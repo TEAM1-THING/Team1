@@ -32,7 +32,9 @@ html[data-sc-ghost] body > :not(#sc-bar) { opacity: .45; }
 html[data-sc-ghost] body { background: rgb(13 18 25 / .55) !important; }
 `;
 
-const NO_BANNER_CSS = `[class~="bg-[#0d1219]"] > p[role="note"] { display: none !important; }`;
+// Hides only the "everyone has been told and agreed" line; the "Ask first"
+// script under it (what the advisor says to get consent) stays.
+const NO_BANNER_CSS = `[class~="bg-[#0d1219]"] > p[role="note"], [class~="bg-[#0d1219]"] > [role="note"] > p:first-child { display: none !important; }`;
 const PREP_KEY = "secondchair.prep"; // where the meeting page reads the prep (src/lib/store.ts)
 
 const MARGIN = 16;
@@ -61,7 +63,9 @@ function defaultBounds(): Rectangle {
 export type Overlay = ReturnType<typeof createOverlay>;
 export type OverlayView = { mode: OverlayMode; visible: boolean; collapsed: boolean; listening: boolean };
 
-export function createOverlay(onChange: (v: OverlayView) => void) {
+// `showAtLaunch`: a meeting link launched the app, so the panel appears at
+// once. Otherwise it waits, hidden, for the app window to start a meeting.
+export function createOverlay(onChange: (v: OverlayView) => void, showAtLaunch: boolean) {
   const mode = initialMode();
   const mac = process.platform === "darwin";
   const saved = load();
@@ -73,6 +77,7 @@ export function createOverlay(onChange: (v: OverlayView) => void) {
   let listening = false;
   let paired = saved.paired === true;
   let notice = saved.notice ?? config.disclosureNotice;
+  let meeting = showAtLaunch; // a meeting has been opened in the panel
   let noticeCss: string | null = null;
 
   const win = new BrowserWindow({
@@ -191,7 +196,7 @@ export function createOverlay(onChange: (v: OverlayView) => void) {
     screen.off("display-metrics-changed", rescue);
   });
 
-  win.once("ready-to-show", () => win.showInactive()); // 3. Focus: appear without taking it.
+  if (showAtLaunch) win.once("ready-to-show", () => win.showInactive()); // 3. Focus: appear without taking it.
   void win.loadURL(config.url);
 
   // Tell the title bar and the tray what state the overlay is in.
@@ -261,6 +266,22 @@ export function createOverlay(onChange: (v: OverlayView) => void) {
       }
       publish();
     },
+    get meeting() {
+      return meeting;
+    },
+    // The app window started a meeting: load it fresh (the page reads the prep
+    // the app window just saved) and appear without taking focus.
+    startMeeting() {
+      meeting = true;
+      if (collapsed) self.toggleCollapsed();
+      void win.loadURL(origin + "/meeting");
+      win.showInactive();
+      publish();
+    },
+    show() {
+      if (!win.isVisible()) win.showInactive();
+      publish();
+    },
     toggleVisible() {
       if (win.isVisible()) {
         if (mode.typing) self.setTyping(false);
@@ -306,6 +327,7 @@ export function createOverlay(onChange: (v: OverlayView) => void) {
     // A link from the website: show the meeting here, with the prep the
     // advisor made in the browser when the link carries one.
     async openLink(link: DeepLink) {
+      meeting = true;
       if (collapsed) self.toggleCollapsed();
       if (!win.isVisible()) win.showInactive();
       const target = origin + link.path;

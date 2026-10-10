@@ -4,6 +4,25 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (16:50) - Desktop: a regular Mac app; prep in an app window, the meeting in the panel
+
+Branch `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f`.
+
+- **Why:** with no Dock icon the only handle was a menu-bar glyph; once the
+  panel was hidden there was no obvious way back, and its X read as "close".
+- **Now:** a Dock icon, Command+Q, Command+Tab. Opening the app shows a normal
+  window with the start page and prep. Starting the meeting (prep's button or
+  the demo link) hides that window and opens the meeting in the private panel;
+  both share one session, so the prep carries over with no link. The panel's X
+  hides it; clicking the Dock icon brings it back (or the app window when no
+  meeting is hidden). Menus: Meeting (Prepare a meeting, Command+N), Edit (copy
+  and paste in the prep form), Panel, Window; the Dock menu has the first two.
+- **Checked on macOS 26.3:** the panel still floats over a full-screen app with
+  the app no longer an accessory; with protection on, the system screen capture
+  leaves the panel out (off: it shows). Real Zoom or Meet share not yet tried.
+- The "everyone has been told" line hides again (B's markup changed twice
+  today); the rule covers both versions.
+
 ## 2026-10-10 (16:30) - Desktop: plain names, a separate screen-share button, hover labels
 
 Branch `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f`.

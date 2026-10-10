@@ -87,7 +87,9 @@ function tips(s: BarStatus): Record<string, Tip> {
       : { name: "Shrink to a thin bar", detail: "Uncover the call and keep just this bar. Double-clicking the bar does the same." },
     hide: {
       name: "Hide the panel",
-      detail: `Bring it back with ${key("H")} or the Second Chair icon in the ${s.mac ? "menu bar" : "taskbar tray"}.`,
+      detail: s.mac
+        ? `Bring it back by clicking Second Chair in the Dock, or press ${key("H")}.`
+        : `Bring it back with ${key("H")}, or open Second Chair again.`,
     },
   };
 }

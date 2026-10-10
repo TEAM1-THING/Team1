@@ -7,6 +7,7 @@
 // and the letters avoid the ones AltGr types on common European layouts.
 import { app, globalShortcut, Menu, nativeImage, Tray, type MenuItemConstructorOptions } from "electron";
 import { asset } from "./config";
+import type { Home } from "./home";
 import type { Overlay, OverlayView } from "./overlay";
 
 type Action = { id: string; label: string; accelerator: string; run: () => void };
@@ -28,7 +29,35 @@ export function registerHotkeys(list: Action[]): void {
   for (const a of taken) console.warn(`[hotkeys] ${a.accelerator} is taken by another app; use the menu-bar icon for "${a.label}".`);
 }
 
-export function createTray(overlay: Overlay, list: Action[]) {
+// The app's menus when it is in front (macOS menu bar) and on the Dock icon.
+// The Edit menu is what makes copy and paste work in the prep form.
+export function setAppMenus(overlay: Overlay, list: Action[], home: Home) {
+  const by = Object.fromEntries(list.map((a) => [a.id, a]));
+  const item = (id: string): MenuItemConstructorOptions => ({ label: by[id].label, accelerator: by[id].accelerator, registerAccelerator: false, click: by[id].run });
+  const prepare: MenuItemConstructorOptions = { label: "Prepare a meeting", accelerator: "CommandOrControl+N", click: () => home.prepare() };
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate([
+      ...(process.platform === "darwin"
+        ? [{ label: "Second Chair", submenu: [{ role: "about" }, { type: "separator" }, { role: "hide" }, { role: "hideOthers" }, { type: "separator" }, item("quit")] } as MenuItemConstructorOptions]
+        : []),
+      { label: "Meeting", submenu: [prepare, { type: "separator" }, item("visible"), item("typing"), item("ghost"), item("collapse"), { type: "separator" }, { label: "Sample meeting", submenu: [item("next"), item("auto")] }] },
+      { role: "editMenu" },
+      {
+        label: "Panel",
+        submenu: [
+          { label: "Larger text", click: () => overlay.zoomBy(1) },
+          { label: "Smaller text", click: () => overlay.zoomBy(-1) },
+          { label: "Move under the webcam", click: () => overlay.placeUnderCamera() },
+          { label: "Move back to the corner", click: () => overlay.resetPosition() },
+        ],
+      },
+      { role: "windowMenu" },
+    ]),
+  );
+  app.dock?.setMenu(Menu.buildFromTemplate([prepare, item("visible")]));
+}
+
+export function createTray(overlay: Overlay, list: Action[], home: Home) {
   const mac = process.platform === "darwin";
   // A template image follows the menu bar's light or dark appearance on macOS.
   const icon = mac
@@ -51,6 +80,7 @@ export function createTray(overlay: Overlay, list: Action[]) {
       Menu.buildFromTemplate([
         { label: listening ? "Second Chair: listening to the call" : "Second Chair", enabled: false },
         { type: "separator" },
+        { label: "Prepare a meeting", click: () => home.prepare() },
         item("visible", { label: visible ? "Hide the panel" : "Show the panel" }),
         item("typing", { type: "checkbox", checked: mode.typing }),
         item("ghost", { type: "checkbox", checked: mode.ghost }),

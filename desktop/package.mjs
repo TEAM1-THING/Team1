@@ -45,7 +45,6 @@ const [appDir] = await packager({
   ignore: [/^\/src($|\/)/, /^\/static($|\/)/, /^\/out($|\/)/, /^\/build\.mjs$/, /^\/package\.mjs$/, /^\/tsconfig\.json$/],
   protocols: [{ name: NAME, schemes: ["secondchair"] }],
   extendInfo: {
-    LSUIElement: true, // no Dock icon; the menu-bar icon is the app's handle
     NSMicrophoneUsageDescription: "Second Chair transcribes the meeting, with everyone's consent, to suggest your next move.",
     NSAudioCaptureUsageDescription: "Second Chair listens to the call's audio, with everyone's consent, to suggest your next move.",
   },

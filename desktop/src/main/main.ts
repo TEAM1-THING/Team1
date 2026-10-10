@@ -1,4 +1,6 @@
-// Second Chair desktop: the meeting screen as a private overlay on the call.
+// Second Chair desktop: a regular app whose meeting screen is a private panel
+// over the call. The app window holds the start page and the prep; starting
+// the meeting moves it into the panel.
 //
 // The main process only manages windows, hotkeys and the tray, and never waits
 // on audio, speech or the network. The work is split across processes:
@@ -14,7 +16,8 @@ import { app, globalShortcut, ipcMain, MessageChannelMain, utilityProcess, type 
 import { parseDeepLink, SCHEME } from "../core/deepLink";
 import { createAudioWindow } from "./audio";
 import { config, dist } from "./config";
-import { actions, createTray, registerHotkeys } from "./controls";
+import { actions, createTray, registerHotkeys, setAppMenus } from "./controls";
+import { createHome } from "./home";
 import { createOverlay } from "./overlay";
 
 type Role = "overlay" | "audio";
@@ -23,6 +26,7 @@ type Role = "overlay" | "audio";
 const waiting: string[] = process.argv.filter((a) => a.startsWith(`${SCHEME}://`));
 let openLink: ((url: string) => void) | null = null;
 const receive = (url: string) => (openLink ? openLink(url) : waiting.push(url));
+let reopen: (() => void) | null = null; // the app was opened again while running
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -33,7 +37,11 @@ if (!app.requestSingleInstanceLock()) {
     e.preventDefault();
     receive(url);
   });
-  app.on("second-instance", (_e, argv) => argv.filter((a) => a.startsWith(`${SCHEME}://`)).forEach(receive));
+  app.on("second-instance", (_e, argv) => {
+    const links = argv.filter((a) => a.startsWith(`${SCHEME}://`));
+    if (links.length) links.forEach(receive);
+    else reopen?.();
+  });
   // Only a packaged build owns the scheme; in development it would point the
   // OS at the bare Electron binary instead of this app.
   if (app.isPackaged && !app.isDefaultProtocolClient(SCHEME)) app.setAsDefaultProtocolClient(SCHEME);
@@ -42,20 +50,29 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 function start() {
-  // No Dock icon, and never the active app on its own: the call keeps focus.
-  if (process.platform === "darwin") app.setActivationPolicy("accessory");
-
+  // A regular app: a Dock icon, an app window, Command+Q. The panel itself
+  // still never takes focus from the call (it is a non-activating panel).
   let quitting = false;
   let restarts = 0;
   const wired = new Map<Role, WebContents>();
+  const launchedByLink = waiting.length > 0;
 
   // The callback first fires after a page load, by which time the tray exists.
-  const overlay = createOverlay((view) => tray.render(view));
+  const overlay = createOverlay((view) => tray.render(view), launchedByLink);
+  const home = createHome(() => overlay.startMeeting());
   const audio = createAudioWindow();
   const list = actions(overlay);
-  const tray = createTray(overlay, list);
+  const tray = createTray(overlay, list, home);
+  setAppMenus(overlay, list, home);
   overlay.setListening(false); // first render of the tray
   registerHotkeys(list);
+  // Opened from the Dock, Finder or Spotlight: the app window, unless a link
+  // is opening a meeting in the panel.
+  if (!launchedByLink) home.win.once("ready-to-show", () => home.show());
+  // Clicking the Dock icon brings back what the advisor is missing: the hidden
+  // panel during a meeting, otherwise the app window.
+  reopen = () => (overlay.meeting && !overlay.win.isVisible() ? overlay.show() : home.show());
+  app.on("activate", reopen);
 
   openLink = (url) => {
     const link = parseDeepLink(url);
@@ -116,6 +133,7 @@ function start() {
 
   app.on("before-quit", () => {
     quitting = true;
+    home.quitting();
     pipeline.kill();
   });
   overlay.win.on("closed", () => app.quit());
