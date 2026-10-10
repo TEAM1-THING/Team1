@@ -20,6 +20,11 @@ describe("kindOf", () => {
     expect(kindOf("decide: start now or wait")).toEqual({ kind: "decide", text: "start now or wait" });
   });
 
+  it("keeps the whole topic when a prefix has nothing after it", () => {
+    expect(kindOf("request:")).toEqual({ kind: "request", text: "request:" });
+    expect(kindOf("Worry:  ")).toEqual({ kind: "worry", text: "Worry:  " });
+  });
+
   it("treats an untagged topic as a worry, unchanged", () => {
     expect(kindOf("liquidity")).toEqual({ kind: "worry", text: "liquidity" });
     expect(kindOf("worry: market timing")).toEqual({ kind: "worry", text: "market timing" });

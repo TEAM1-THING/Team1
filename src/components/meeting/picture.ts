@@ -1,6 +1,7 @@
-// Client picture (#39): the concern ledger read as kinds. The engine tags a
-// topic with a prefix ("life event: son's down payment"); the contract does not
-// change. An untagged topic is a worry, so older ledgers read the same.
+// Client picture (#39): the concern ledger read as kinds, from a prefix on the
+// topic ("life event: son's down payment"); the contract does not change. The
+// engine emits "request: " today; the other prefixes are asked of track A on
+// #39. An untagged topic is a worry, so older ledgers read the same.
 import type { Concern } from "@/lib/types";
 
 export const KINDS = [
@@ -16,7 +17,10 @@ const PREFIX = /^\s*(worry|learn|decide|life event|request)\s*:\s*/i;
 
 export function kindOf(topic: string): { kind: Kind; text: string } {
   const m = topic.match(PREFIX);
-  return m ? { kind: m[1].toLowerCase() as Kind, text: topic.slice(m[0].length) } : { kind: "worry", text: topic };
+  if (!m) return { kind: "worry", text: topic };
+  // A bare prefix ("request:") keeps its whole topic rather than show an empty line.
+  const text = topic.slice(m[0].length).trim();
+  return { kind: m[1].toLowerCase() as Kind, text: text || topic };
 }
 
 export type PictureItem = Concern & { text: string };
