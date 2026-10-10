@@ -50,6 +50,21 @@ const cards: Record<string, Card> = {
     doNotClaim: ["Any down payment figure: she has not given one."],
     defer: false,
   },
+  t8: {
+    id: "c-t8",
+    turnId: "t8",
+    moment: "contradiction",
+    concern: "She recalls the reserve as $200,000; the plan says $180,000.",
+    facts: [
+      { text: "The plan keeps a $180,000 liquid reserve, equal to 24 months of expenses.", label: "PREPARED_FACT", sourceId: "plan-1" },
+      { text: "Each of the 6 monthly tranches is $200,000.", label: "PREPARED_FACT", sourceId: "plan-1" },
+    ],
+    recommendedMove: "Give the plan's reserve figure gently, then name the tranche size she likely recalled.",
+    phrasing: "Good thing to check. The reserve is $180,000, 24 months of expenses. The $200,000 you may be remembering is each monthly investment tranche.",
+    why: "$200,000 is the plan's monthly tranche size, the likely source of the mix-up.",
+    doNotClaim: ["That the reserve is $200,000."],
+    defer: false,
+  },
 };
 
 export function mockMoment(turnId: string, state: ConversationState): MomentResponse {
@@ -58,7 +73,7 @@ export function mockMoment(turnId: string, state: ConversationState): MomentResp
   const concerns = state.concerns.map((c) =>
     turnId === "t4" && c.topic === "liquidity" ? { ...c, status: "resolved" as const, resolvedAtTurn: turnId } : c,
   );
-  const topic = { t2: "liquidity", t4: "market timing", t6: "down payment" }[turnId]!;
+  const topic = { t2: "liquidity", t4: "market timing", t6: "down payment", t8: "reserve figure" }[turnId]!;
   concerns.push({ id: `k-${turnId}`, topic, status: "open", raisedAtTurn: turnId });
   return { card, state: { concerns, cards: [...state.cards, card] } };
 }

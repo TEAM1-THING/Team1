@@ -4,6 +4,7 @@ import { demoPrep, demoTranscript } from "@/data/demo";
 import { POST } from "@/app/api/moment/route";
 import { LIVE_TIMEOUT_MS, setClientForTests } from "@/lib/engine/client";
 import { buildMomentPrompt, outOfScopeHit, runMoment, type LlmMoment } from "@/lib/engine/moment";
+import { checkClientFigures } from "@/lib/engine/recall";
 import { mockMoment } from "@/lib/mock";
 import { MomentResponse, emptyState, type ConversationState, type Prep, type TranscriptTurn } from "@/lib/types";
 
@@ -37,6 +38,24 @@ const liveT2: LlmMoment = {
   defer: false,
   concernUpdates: { open: ["liquidity"], resolve: [] },
 };
+
+// t8: Dana recalls the reserve as $200,000; the plan says $180,000, and
+// $200,000 is the monthly tranche size.
+const liveT8: LlmMoment = {
+  ...liveT2,
+  moment: "contradiction",
+  concern: "Recalls the reserve as $200,000; the plan says $180,000.",
+  facts: [
+    { text: "The plan keeps a $180,000 liquid reserve.", label: "PREPARED_FACT", sourceId: "plan-1" },
+    { text: "Each of the 6 monthly tranches is $200,000.", label: "PREPARED_FACT", sourceId: "plan-1" },
+  ],
+  recommendedMove: "Give the plan's reserve figure gently, then name the tranche size.",
+  phrasing: "The reserve is $180,000. The $200,000 you may be remembering is each monthly tranche.",
+  why: "$200,000 is the plan's monthly tranche size, the likely mix-up.",
+  doNotClaim: ["That the reserve is $200,000."],
+  concernUpdates: { open: ["reserve figure"], resolve: [] },
+};
+const afterT6 = () => ["t2", "t4", "t6"].reduce((s, id) => mockMoment(id, s).state, emptyState());
 
 beforeEach(() => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -295,6 +314,70 @@ describe("runMoment", () => {
     expect(parse).not.toHaveBeenCalled();
   });
 
+  it("names both figures when the client misremembers one, the plan's green with its source", async () => {
+    returning(liveT8);
+    const res = await runMoment({ prep: demoPrep, turns: upTo("t8"), state: afterT6() });
+    expect(res.card).toMatchObject({ id: "c-t8", moment: "contradiction", concern: liveT8.concern, phrasing: liveT8.phrasing });
+    expect(res.card?.facts).toEqual(liveT8.facts);
+    expect(res.card?.phrasing).toContain("$180,000");
+    expect(res.card?.phrasing).toContain("$200,000");
+    // The meeting card shows the cited document and its date under the fact.
+    const source = demoPrep.sources.find((s) => s.id === res.card?.facts[0].sourceId);
+    expect(source?.date).toBeTruthy();
+  });
+
+  it("allows the client's own figure in the phrasing even when no source has it", async () => {
+    const turns = [...upTo("t7"), { id: "x8", speaker: "client" as const, t: 75, text: "I thought the reserve was $250,000?" }];
+    returning({
+      ...liveT8,
+      concern: "Recalls the reserve as $250,000; the plan says $180,000.",
+      facts: [
+        { text: "The plan keeps a $180,000 liquid reserve.", label: "PREPARED_FACT", sourceId: "plan-1" },
+        { text: "The reserve is $250,000.", label: "PREPARED_FACT", sourceId: "plan-1" },
+      ],
+      phrasing: "You mentioned $250,000; the plan's reserve is $180,000, 24 months of expenses.",
+      why: "Her figure and the plan's differ.",
+    });
+    const res = await runMoment({ prep: demoPrep, turns, state: afterT6() });
+    expect(res.card?.phrasing).toContain("$250,000");
+    expect(res.card?.facts.map((f) => f.label)).toEqual(["PREPARED_FACT", "SUGGESTION"]);
+  });
+
+  it("still rejects or downgrades an invented third figure on a mismatch card", async () => {
+    returning({ ...liveT8, phrasing: "The reserve is $180,000, not $200,000; with interest it reaches $220,000." });
+    const spoken = await runMoment({ prep: demoPrep, turns: upTo("t8"), state: afterT6() });
+    expect(spoken.card?.phrasing).toBe(mockMoment("t8", afterT6()).card?.phrasing);
+    expect(spoken.card?.phrasing).not.toContain("$220,000");
+
+    returning({ ...liveT8, facts: [...liveT8.facts, { text: "With interest the reserve reaches $220,000.", label: "PREPARED_FACT", sourceId: "plan-1" }] });
+    const fact = await runMoment({ prep: demoPrep, turns: upTo("t8"), state: afterT6() });
+    expect(fact.card?.facts.map((f) => f.label)).toEqual(["PREPARED_FACT", "PREPARED_FACT", "SUGGESTION"]);
+  });
+
+  it("downgrades a prepared fact that pins the client's figure on the wrong thing", async () => {
+    returning({
+      ...liveT8,
+      facts: [
+        { text: "The report lists the reserve at $200,000.", label: "PREPARED_FACT", sourceId: "plan-1" },
+        { text: "Each of the 6 monthly tranches is $200,000.", label: "PREPARED_FACT", sourceId: "plan-1" },
+      ],
+    });
+    const res = await runMoment({ prep: demoPrep, turns: upTo("t8"), state: afterT6() });
+    expect(res.card?.facts.map((f) => f.label)).toEqual(["SUGGESTION", "PREPARED_FACT"]);
+  });
+
+  it("falls back to a canned mismatch card for t8 whose prepared facts survive the trace", async () => {
+    setClientForTests(null);
+    const res = await runMoment({ prep: demoPrep, turns: upTo("t8"), state: afterT6() });
+    expect(res.card?.id).toBe("c-t8");
+    expect(res.card?.moment).toBe("contradiction");
+    expect(res.card?.facts.map((f) => [f.label, f.sourceId])).toEqual([
+      ["PREPARED_FACT", "plan-1"],
+      ["PREPARED_FACT", "plan-1"],
+    ]);
+    expect(res.state.concerns.at(-1)).toMatchObject({ topic: "reserve figure", status: "open", raisedAtTurn: "t8" });
+  });
+
   it("resolves the liquidity concern and opens the new one", async () => {
     returning({
       ...liveT2,
@@ -322,6 +405,26 @@ describe("buildMomentPrompt", () => {
     expect(prompt.match(/<\/meeting_data>/g)).toHaveLength(1);
     expect(prompt).toContain("plan-1");
     expect(prompt).toContain("Crypto");
+  });
+
+  it("hands Claude the client's figures and where the plan holds them", () => {
+    const turns = upTo("t8");
+    const prompt = buildMomentPrompt(demoPrep, turns, emptyState(), turns.at(-1)!);
+    expect(prompt).toContain("<client_figures>");
+    const check = checkClientFigures(turns.at(-1)!.text, demoPrep, 12);
+    expect(check?.figures).toEqual([
+      {
+        said: "$200,000",
+        inMaterials: true,
+        foundIn: [{ sourceId: "plan-1", text: "Enter the market in 6 equal monthly tranches of $200,000 to reduce timing risk." }],
+      },
+    ]);
+    expect(check?.planLines.map((l) => l.sourceId)).toEqual(["plan-1", "plan-2"]);
+    expect(check?.planLines[0].text).toContain("$180,000 liquid reserve");
+
+    expect(checkClientFigures("My sister lost a lot in 2008.", demoPrep, 12)?.figures[0]).toMatchObject({ inMaterials: false, foundIn: [] });
+    const noFigures = upTo("t2");
+    expect(buildMomentPrompt(demoPrep, noFigures, emptyState(), noFigures.at(-1)!)).not.toContain("<client_figures>");
   });
 
   it("caps what goes to Claude", () => {

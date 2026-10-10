@@ -22,6 +22,7 @@ const SCENES: { id: string; expect: string; turns: TranscriptTurn[]; state: Conv
   { id: "t2", expect: "objection about liquidity; anchor to the $180,000 reserve", turns: upTo("t2"), state: emptyState() },
   { id: "t4", expect: "hesitation about market timing; phased entry already in plan; liquidity resolved", turns: upTo("t4"), state: after(["t2"]) },
   { id: "t6", expect: "disclosure of a new goal (son's down payment); ask amount and timing; no invented figure", turns: upTo("t6"), state: after(["t2", "t4"]) },
+  { id: "t8", expect: "contradiction: recalls the reserve as $200,000; plan says $180,000 (plan-1); $200,000 is the tranche size, the likely mix-up", turns: upTo("t8"), state: after(["t2", "t4", "t6"]) },
   { id: "x1", expect: "out-of-scope question (individual stock pick); must defer, no prepared facts", turns: extra("x1", "Should I just put some of this into Nvidia stock instead? My neighbour made a fortune."), state: after(["t2", "t4", "t6"]) },
   { id: "x2", expect: "contradiction: earlier goal retire at 70, now 65; flag it, ask before changing plan", turns: extra("x2", "Actually, I'd really like to stop working at 65, not 70. That's still fine with this plan, right?"), state: after(["t2", "t4", "t6"]) },
   { id: "x3", expect: "buying signal / commitment conditional on the reserve; confirm next step, no pressure", turns: extra("x3", "Okay. If the reserve stays untouched and we go in gradually, I think I'm ready to get started."), state: after(["t2", "t4", "t6"]) },

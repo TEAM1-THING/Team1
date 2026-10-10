@@ -7,7 +7,8 @@ import { FALLBACK_BETA, LIVE_MODEL, LIVE_TIMEOUT_MS, getClient, supportsFallback
 import { classifyUtterance, echoesCard } from "./gate";
 import { demoPrep, demoTranscript } from "../../data/demo";
 import { mockMoment } from "../mock";
-import { enforceNumberTrace, parseNumber } from "../provenance";
+import { enforceNumberTrace } from "../provenance";
+import { checkClientFigures, figures, misattributed } from "./recall";
 import {
   Card,
   MOMENT_TYPES,
@@ -102,12 +103,13 @@ Rules:
   - SUGGESTION for framing, ideas and anything that rests on an assumption.
   - DO_NOT_CLAIM for something the evidence does not support and the advisor should not assert. Write it as the claim to avoid (for example "That the reserve covers every emergency"), never as a true statement from the plan.
 - In facts, write every figure in digits exactly as the source writes it, with its unit ($, %), never in words.
-- Figures belong in facts. concern, recommendedMove, phrasing, why and deferReason may only repeat a figure that appears in a source or in a CALCULATED fact on this card; otherwise leave numbers out of them.
+- Figures belong in facts. concern, recommendedMove, phrasing, why and deferReason may only repeat a figure that appears in a source, in a CALCULATED fact on this card, or in the client's own words; otherwise leave numbers out of them.
 - List under doNotClaim what the evidence does not support, so the advisor does not say it. The phrasing must never assert anything on that list.
 - When a prepared figure answers the client's concern (for example the reserve amount), say that figure in the phrasing, exactly as the source writes it.
 - If the client asks about anything in mandate.outOfScope, or anything outside the Mandate, set defer to true, give a deferReason, write a phrasing that politely defers the topic (for example to a follow-up or a specialist), and include no PREPARED_FACT.
 - If nothing decision-relevant happened (small talk, a plain acknowledgement), set relevant to false. The other fields may then be brief placeholders.
 - moment is the one type that fits best from: ${MOMENT_TYPES.join(", ")}.
+- Watch for a misremembered figure. <client_figures> lists each figure in the latest client turn: inMaterials says whether that value is anywhere in the materials, foundIn the source sentences that hold it, planLines source sentences with figures on the same topic. When the client states or recalls a figure for something the plan sets (the reserve, a tranche, a return, an income, an age) and the plan's figure for it differs, the moment is contradiction. Say it plainly: concern names what the client said and what the plan says; one PREPARED_FACT gives the plan's figure in the source's own words, without the client's figure; when foundIn shows the client's figure is something else in the plan, add a PREPARED_FACT saying what it is there, and name it in why as the likely reason for the mix-up. The phrasing gives the plan's figure gently and never says the client is wrong. A figure missing from the materials is not a mismatch unless the client ties it to the plan.
 - Watch for word meaning, which advisors often miss: the client reacting to a word differently than the advisor meant it (for example hearing "scrutinize" as being audited), or using slang or a regional idiom whose meaning matters (for example "going to the basement" can mean being in financial trouble). Call that a misunderstanding, name the word and both readings in concern, and suggest phrasing that checks or clarifies the meaning in plain words before moving on.
 - concern is what sits underneath the client's words, in one line.
 - recommendedMove is the advisor's next move in one sentence of at most 20 words. phrasing is at most 30 words the advisor could say aloud, in plain spoken language. why is one sentence of at most 20 words on why this move fits what the client said.
@@ -164,6 +166,7 @@ export function buildMomentParts(
     disclaimers: clipList(m.disclaimers),
     outOfScope: clipList(m.outOfScope),
   };
+  const said = checkClientFigures(latest.text, prep, MAX_SOURCES);
   return {
     // Identical on every turn of a meeting, so it is cached after the first card.
     prep: [
@@ -185,6 +188,7 @@ export function buildMomentParts(
       `<concern_ledger>${data(ledger)}</concern_ledger>`,
       `<recent_turns>${data(recent)}</recent_turns>`,
       `<latest_client_turn>${data(turn(latest))}</latest_client_turn>`,
+      ...(said ? [`<client_figures>${data(said)}</client_figures>`] : []),
       "</meeting_data>",
       "",
       "Draft the card for the latest client turn, or set relevant to false if nothing decision-relevant happened.",
@@ -248,34 +252,28 @@ export function applyConcernUpdates(
 }
 
 // Number trace, stricter than provenance.ts (which stays the shared floor and
-// still runs after this). Figures keep their unit: "$180000", "%5", "24".
-const FIGURE = /\$?\d[\d,]*(?:\.\d+)?\s*(?:[kKmM](?![a-zA-Z])|%)?/g;
+// still runs after this). figures() keeps the unit: "$180000", "%5", "24".
 const NUMBER_WORD =
   /\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|billion|trillion|dozen|percent)\b/i;
 
-export function figures(text: string): string[] {
-  const out: string[] = [];
-  for (const raw of text.match(FIGURE) ?? []) {
-    const value = parseNumber(raw);
-    if (value === null) continue;
-    out.push(`${raw.includes("$") ? "$" : raw.trim().endsWith("%") ? "%" : ""}${value}`);
-  }
-  return out;
-}
-
 // PREPARED_FACT stays green only if every figure, unit included, appears in the
-// source it cites, and it writes no number in words. Otherwise it is
-// downgraded the same way provenance.ts downgrades.
-function traceToSource(fact: CardFact, prep: Prep): CardFact {
+// source it cites, it writes no number in words, and it does not pin a figure
+// the client just said on the wrong thing. Otherwise it is downgraded the same
+// way provenance.ts downgrades.
+function traceToSource(fact: CardFact, prep: Prep, clientText: string): CardFact {
   if (fact.label !== "PREPARED_FACT") return fact;
   const source = prep.sources.find((s) => s.id === fact.sourceId);
   const known = new Set(source ? figures(source.text) : []);
-  const traced = !!source && !NUMBER_WORD.test(fact.text) && figures(fact.text).every((f) => known.has(f));
+  const traced =
+    !!source &&
+    !NUMBER_WORD.test(fact.text) &&
+    figures(fact.text).every((f) => known.has(f)) &&
+    !misattributed(fact, prep, clientText);
   return traced ? fact : { ...fact, label: fact.math ? "CALCULATED" : "SUGGESTION" };
 }
 
-function traceFacts(card: Card, prep: Prep): Card {
-  return enforceNumberTrace({ ...card, facts: card.facts.map((f) => traceToSource(f, prep)) }, prep);
+function traceFacts(card: Card, prep: Prep, latest: TranscriptTurn): Card {
+  return enforceNumberTrace({ ...card, facts: card.facts.map((f) => traceToSource(f, prep, latest.text)) }, prep);
 }
 
 // The advisor reads these aloud or acts on them, so (guardrail 4) any figure
@@ -363,7 +361,7 @@ export function toCard(out: LlmMoment, prep: Prep, latest: TranscriptTurn, turns
   };
   const parsed = Card.safeParse(candidate);
   if (!parsed.success) return null;
-  const card = traceFacts(parsed.data, prep);
+  const card = traceFacts(parsed.data, prep, latest);
   // When the floor fired, only concern is still the model's own text.
   return textTraced(topic ? [card.concern] : spoken(card), card.facts, prep, turns) ? card : null;
 }
@@ -382,7 +380,7 @@ function fallback(prep: Prep, state: ConversationState, latest: TranscriptTurn, 
   if (!demo) return none;
   const res = mockMoment(latest.id, state);
   if (!res.card) return none;
-  const card = traceFacts(res.card, prep);
+  const card = traceFacts(res.card, prep, latest);
   if (!textTraced(spoken(card), card.facts, prep, [latest])) return none;
   return { card, state: { concerns: res.state.concerns, cards: [...state.cards.filter((c) => c.id !== card.id), card] } };
 }
