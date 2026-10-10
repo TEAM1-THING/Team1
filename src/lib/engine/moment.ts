@@ -93,10 +93,11 @@ Rules:
   - PREPARED_FACT only for a figure or statement copied from one of the sources, with that source's id in sourceId. Copy figures exactly as the source writes them.
   - CALCULATED only when you show the math in the math field, built from prepared figures.
   - SUGGESTION for framing, ideas and anything that rests on an assumption.
-  - DO_NOT_CLAIM for something the evidence does not support and the advisor should not assert.
+  - DO_NOT_CLAIM for something the evidence does not support and the advisor should not assert. Write it as the claim to avoid (for example "That the reserve covers every emergency"), never as a true statement from the plan.
 - In facts, write every figure in digits exactly as the source writes it, with its unit ($, %), never in words.
 - Figures belong in facts. concern, recommendedMove, phrasing, why and deferReason may only repeat a figure that appears in a source or in a CALCULATED fact on this card; otherwise leave numbers out of them.
-- List under doNotClaim what the evidence does not support, so the advisor does not say it.
+- List under doNotClaim what the evidence does not support, so the advisor does not say it. The phrasing must never assert anything on that list.
+- When a prepared figure answers the client's concern (for example the reserve amount), say that figure in the phrasing, exactly as the source writes it.
 - If the client asks about anything in mandate.outOfScope, or anything outside the Mandate, set defer to true, give a deferReason, write a phrasing that politely defers the topic (for example to a follow-up or a specialist), and include no PREPARED_FACT.
 - If nothing decision-relevant happened (small talk, a plain acknowledgement), set relevant to false. The other fields may then be brief placeholders.
 - moment is the one type that fits best from: ${MOMENT_TYPES.join(", ")}.
