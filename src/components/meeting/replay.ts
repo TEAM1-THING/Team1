@@ -1,8 +1,8 @@
 // Replay logic for the meeting screen, kept free of React so a test can drive
 // it through the real /api/moment handler.
-import type { Card, ConversationState, MomentRequest, MomentResponse, Prep, TranscriptTurn } from "@/lib/types";
+import type { Card, Concern, ConversationState, MomentRequest, MomentResponse, Prep, TranscriptTurn } from "@/lib/types";
 
-export type PostMoment = (req: MomentRequest) => Promise<MomentResponse>;
+export type PostMoment = (req: MomentRequest, signal?: AbortSignal) => Promise<MomentResponse>;
 
 // Only a client turn can raise a moment; advisor turns just extend the transcript.
 export async function processTurn(
@@ -16,11 +16,12 @@ export async function processTurn(
   return { card: res.card, state: res.state };
 }
 
-export const postMoment: PostMoment = async (req) => {
+export const postMoment: PostMoment = async (req, signal) => {
   const res = await fetch("/api/moment", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(req),
+    signal,
   });
   if (!res.ok) throw new Error(`/api/moment answered ${res.status}`);
   return (await res.json()) as MomentResponse;
@@ -33,3 +34,8 @@ export const LABELS = {
   SUGGESTION: { text: "Suggestion", chip: "bg-rose-400/15 text-rose-300", rule: "border-rose-400" },
   DO_NOT_CLAIM: { text: "Do not claim", chip: "bg-slate-400/15 text-slate-300", rule: "border-slate-500" },
 } as const;
+
+// End-of-meeting follow-ups: one task line per concern still open.
+export function followUpTasks(concerns: Concern[], client: string): string[] {
+  return concerns.filter((c) => c.status === "open").map((c) => `Follow up with ${client}: ${c.topic} (raised at ${c.raisedAtTurn})`);
+}

@@ -4,6 +4,54 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (16:25) - Desktop: site links open the overlay; real macOS app; native call audio
+
+Branch `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f` (pushed, not merged).
+
+- **Links open the overlay.** `cd desktop && npm run install-app` builds
+  `Second Chair.app`, signs it ad hoc, installs it to `~/Applications` and
+  registers `secondchair://`. On first run it opens the site once with
+  `?sc-desktop=paired`; from then on that browser hands `/` and `/meeting` to
+  the overlay (`src/components/desktop/OpenInDesktop.tsx`, mounted in the root
+  layout), with the advisor's prep in the link's fragment (never sent to a
+  server). Browsers that were never paired, phones, and the overlay itself
+  see the site as before. Chrome asks once before opening the app; "always
+  allow" makes it automatic. Live on the production link only after a merge.
+- **macOS audio without BlackHole.** Electron 39+ captures system audio on
+  macOS 14.2+ through a Core Audio tap. It needs `NSAudioCaptureUsageDescription`
+  in the app's Info.plist (a dev run gets a silent stream, no error), so it
+  works from the packaged app. The capture's video is the hidden window's own
+  frame, so no Screen Recording permission is asked for. BlackHole remains the
+  fallback for older macOS.
+- **Testing the undisclosed scenario (user's call):** the meeting page's
+  "everyone has been told" notice is hidden in the overlay by default, with a
+  menu-bar toggle. The all-parties consent checkbox still gates recording:
+  California requires every party's consent to record.
+- Also: "Move under the camera" keeps the advisor's eyes near the lens.
+
+Verified with the installed app: a `secondchair://` link through macOS opened
+the meeting with the handed-off prep (the demo client's name gone); a hostile
+`path` stayed on `/meeting`; a malformed link was ignored. 155 tests, next
+build green. Not verified: the Chrome prompt (needs a person to click), Core
+Audio capture of a real call, capture exclusion on macOS (needs Screen
+Recording permission for the test runner).
+
+## 2026-10-10 (16:05) - Block 2 sense check launched
+
+Test `53289620-a96e-41c4-8229-9448b1187d8d`, session 2, theme Catch what
+humans miss, stimulus https://second-chair-seven.vercel.app (production, so
+every merge to `main` reaches testers who load or reload it). SenseAI frames
+the calls as: advisors miss the real worry behind client questions or give
+answers they can't back with plan numbers, and those misses cost them client
+trust. Launched on the team's explicit go; 2 checks remain. Description sent
+word for word: prep from the advisor's files, a card with what the client
+likely means, facts from the advisor's own plan with the document and date
+each came from, a suggested answer, anything untraced marked as a suggestion.
+Known rough edge at launch: End meeting downloads a JSON file and opens the
+records app empty (#25 and #27 pending review).
+
+---
+
 ## 2026-10-10 (15:55) - Desktop overlay (Electron), on its own branch
 
 Branch `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f`, not merged (code freeze).
@@ -30,9 +78,9 @@ B collapse, Right next turn, P auto-play, Shift+Q quit.
   audio thread, speech-to-text runs in a utility process with backpressure
   (merges waiting sentences instead of queueing). Turns enter through the
   meeting page's own mic button, consent checkbox included (shimmed
-  SpeechRecognition). **Found:** the meeting page drops a turn that arrives
-  while `/api/moment` is answering; the shim now holds those and sends them
-  as one merged turn when the page is free.
+  SpeechRecognition). Testing showed the page dropping lines spoken during
+  an analysis; main's live-turn change (f2fa17d) fixed that in the page, so
+  the shim passes each line straight through.
 - **Speech-to-text** is any OpenAI-compatible endpoint in `SC_STT_URL`
   (local whisper keeps audio on the machine). macOS needs a virtual audio
   device (BlackHole) for the call's sound; Electron has loopback on Windows only.
@@ -42,6 +90,74 @@ B collapse, Right next turn, P auto-play, Shift+Q quit.
 zones, collapse, see-through, no sideways overflow, no page errors, tone to
 card in 9 s, nothing sent after Stop mic. 125 tests green. Not verified: real
 call audio (no BlackHole here), capture exclusion, Windows.
+## 2026-10-10 (15:55) - Track A: prep from files, live turns, speaker labels
+
+**Live:** https://second-chair-seven.vercel.app. Merged #19 (C), #20 (D) and
+#22. Checked on production: t2, t4 and t6 give live cards in 4.1 to 4.7 s;
+filler ("Okay, that helps.") returns no card in 0.8 s with no Claude call;
+the sample PDF and CSV are read in 8.5 s; pre-flight runs live Bright Data.
+
+**#22, merged.** Prep starts from files: PDF and images go to Claude;
+.docx, .xlsx and .pptx are unzipped server-side (no new packages); CSV and
+text are kept verbatim. A client-file figure not found in the files is zeroed
+and listed as missing, never guessed. Live gate: questions always run; filler
+and plain statements do not; a statement with a worry, life event, changed
+goal or figure still runs, because two of the three demo scenes are
+statements and "stop working at 65, not 70" is a contradiction. Prepared
+facts show their source document and its date (Block 1 tester 2).
+
+**#26, open.** Live mic lines spoken during the 4 s analysis were dropped
+(`step()` returned early while busy). Now every line shows at once and
+analysis is newest-wins: a new line cancels the stale request and, after a
+0.6 s pause, one request covers everything said. Speaker labels: a line that
+echoes the card's phrasing is the advisor (no call); otherwise the engine
+judges the speaker first and returns `speaker: "advisor"` with no card; a
+click on a live line's label flips it. Prep reads who the meeting is with
+(client, prospect, supervisor, compliance, committee) and why; money fields
+are expected only of a client or prospect. Live check: a Q3 note was read as
+"Priya Shah, supervisor"; an advisor question came back `speaker=advisor`.
+
+**Not built here: hiding the overlay from screen capture.** The request was
+stopped by a safety check; another session owns the alternative. Research
+for the record: on macOS 15.4+ Apple says there is no public API to prevent
+capture, and ScreenCaptureKit-based capture records `NSWindowSharingNone`
+windows, so per-app behavior varies.
+
+**Sense checks.** Block 1 closed: 13 sends, 2 completed, 11 failed. Block 2
+drafted with the link as stimulus; not launched.
+
+**Tooling.** The ecc plugin's pre-commit hook needs `eslint-formatter-compact`;
+installed locally with `--no-save`, so `package.json` is untouched.
+
+---
+
+## 2026-10-10 (15:45) - Track D: records app drops sign-in for now; End meeting hands the record over
+
+**Decided (supersedes 15:10):** the records app runs **without sign-in or a
+database** for the sense check. Records stay in the browser and leave as raw
+JSON files; the compliance sign-off is a typed reviewer name and time written
+into the file (not checked against an account). A shared database with
+sign-in, possibly Supabase, is queued for after the second sense check. The
+sign-in + saved-records version is kept as the Base44 checkpoint "records:
+load record handed over by End meeting".
+
+**Built:** End meeting now opens https://second-chair-view.base44.app with the
+record in the link's fragment (never sent to a server); the app loads it ready
+to review, sign off and download (records app published; our half is #25).
+Records app fixes: times in the viewer's zone, phrasing labelled SUGGESTION.
+D1 (#4) closed. D2 (#8) waits on the Chrome mic test.
+
+## 2026-10-10 (15:30) - Track B: live mic has no speaker separation (parked)
+
+The live mic labels everything it hears as the client, the advisor's own
+speech included. `MicInput.tsx:99` hands the meeting screen text only (Chrome's
+speech API has no speaker information), and `src/app/meeting/page.tsx:70`
+marks every mic line `speaker: "client"`, so advisor lines go to the engine as
+client turns and can raise wrong cards and concerns. The scripted replay is
+unaffected. **Parked by B for now:** if the mic is demoed, only the client
+should speak. Cheapest fix when wanted: a Client / Me toggle on the meeting
+screen that sets the speaker of each mic line (B's files only, no contract
+change); advisor lines then stay as context and raise no cards.
 
 ## 2026-10-10 (15:10) - Track D: Vercel live, records app published
 
