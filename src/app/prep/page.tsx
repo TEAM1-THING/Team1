@@ -13,6 +13,7 @@ import { confirmPrep } from "@/components/prep/prepModel";
 import { SourcesEditor } from "@/components/prep/SourcesEditor";
 import { Backdrop, btnPrimary, Step } from "@/components/prep/ui";
 import { demoPrep } from "@/data/demo";
+import { traceConflicts } from "@/lib/provenance";
 import { savePrep } from "@/lib/store";
 import type { Prep } from "@/lib/types";
 
@@ -37,9 +38,19 @@ export default function PrepPage() {
   const [reviewing, setReviewing] = useState(false);
   const [missing, setMissing] = useState<string[]>([]);
   const set = (patch: Partial<Prep>) => setPrep((p) => ({ ...p, ...patch }));
+  // Re-traced on every edit, so fixing a figure in a source clears its warning.
+  const conflicts = traceConflicts(prep.conflicts ?? [], prep.sources);
+  const titleOf = (id: string) => prep.sources.find((s) => s.id === id)?.title.trim() || "an untitled file";
 
   function read(r: IngestResponse) {
-    setPrep({ meeting: r.meeting, clientFile: r.clientFile, sources: r.sources, mandate: r.mandate, confirmed: false });
+    setPrep({
+      meeting: r.meeting,
+      clientFile: r.clientFile,
+      sources: r.sources,
+      mandate: r.mandate,
+      conflicts: r.conflicts ?? [],
+      confirmed: false,
+    });
     setMissing(r.missing);
     setMandateOk(false);
     setReviewing(true);
@@ -91,6 +102,23 @@ export default function PrepPage() {
             Not found in your files. Fill in if it matters for this meeting:{" "}
             {missing.map((m) => FIELD_NAMES[m] ?? m).join(", ")}.
           </p>
+        )}
+
+        {reviewing && conflicts.length > 0 && (
+          <div role="note" className="rounded-xl bg-amber-500/15 px-4 py-2 text-sm text-amber-100">
+            <p>
+              Your files disagree on {conflicts.length === 1 ? "a figure" : `${conflicts.length} figures`}. Check which
+              is current before the meeting:
+            </p>
+            <ul className="mt-1 list-disc pl-5">
+              {conflicts.map((c, i) => (
+                <li key={i}>
+                  {c.quantity.charAt(0).toUpperCase() + c.quantity.slice(1)}:{" "}
+                  {c.values.map((v) => `${v.value} in ${titleOf(v.sourceId)}`).join(", ")}.
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {reviewing && (

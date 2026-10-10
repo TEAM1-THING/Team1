@@ -1,6 +1,6 @@
 // Find in your materials (#32): instant lookup over the advisor's own sources.
 import { describe, expect, it } from "vitest";
-import { figureParts, findInMaterials } from "@/components/meeting/find";
+import { figureParts, findInMaterials } from "@/components/meeting/findMatches";
 import { demoPrep } from "@/data/demo";
 
 const sources = demoPrep.sources;

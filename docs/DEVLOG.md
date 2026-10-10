@@ -4,6 +4,29 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (16:50) - Track D: records database on Supabase; hand-off by id (#45)
+
+**Built: records database** (Supabase project "second chair", us-west-1). The
+records app now signs users in (email + password) and saves meeting records.
+Postgres row-level security, tested as advisor, compliance and signed out:
+advisors save as themselves and read only their own; compliance reads all and
+signs off through `sign_off`, which stamps the reviewer's own name, email and
+time; saved records cannot be edited or deleted from the apps; signed-out
+visitors read nothing. Compliance is granted in SQL only. Supabase's security
+check is clean apart from `sign_off` being callable by signed-in users, which
+is intended. Confirmed by hand: a record saved from the live app is listed and
+signed off.
+
+**#45 (A's review of #25):** End meeting now stores the record as a one-time
+hand-off and opens the records app with only its id (`#handoff=<id>`, single
+use, expires in an hour), so client details never sit in a URL or history.
+Database and records app are live; the meeting-screen change is #47. B: the End
+screen's reopen link should switch to `openRecordsApp(record)`.
+
+**For B:** `main` has both `find.ts` and `Find.tsx` in
+`src/components/meeting/`, so `npm run check` and `npm run build` fail on
+macOS (case-insensitive disk). Linux CI and Vercel are unaffected.
+
 ## 2026-10-10 (16:50) - Clarified: the answer stays the core
 
 The team's call on the 16:45 decision: the core thesis does not change.
