@@ -324,6 +324,32 @@ describe("buildMomentPrompt", () => {
     expect(prompt).toContain("Crypto");
   });
 
+  it("passes traced file conflicts as data and drops one a source no longer backs", () => {
+    const turns: TranscriptTurn[] = [{ id: "t1", speaker: "client", t: 0, text: "Is the reserve enough?" }];
+    const prep: Prep = {
+      ...demoPrep,
+      sources: [
+        { id: "a", title: "Plan", kind: "plan", text: "Reserve $180,000." },
+        { id: "b", title: "Summary", kind: "note", text: "Reserve $200,000." },
+      ],
+      conflicts: [
+        {
+          quantity: "cash reserve",
+          values: [
+            { value: "$180,000", sourceId: "a" },
+            { value: "$200,000", sourceId: "b" },
+          ],
+        },
+      ],
+    };
+    expect(buildMomentPrompt(prep, turns, emptyState(), turns[0])).toContain(
+      '<file_conflicts>[{"quantity":"cash reserve","values":[{"value":"$180,000","sourceId":"a"}',
+    );
+    // The advisor corrected the summary after prep: nothing left to flag.
+    const fixed: Prep = { ...prep, sources: [prep.sources[0], { ...prep.sources[1], text: "Reserve $180,000." }] };
+    expect(buildMomentPrompt(fixed, turns, emptyState(), turns[0])).not.toContain("file_conflicts");
+  });
+
   it("caps what goes to Claude", () => {
     const big = "x".repeat(50_000);
     const prep: Prep = {
