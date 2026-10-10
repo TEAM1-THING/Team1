@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AnticipatedPanel } from "@/components/prep/AnticipatedPanel";
 import { ClientFileForm } from "@/components/prep/ClientFileForm";
 import { FileDrop, type IngestResponse } from "@/components/prep/FileDrop";
 import { MeetingSummary } from "@/components/prep/MeetingSummary";
@@ -49,6 +50,7 @@ export default function PrepPage() {
       sources: r.sources,
       mandate: r.mandate,
       conflicts: r.conflicts ?? [],
+      anticipated: r.anticipated ?? [],
       confirmed: false,
     });
     setMissing(r.missing);
@@ -143,6 +145,12 @@ export default function PrepPage() {
               setMandateOk(false);
             }}
           />
+        </Step>
+        )}
+
+        {reviewing && (
+        <Step n={5} title="Likely worries" hint="What this client is likely to raise, each with a prepared answer. A live card starts from it when the worry comes up.">
+          <AnticipatedPanel prep={prep} value={prep.anticipated ?? []} onChange={(anticipated) => set({ anticipated })} />
         </Step>
         )}
       </main>
