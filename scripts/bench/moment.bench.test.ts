@@ -16,7 +16,8 @@ const VARIANTS: { name: string; opts: MomentOptions }[] = [
 
 const upTo = (id: string) => demoTranscript.slice(0, demoTranscript.findIndex((t) => t.id === id) + 1);
 const after = (ids: string[]) => ids.reduce<ConversationState>((s, id) => mockMoment(id, s).state, emptyState());
-const extra = (id: string, text: string): TranscriptTurn[] => [...demoTranscript, { id, speaker: "client", t: 70, text }];
+// The harder scenes follow t6, matching their state (cards for t2, t4, t6).
+const extra = (id: string, text: string): TranscriptTurn[] => [...upTo("t6"), { id, speaker: "client", t: 70, text }];
 
 const SCENES: { id: string; expect: string; turns: TranscriptTurn[]; state: ConversationState }[] = [
   { id: "t2", expect: "objection about liquidity; anchor to the $180,000 reserve", turns: upTo("t2"), state: emptyState() },

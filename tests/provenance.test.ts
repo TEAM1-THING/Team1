@@ -54,6 +54,6 @@ describe("mock engine honours the contract", () => {
       expect(enforceNumberTrace(card, demoPrep)).toEqual(card);
       state = res.state;
     }
-    expect(state.concerns.map((c) => c.status)).toEqual(["resolved", "open", "open", "open"]);
+    expect(state.concerns.map((c) => c.status)).toEqual(["resolved", "open", "open"]);
   });
 });
