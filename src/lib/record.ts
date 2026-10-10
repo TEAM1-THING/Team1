@@ -2,7 +2,7 @@
 // ship track. The meeting screen only ever calls exportRecord.
 // Flow: download the record as JSON, then open the Base44 records app
 // (NEXT_PUBLIC_BASE44_URL) in a new tab with the record already loaded, ready
-// to review, sign off and download as a raw file.
+// to review, save and sign off.
 import type { ConversationState, Prep } from "./types";
 
 export type MeetingRecord = {
@@ -26,29 +26,77 @@ export function recordFileName(record: MeetingRecord): string {
   return `second-chair-record-${who}-${record.endedAt.slice(0, 10)}.json`;
 }
 
-// Next.js inlines NEXT_PUBLIC_* at build time: after setting or changing it in
-// Vercel, redeploy for the browser bundle to see it.
+// Next.js inlines NEXT_PUBLIC_* at build time: after setting or changing these
+// in Vercel, redeploy for the browser bundle to see them.
 export function base44Url(): string | null {
   const url = process.env.NEXT_PUBLIC_BASE44_URL?.trim();
   return url && /^https?:\/\//.test(url) ? url : null;
 }
 
-// The record rides in the link's fragment (#record=<base64url JSON>), which
-// browsers never send to a server. The records app moves it into the tab's
-// sessionStorage before its sign-in check. Too big for a link: open the app
-// without it, and the advisor uploads the downloaded file instead.
-const MAX_LINK = 1_000_000; // Chrome accepts URLs up to about 2 MB
-
-export function encodeRecord(record: MeetingRecord): string {
-  let bin = "";
-  for (const byte of new TextEncoder().encode(JSON.stringify(record))) bin += String.fromCharCode(byte);
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+// The records database (Supabase). The publishable key is meant for browsers;
+// the database only lets it create a hand-off, nothing else.
+export function supabaseConfig(): { url: string; key: string } | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/+$/, "");
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
+  return url && key && /^https:\/\//.test(url) ? { url, key } : null;
 }
 
-export function recordLink(base: string, record: MeetingRecord): string {
-  const plain = base.replace(/#.*$/, "");
-  const link = `${plain}#record=${encodeRecord(record)}`;
-  return link.length <= MAX_LINK ? link : plain;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Hand-off by id (#45): the record waits in the database under a one-time id
+// that expires in an hour, and only the id goes in the link, so client details
+// never sit in a URL or browser history. Null on any failure.
+export async function createHandoff(
+  record: MeetingRecord,
+  config: { url: string; key: string },
+  fetchImpl: typeof fetch = fetch,
+): Promise<string | null> {
+  try {
+    const res = await fetchImpl(`${config.url}/rest/v1/rpc/create_handoff`, {
+      method: "POST",
+      headers: { apikey: config.key, "Content-Type": "application/json" },
+      body: JSON.stringify({ record }),
+    });
+    if (!res.ok) return null;
+    const id: unknown = await res.json();
+    return typeof id === "string" && UUID.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+export function handoffLink(base: string, id: string): string {
+  return `${base.replace(/#.*$/, "")}#handoff=${id}`;
+}
+
+/**
+ * @deprecated Records no longer travel in links (#45). Kept so existing
+ * callers compile; returns the plain records-app link. To open the app with
+ * the record loaded, call openRecordsApp(record) from a click handler.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function recordLink(base: string, _record: MeetingRecord): string {
+  return base.replace(/#.*$/, "");
+}
+
+// Opens the records app in a new tab with the record handed over by id. Call
+// it from a click: the tab opens at once, while the click still counts as the
+// user's, then moves to the hand-off once the database answers. Never throws.
+export async function openRecordsApp(record: MeetingRecord | null): Promise<void> {
+  try {
+    const url = base44Url();
+    if (!url) return;
+    const tab = window.open("about:blank", "_blank");
+    if (tab) tab.opener = null;
+    const config = supabaseConfig();
+    const id = record && config ? await createHandoff(record, config) : null;
+    // No hand-off: open the app plainly; the advisor uploads the downloaded file.
+    const link = id ? handoffLink(url, id) : url;
+    if (tab) tab.location.href = link;
+    else window.open(link, "_blank", "noopener");
+  } catch (e) {
+    console.error("openRecordsApp: could not open the records app", e);
+  }
 }
 
 // Must not throw: every step is guarded so the meeting screen never breaks.
@@ -68,18 +116,5 @@ export async function exportRecord(prep: Prep, state: ConversationState): Promis
   } catch (e) {
     console.error("exportRecord: download failed", e);
   }
-  try {
-    const url = base44Url();
-    if (url) {
-      let link = url;
-      try {
-        if (record) link = recordLink(url, record);
-      } catch (e) {
-        console.error("exportRecord: could not put the record in the link", e);
-      }
-      window.open(link, "_blank", "noopener");
-    }
-  } catch (e) {
-    console.error("exportRecord: could not open the Base44 app", e);
-  }
+  await openRecordsApp(record);
 }
