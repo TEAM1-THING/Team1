@@ -1,0 +1,24 @@
+# This repository is PUBLIC. Nothing in here may be a secret.
+# SenseAI token, API keys and promo codes live in each person's own
+# ~/.claude.json (local scope) or password manager, never in the tree.
+.env
+.env.*
+*.pem
+*.key
+*.secret
+secrets/
+.mcp.json
+.claude/settings.local.json
+
+# local tool state
+.claude-flow/
+.claude/scheduled_tasks.lock
+.swarm/
+.DS_Store
+
+# build output
+node_modules/
+dist/
+.next/
+__pycache__/
+*.pyc

@@ -1,0 +1,100 @@
+# team1 Devlog
+
+Running log of sessions, decisions and remaining work. Newest entries at top.
+
+---
+
+## 2026-10-10 (12:55) - first push; docs now pushed on every change
+
+- First commit on `main`: `CLAUDE.md`, `HANDOFF.md`, `docs/`, `.gitignore`.
+  Checked for the token, promo codes and the preview link before committing; none present.
+- **Decided (user):** any change to the handoff, devlog or `CLAUDE.md` is
+  committed and pushed right away. Recorded in `CLAUDE.md` working agreements.
+- A session loop polls the Block 1 check and logs tester summaries here.
+
+## 2026-10-10 (12:52) - Block 1 sense check launched (1 of 3 spent)
+
+- **Test** `78e8af97-7ece-4d65-bc1d-e7ba058f67bd`, interview, session 1, theme
+  *catch what humans miss*. Launched on the user's explicit "launch". **2 checks left.**
+- **Idea field sent:** "Run a check or initial thoughts about this idea: " + who
+  it's for and what they do today + the section 02 primary description, word for
+  word (verified on the preview page). No stimulus, so the call is all market research.
+- Surveys are off for the event, so interviewer questions cannot be set in
+  session 1. Questions 2 to 7, condensed, went into `team_question` (documented
+  as a session 3 input; the preview did not show it, so it may be ignored).
+- SenseAI's own restatement of the hypothesis: advisors regularly miss client
+  signals in meetings (an unspoken worry, a contradiction), and those misses cost
+  trust, deals or follow-up work.
+- **Next:** results about an hour after launch. Log tester quotes, copilot vs
+  note-taker reading, and disclosure views here.
+
+## 2026-10-10 (12:35) - end of session 1: handoff written, next session has SenseAI
+
+**Uncommitted. Docs only. No sense-check tool calls were made in this session.**
+
+- `HANDOFF.md` rewritten for the next session: current state, start-here list
+  with the time windows, a do-not list, and ideas considered and parked. The
+  previous "current state" moved unchanged to
+  `docs/handoff/2026-10-10-03-state-at-afternoon-start.md`.
+- Section 02 now carries a ready-to-paste SenseAI agent prompt.
+- The next session was started after the MCP was registered, so it should have
+  the tools. It must verify with `list_tests`.
+- **Still needs the team:** guardrails, Block 1 description confirmation, and an
+  explicit "launch". Block 1 closes at 1:00 PM PDT.
+
+## 2026-10-10 (afternoon) - positioning revised: next-move coaching, not question answering
+
+**Uncommitted.** Docs only. New section `docs/handoff/2026-10-10-02-positioning-revision.md`.
+
+- **Change:** Second Chair recognises decision-relevant moments (not just
+  questions) and privately proposes the next move, with conversation state
+  (raised / resolved / open concerns). Provenance labels now cover tactical
+  suggestions too, plus a DO NOT CLAIM line.
+- **Market check (quick search, 2026-10-10):** Zocks' live product retrieves
+  client context and answers client-data questions; its page mentions no
+  what-to-say or objection handling. Cluely's homepage is "undetectable AI for
+  meetings", with no advisor targeting and no mention of sales calls or
+  negotiations (the pasted research said it did). Jiffy.ai advertises in-meeting
+  "intelligent prompts" for advisors, so "nobody does this" is overclaiming.
+  Balto: not verified.
+- **Pushed back on, recorded as a recommendation, not a decision:** the research's
+  "client thinks it's one advisor" framing. Undisclosed AI in a regulated client
+  meeting is a compliance and consent problem. Keep the image as a demo hook;
+  product stays disclosed. Also reworded "maximize success" as serving the
+  client's stated goals.
+- **Replaced:** the "visible to both" second screen. The coaching screen is now
+  private to the advisor.
+- **Build order changed:** moment detector and conversation state come before any
+  speech; live speech and the in-person / online toggle moved later.
+- **Open:** team decision on the five guardrails, the revised Block 1
+  description, and audio retention (transcript only vs audio).
+- **12:3x, Block 1 wording rewritten** in section 02 to read as a live copilot,
+  not a note-taker: leads with "unfair advantage", says "it is not a note-taker"
+  in the first two sentences, drops the after-meeting notes, adds a plain-words
+  fallback, and a diagnostic interview question ("in your own words, what does
+  this do?"). Only one check per block is allowed, so one idea launches in
+  12-1 PM.
+
+## 2026-10-10 (midday) - repo mounted, direction chosen, nothing built yet
+
+**Uncommitted; repo has no commits.** Setup and decisions only. No product code.
+
+- **Repo:** `joshcodes42/Team1` (public, was empty) cloned into `~/Documents/team1`.
+- **SenseAI:** `sense-check` MCP registered at local scope under the `team1`
+  project key; `claude mcp get` reports connected. No tool call made, so no
+  sense check spent. A stale entry under the home-folder key was removed.
+  Tools only appear in a session started after registration.
+- **Direction:** theme *Catch what humans miss*, user *wealth and financial
+  advisors*, working name *Second Chair*. An in-room co-pilot bounded by the
+  advisor's own prepared materials (the "Mandate"), with provenance-labelled
+  answer cards, a deferral rule, and after-meeting follow-ups.
+- **Mode toggle added:** in person vs online. Same pipeline, different audio
+  source. Online is the cheaper, more reliable path.
+- **Corrected:** Shazam-style spectrogram fingerprinting matches known
+  recordings, so it does not clean up free speech. Plan is a close mic plus a
+  streaming speech model, with a sample-meeting replay mode as the fallback.
+- **Open:** stack, speech and LLM provider, Bright Data credit redemption,
+  first commit, Felix binding (not done on purpose: it writes into the Felix
+  repo and adds a stop-gate here).
+- **Next:** new session in this folder, `list_tests` (expect 3 left), launch
+  Block 1 only on the team's explicit go.
