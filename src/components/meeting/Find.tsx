@@ -3,7 +3,7 @@
 // "/" focuses it from anywhere on the meeting screen; Escape clears it.
 import { useMemo, useState } from "react";
 import type { PrepSource } from "@/lib/types";
-import { figureParts, findInMaterials } from "./find";
+import { figureParts, findInMaterials } from "./findMatches";
 import { LABELS } from "./replay";
 
 export const FIND_INPUT_ID = "find-in-materials";
