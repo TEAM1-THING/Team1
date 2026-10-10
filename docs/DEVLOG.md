@@ -4,6 +4,40 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (16:25) - Block 2, tester 1: "mixed" on the theme; speed is the value they see
+
+**Read:** they understood it as a live copilot ("this is listening and going
+to be searching through data ... to actually pull up a retort"), not a
+note-taker. Likes: pulls plan facts during the meeting with no manual search;
+cuts the downtime while the client waits; looks professional; "I have never
+seen anything like this." Dislikes: none, on one condition: "as long as the
+client was comfortable with it."
+
+**Doubt (the theme):** "it's possible it could catch something that the team
+would miss. I think it would just do it much, much faster. That would be the
+real benefit of this."
+
+**Their stories, which are catches in disguise:**
+- A client remembered a different number than the report showed; they opened
+  the Excel and checked the formulas by hand to prove which was right.
+- On site at a corporate client they could not find a number in prepared
+  documents; neither could an inside rep. "it was probably, I bet, fifteen or
+  twenty minutes transpired by the time I got the answer", waiting in an empty
+  conference room, "fairly embarrassed".
+
+**Confusion:** on opening the link, "I don't know what I'm looking at." In the
+demo meeting the concerns panel said nothing's raised yet, with no hint of
+what would appear there.
+
+**What changes the build before 8 PM** (issues filed, labelled `feedback`):
+catch a figure the client misremembers and show the plan's figure with its
+source; flag figures that disagree across the uploaded files at prep; an
+instant "find in your materials" lookup on the meeting screen; explain the
+demo and the empty states; a consent line the advisor can say to the client.
+Pitch: lead with the 15-to-20-minute hunt (speed), then show the catch.
+
+---
+
 ## 2026-10-10 (16:05) - Block 2 sense check launched
 
 Test `53289620-a96e-41c4-8229-9448b1187d8d`, session 2, theme Catch what
