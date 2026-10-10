@@ -4,7 +4,7 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
-## 2026-10-10 (17:05) - README: start to finish
+## 2026-10-10 (16:43) - README: start to finish
 
 `README.md` (new): the website with no install, then the Mac app (download,
 install, open, prep, the panel's buttons, shortcuts, screen share, quitting),
@@ -12,7 +12,7 @@ live transcription and its settings, updating and removing, Windows status,
 running locally, the checks, and a troubleshooting table. The install steps
 were followed from a fresh clone of this branch: install and package succeed.
 
-## 2026-10-10 (16:50) - Desktop: a regular Mac app; prep in an app window, the meeting in the panel
+## 2026-10-10 (16:38) - Desktop: a regular Mac app; prep in an app window, the meeting in the panel
 
 Branch `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f`.
 
@@ -31,7 +31,7 @@ Branch `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f`.
 - The "everyone has been told" line hides again (B's markup changed twice
   today); the rule covers both versions.
 
-## 2026-10-10 (16:30) - Desktop: plain names, a separate screen-share button, hover labels
+## 2026-10-10 (16:23) - Desktop: plain names, a separate screen-share button, hover labels
 
 Branch `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f`.
 

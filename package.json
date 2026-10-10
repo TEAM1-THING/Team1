@@ -9,7 +9,9 @@
     "lint": "eslint",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "check": "tsc --noEmit && vitest run"
+    "check": "tsc --noEmit && vitest run",
+    "install-app": "npm --prefix desktop install && npm --prefix desktop run install-app",
+    "app": "npm --prefix desktop start"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",

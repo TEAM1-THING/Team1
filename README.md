@@ -54,15 +54,11 @@ Until the desktop app is merged into `main`, it lives on its own branch:
 git checkout LeavesJ/electron-gpu-ux-bottlenecks-9cf39f
 ```
 
-Install what the app needs, then build it and put it in your Applications
-folder (this takes a minute or two):
+Install what the app needs, build it, and put it in your Applications folder
+(this takes a minute or two):
 
 ```bash
-npm --prefix desktop install
-```
-
-```bash
-npm --prefix desktop run install-app
+npm run install-app
 ```
 
 When it finishes it prints `installed .../Applications/Second Chair.app`.
@@ -188,11 +184,7 @@ git pull
 ```
 
 ```bash
-npm --prefix desktop install
-```
-
-```bash
-npm --prefix desktop run install-app
+npm run install-app
 ```
 
 To remove it, quit the app and delete `Second Chair` from the Applications
@@ -201,7 +193,7 @@ folder in your home folder. Its saved settings are in
 
 ## Windows
 
-Not tested yet. `npm --prefix desktop start` runs the app from the code, and
+Not tested yet. `npm run app` runs the app from the code, and
 `npm --prefix desktop run package` builds it into `desktop/out`. Shortcuts use
 Ctrl+Alt, and the menu icon sits in the taskbar tray.
 
@@ -233,7 +225,7 @@ npm run dev
 To point the desktop app at your local site, run it from the code:
 
 ```bash
-SC_URL=http://localhost:3000/meeting npm --prefix desktop start
+SC_URL=http://localhost:3000/meeting npm run app
 ```
 
 Running from the code can't hear the call's audio on a Mac (the sound comes
@@ -273,8 +265,9 @@ The live site deploys from `main` on Vercel.
 | The app window didn't appear | If you were in a full-screen app, it opened on your desktop: swipe left or right with three fingers, or leave full screen |
 | A shortcut does nothing | Another app already uses it; use the menu-bar icon instead |
 | Two panels on screen | Two copies are running (the installed app and one started from the code); quit one |
+| `Missing script: "install-app"` | Run it from the `Team1` folder, on the desktop branch (see Download and install) |
 | The menu still shows old names | You are running an old build: quit it and reinstall (see Update) |
 | `SC_STT_URL is not set` in Terminal | Live transcription is off; see Live transcription |
-| The live mic hears nothing | Use the installed app (not `npm start`), on macOS 14.2 or later, and check the permission under Live transcription |
+| The live mic hears nothing | Use the installed app (not `npm run app`), on macOS 14.2 or later, and check the permission under Live transcription |
 | `Could not find a production build` | Use `npm run dev`, or run `npm run build` first |
 | `Electron failed to install correctly` | Run `node desktop/node_modules/electron/install.js`, then try again |
