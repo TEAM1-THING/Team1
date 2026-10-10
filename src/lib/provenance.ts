@@ -68,9 +68,11 @@ export function traceConflicts(
   const out: FileConflict[] = [];
   for (const c of conflicts) {
     const quantity = c.quantity.trim();
+    const named = new Set(c.values.flatMap((v) => [...(bySource.get(v.sourceId) ?? [])]));
+    // A number in the label itself must be in a file the conflict names.
+    if (!extractNumbers(quantity).every((n) => named.has(n))) continue;
     const seen = new Set<string>();
-    const figures = new Set<string>();
-    const files = new Set<string>();
+    const perFile = new Map<string, Set<string>>();
     const values = c.values.flatMap((v) => {
       const value = v.value.trim();
       const nums = extractNumbers(value);
@@ -80,11 +82,15 @@ export function traceConflicts(
       const figure = nums.join("|");
       if (seen.has(`${figure}@${v.sourceId}`)) return [];
       seen.add(`${figure}@${v.sourceId}`);
-      figures.add(figure);
-      files.add(v.sourceId);
+      if (!perFile.has(v.sourceId)) perFile.set(v.sourceId, new Set());
+      perFile.get(v.sourceId)!.add(figure);
       return [{ value, sourceId: v.sourceId }];
     });
-    if (quantity && figures.size >= 2 && files.size >= 2) out.push({ quantity, values });
+    // Two files must each give a figure the other does not; files that share a figure agree.
+    const sets = [...perFile.values()];
+    const lacks = (a: Set<string>, b: Set<string>) => [...a].some((x) => !b.has(x));
+    const disagree = sets.some((a, i) => sets.some((b, j) => i < j && lacks(a, b) && lacks(b, a)));
+    if (quantity && disagree) out.push({ quantity, values });
   }
   return out;
 }
