@@ -4,6 +4,22 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (16:05) - Block 2 sense check launched
+
+Test `53289620-a96e-41c4-8229-9448b1187d8d`, session 2, theme Catch what
+humans miss, stimulus https://second-chair-seven.vercel.app (production, so
+every merge to `main` reaches testers who load or reload it). SenseAI frames
+the calls as: advisors miss the real worry behind client questions or give
+answers they can't back with plan numbers, and those misses cost them client
+trust. Launched on the team's explicit go; 2 checks remain. Description sent
+word for word: prep from the advisor's files, a card with what the client
+likely means, facts from the advisor's own plan with the document and date
+each came from, a suggested answer, anything untraced marked as a suggestion.
+Known rough edge at launch: End meeting downloads a JSON file and opens the
+records app empty (#25 and #27 pending review).
+
+---
+
 ## 2026-10-10 (15:55) - Track A: prep from files, live turns, speaker labels
 
 **Live:** https://second-chair-seven.vercel.app. Merged #19 (C), #20 (D) and
