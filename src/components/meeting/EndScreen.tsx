@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { base44Url, buildRecord, recordFileName, recordLink } from "@/lib/record";
 import type { Card, Concern, Prep } from "@/lib/types";
+import Concerns from "./Concerns";
 import { endSummary } from "./endSummary";
 
 type Props = { prep: Prep; cards: Card[]; concerns: Concern[]; tasks: string[]; clock: string; onBack: () => void };
@@ -110,6 +111,8 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
           </section>
 
           <div className="flex flex-col gap-5">
+            {/* #39: the same client picture the meeting screen showed. */}
+            <Concerns concerns={concerns} />
             <section aria-labelledby="followups-h" className={`${panel} border-sky-300/30`}>
               <h2 id="followups-h" className="mb-1 text-sm font-semibold text-slate-200">
                 Follow-ups from this meeting
