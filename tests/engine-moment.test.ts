@@ -176,6 +176,19 @@ describe("runMoment", () => {
     expect(unit.card?.recommendedMove).not.toBe("Point to the 6% return.");
   });
 
+  it("allows a spoken figure the client said, or one from the Mandate", async () => {
+    const turns = [...demoTranscript, { id: "x2", speaker: "client" as const, t: 70, text: "I'd like to stop working at 65, not 70." }];
+    returning({
+      ...liveT2,
+      moment: "contradiction",
+      phrasing: "You mentioned 65 today; the plan assumed 70 and a 5% return. Can we look at what retiring at 65 changes?",
+      why: "Retiring at 65 instead of 70 changes the plan.",
+    });
+    const res = await runMoment({ prep: demoPrep, turns, state: emptyState() });
+    expect(res.card?.moment).toBe("contradiction");
+    expect(res.card?.phrasing).toContain("65");
+  });
+
   it("allows a spoken figure that comes from a kept CALCULATED fact", async () => {
     returning({
       ...liveT2,

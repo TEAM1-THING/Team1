@@ -2,15 +2,24 @@
 // read from the environment and never reaches the browser.
 import Anthropic from "@anthropic-ai/sdk";
 
-// Opus 5.5 at low effort keeps live cards fast; override per deployment.
+// Prep-time calls (Mandate draft, pre-flight): quality over speed.
 export const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5-5";
 
+// Live cards: the team's latency budget is 5 s end to end, so the live path
+// uses the fastest model. Chosen by benchmark; override per deployment.
+export const LIVE_MODEL = process.env.LIVE_MODEL || "claude-haiku-5-5";
+
 // A live card that arrives late is useless; past this the route falls back.
-export const LIVE_TIMEOUT_MS = 8_000;
+export const LIVE_TIMEOUT_MS = 5_000;
 
 // Server-side refusal fallback: a declined request is re-run on Anthropic's
 // recommended model inside the same call.
 export const FALLBACK_BETA = "server-side-fallback-2026-07-01";
+
+// Haiku 5.5 has no server-side fallback; sending the parameter would 400.
+export function supportsFallback(model: string): boolean {
+  return /^claude-(opus|sonnet|fable)-/.test(model);
+}
 
 let client: Anthropic | null = null;
 let injected: Anthropic | null | undefined; // undefined = no test override

@@ -3,7 +3,7 @@
 // the meeting screen always gets a valid MomentResponse.
 import * as z from "zod/v4";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
-import { FALLBACK_BETA, LIVE_TIMEOUT_MS, MODEL, getClient } from "./client";
+import { FALLBACK_BETA, LIVE_MODEL, LIVE_TIMEOUT_MS, getClient, supportsFallback } from "./client";
 import { demoPrep, demoTranscript } from "../../data/demo";
 import { mockMoment } from "../mock";
 import { enforceNumberTrace, parseNumber } from "../provenance";
@@ -22,8 +22,10 @@ import {
   type TranscriptTurn,
 } from "../types";
 
-const RECENT_TURNS = 8;
-const MAX_TOKENS = 2048;
+const RECENT_TURNS = 6;
+// A card is a few short fields; a tight cap keeps a runaway answer from
+// blowing the 5 s budget.
+const MAX_TOKENS = 900;
 const DEFAULT_DEFER_REASON = "Outside the prepared Mandate; defer it to a follow-up rather than answer now.";
 
 // Prompt budget. MomentRequest (frozen) has no bounds, so every Claude call is
@@ -99,7 +101,8 @@ Rules:
 - If nothing decision-relevant happened (small talk, a plain acknowledgement), set relevant to false. The other fields may then be brief placeholders.
 - moment is the one type that fits best from: ${MOMENT_TYPES.join(", ")}.
 - concern is what sits underneath the client's words, in one line.
-- recommendedMove is the advisor's next move in one sentence. phrasing is one or two sentences the advisor could say aloud, in plain spoken language. why says in one sentence why this move fits what the client said.
+- recommendedMove is the advisor's next move in one sentence of at most 20 words. phrasing is at most 30 words the advisor could say aloud, in plain spoken language. why is one sentence of at most 20 words on why this move fits what the client said.
+- Give at most 3 facts and at most 2 doNotClaim items. concern is at most 15 words.
 - concernUpdates.open lists short topics (one to three words, for example "liquidity") for new concerns the client raised in this turn. concernUpdates.resolve lists topics, copied from the open concerns in the ledger, that this turn shows are now addressed. Leave both empty when nothing changed.
 
 Keep every field short; the advisor reads it mid-conversation.`;
@@ -116,12 +119,12 @@ function data(value: unknown): string {
 const clip = (s: string, max: number) => (s.length > max ? `${s.slice(0, max)}…` : s);
 const clipList = (xs: string[]) => xs.slice(0, MAX_LIST_ITEMS).map((x) => clip(x, MAX_ITEM_CHARS));
 
-export function buildMomentPrompt(
+export function buildMomentParts(
   prep: Prep,
   turns: TranscriptTurn[],
   state: ConversationState,
   latest: TranscriptTurn,
-): string {
+): { prep: string; live: string } {
   const turn = (t: TranscriptTurn) => ({ id: clip(t.id, 100), text: clip(t.text, MAX_TURN_CHARS) });
   const recent = turns.slice(-RECENT_TURNS).map((t) => ({ ...turn(t), speaker: t.speaker }));
   const topics = (status: Concern["status"]) =>
@@ -150,18 +153,34 @@ export function buildMomentPrompt(
     disclaimers: clipList(m.disclaimers),
     outOfScope: clipList(m.outOfScope),
   };
-  return [
-    "<meeting_data>",
-    `<client_file>${data(clientFile)}</client_file>`,
-    `<sources>${data(sources)}</sources>`,
-    `<mandate>${data(mandate)}</mandate>`,
-    `<concern_ledger>${data(ledger)}</concern_ledger>`,
-    `<recent_turns>${data(recent)}</recent_turns>`,
-    `<latest_client_turn>${data(turn(latest))}</latest_client_turn>`,
-    "</meeting_data>",
-    "",
-    "Draft the card for the latest client turn, or set relevant to false if nothing decision-relevant happened.",
-  ].join("\n");
+  return {
+    // Identical on every turn of a meeting, so it is cached after the first card.
+    prep: [
+      "<meeting_data>",
+      `<client_file>${data(clientFile)}</client_file>`,
+      `<sources>${data(sources)}</sources>`,
+      `<mandate>${data(mandate)}</mandate>`,
+    ].join("\n"),
+    live: [
+      `<concern_ledger>${data(ledger)}</concern_ledger>`,
+      `<recent_turns>${data(recent)}</recent_turns>`,
+      `<latest_client_turn>${data(turn(latest))}</latest_client_turn>`,
+      "</meeting_data>",
+      "",
+      "Draft the card for the latest client turn, or set relevant to false if nothing decision-relevant happened.",
+    ].join("\n"),
+  };
+}
+
+// The whole prompt as one string (tests and logs).
+export function buildMomentPrompt(
+  prep: Prep,
+  turns: TranscriptTurn[],
+  state: ConversationState,
+  latest: TranscriptTurn,
+): string {
+  const parts = buildMomentParts(prep, turns, state, latest);
+  return `${parts.prep}\n${parts.live}`;
 }
 
 const norm = (topic: string) => topic.trim().toLowerCase();
@@ -244,9 +263,23 @@ function traceFacts(card: Card, prep: Prep): Card {
 // the card. doNotClaim and grey/red facts are exempt: they carry their label.
 const spoken = (card: Card) => [card.concern, card.recommendedMove, card.phrasing, card.why, card.deferReason ?? ""];
 
-function textTraced(texts: string[], facts: CardFact[], prep: Prep): boolean {
+// Allowed: the advisor's materials (sources, client file, Mandate), figures
+// the client or advisor said in the transcript (repeating the client's own
+// number is not a claim), and CALCULATED facts kept on the card.
+function textTraced(texts: string[], facts: CardFact[], prep: Prep, turns: TranscriptTurn[]): boolean {
   const allowed = new Set<string>();
-  for (const s of prep.sources) for (const f of figures(s.text)) allowed.add(f);
+  const m = prep.mandate;
+  const said = [
+    ...prep.sources.map((s) => s.text),
+    ...prep.clientFile.statedGoals,
+    ...prep.clientFile.statedConcerns,
+    m.thesis,
+    m.riskStance,
+    ...m.assumptions,
+    ...m.disclaimers,
+    ...turns.map((t) => t.text),
+  ];
+  for (const text of said) for (const f of figures(text)) allowed.add(f);
   for (const v of Object.values(prep.clientFile)) {
     if (typeof v === "number") allowed.add(`${v}`).add(`$${v}`);
   }
@@ -281,7 +314,7 @@ export function outOfScopeHit(text: string, outOfScope: string[]): string | null
 }
 
 // Turn Claude's output into a contract Card, or null if it cannot be trusted.
-export function toCard(out: LlmMoment, prep: Prep, latest: TranscriptTurn): Card | null {
+export function toCard(out: LlmMoment, prep: Prep, latest: TranscriptTurn, turns: TranscriptTurn[] = [latest]): Card | null {
   const moment = toMomentType(out.moment);
   if (!moment) return null;
   const sourceIds = new Set(prep.sources.map((s) => s.id));
@@ -312,7 +345,7 @@ export function toCard(out: LlmMoment, prep: Prep, latest: TranscriptTurn): Card
   if (!parsed.success) return null;
   const card = traceFacts(parsed.data, prep);
   // When the floor fired, only concern is still the model's own text.
-  return textTraced(topic ? [card.concern] : spoken(card), card.facts, prep) ? card : null;
+  return textTraced(topic ? [card.concern] : spoken(card), card.facts, prep, turns) ? card : null;
 }
 
 // The canned cards belong to the demo client and script. Any other meeting
@@ -330,7 +363,7 @@ function fallback(prep: Prep, state: ConversationState, latest: TranscriptTurn, 
   const res = mockMoment(latest.id, state);
   if (!res.card) return none;
   const card = traceFacts(res.card, prep);
-  if (!textTraced(spoken(card), card.facts, prep)) return none;
+  if (!textTraced(spoken(card), card.facts, prep, [latest])) return none;
   return { card, state: { concerns: res.state.concerns, cards: [...state.cards.filter((c) => c.id !== card.id), card] } };
 }
 
@@ -348,26 +381,46 @@ function describe(err: unknown): string {
 // some text leaves that partial text block in front of the fallback model's
 // output, and parse() throws on it, so we use the canned path. Fallbacks only
 // help when the primary declines before writing any text.
-async function callClaude(req: MomentRequest, latest: TranscriptTurn, signal?: AbortSignal): Promise<LlmMoment | string> {
+// model: override LIVE_MODEL (benchmarks). thinkingOff: skip the reasoning
+// step, accepted at low effort on Haiku 5.5.
+export type MomentOptions = { model?: string; thinkingOff?: boolean; timeoutMs?: number };
+
+async function callClaude(
+  req: MomentRequest,
+  latest: TranscriptTurn,
+  signal?: AbortSignal,
+  opts: MomentOptions = {},
+): Promise<LlmMoment | string> {
   const client = getClient();
+  const model = opts.model ?? LIVE_MODEL;
+  const parts = buildMomentParts(req.prep, req.turns, req.state, latest);
   if (!client) return "no client";
   if (signal?.aborted) return "request aborted";
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), LIVE_TIMEOUT_MS);
+  const timeoutMs = opts.timeoutMs ?? LIVE_TIMEOUT_MS;
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   const onAbort = () => controller.abort();
   signal?.addEventListener("abort", onAbort, { once: true });
   try {
     const res = await client.beta.messages.parse(
       {
-        model: MODEL,
+        model,
         max_tokens: MAX_TOKENS,
-        betas: [FALLBACK_BETA],
-        fallbacks: "default",
+        ...(supportsFallback(model) ? { betas: [FALLBACK_BETA], fallbacks: "default" as const } : {}),
         system: MOMENT_SYSTEM,
-        messages: [{ role: "user", content: buildMomentPrompt(req.prep, req.turns, req.state, latest) }],
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: parts.prep, cache_control: { type: "ephemeral" } },
+              { type: "text", text: parts.live },
+            ],
+          },
+        ],
+        ...(opts.thinkingOff ? { thinking: { type: "disabled" as const } } : {}),
         output_config: { effort: "low", format: getOutputFormat() },
       },
-      { signal: controller.signal, timeout: LIVE_TIMEOUT_MS },
+      { signal: controller.signal, timeout: timeoutMs },
     );
     if (res.stop_reason === "refusal") return "refusal";
     if (!res.parsed_output) return "no parsed output";
@@ -382,15 +435,19 @@ async function callClaude(req: MomentRequest, latest: TranscriptTurn, signal?: A
 }
 
 // signal: the incoming request's, so a cancelled request stops the Claude call.
-export async function runMoment(req: MomentRequest, signal?: AbortSignal): Promise<MomentResponse> {
+export async function runMoment(
+  req: MomentRequest,
+  signal?: AbortSignal,
+  opts: MomentOptions = {},
+): Promise<MomentResponse> {
   const { prep, turns, state } = req;
   const latest = turns.at(-1);
   if (!latest || latest.speaker !== "client") return { card: null, state };
   try {
-    const out = await callClaude(req, latest, signal);
+    const out = await callClaude(req, latest, signal, opts);
     if (typeof out === "string") return fallback(prep, state, latest, out);
     if (!out.relevant) return { card: null, state };
-    const card = toCard(out, prep, latest);
+    const card = toCard(out, prep, latest, turns);
     if (!card) return fallback(prep, state, latest, "card failed schema or number trace");
     const result = MomentResponse.safeParse({
       card,
