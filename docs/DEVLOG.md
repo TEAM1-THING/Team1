@@ -4,6 +4,86 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (15:10) - Track D: Vercel live, records app published
+
+**Vercel is live:** https://second-chair-seven.vercel.app (project on D's
+account, connected to `TEAM1-THING/Team1`). Every push to `main` deploys
+production; every branch gets a preview, which sits behind a Vercel login.
+The earlier failures were not a project setting: Vercel refuses to publish
+Next.js 15.5.4 ("Vulnerable version of Next.js detected"). Fixed on `main` by
+#17 (Vercel's bot, 15.5.9). D's `fix/next-15.5.27` branch showed 15.5.27
+passes too; not merged.
+
+**Env (Vercel):** Production has `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`,
+`BRIGHTDATA_API_KEY`, `BRIGHTDATA_ZONE` and `NEXT_PUBLIC_BASE44_URL`. Preview
+has only `ANTHROPIC_MODEL` and `NEXT_PUBLIC_BASE44_URL` so far. Open:
+`ANTHROPIC_MODEL` overrides the engine's Opus default for prep-time calls;
+A to decide whether to keep it.
+
+**Records app, decided: sign-in and saved records, not a public viewer.**
+Guardrail 5 (every card is a record) needs records that outlive the browser
+tab; compliance supervision needs a sign-off that stores who and when; stored
+client details need access control. Published at
+https://second-chair-view.base44.app: save a record, a records list, a
+compliance sign-off (admins only, stored with reviewer and time). Advisors see
+only their own records; only admins edit or delete. "Demo data only" banner.
+Notes and a sample record: `docs/base44/`.
+
+**Mic (`feat/ship`, PR pending):** Chrome speech recognition, one client turn
+per finished sentence. It stays off until "All parties consent" is ticked:
+the meeting screen had no consent notice (CLAUDE.md invariant). Fixed a
+stop/start race that sent every turn twice and a restart loop on network
+errors. End meeting downloads the record and opens the records app.
+
+## 2026-10-10 (14:40) - live model by benchmark; the quote that changed the build
+
+**Merged to `main`:** B #14 (meeting screen), A #15 (live engine, Mandate
+draft, Bright Data pre-flight). CI gate green on both. #16 (dated sources,
+request logging) is open. C and D PRs not yet open. **Every Vercel deploy fails,
+`main` included**, while GitHub CI's clean build passes: a Vercel project
+setting on D's account, not code.
+
+**Live model, decided by measurement** (`scripts/bench/`, live API, 6 scenes
+× 2 runs, 18 blind judgements per model from an advisor, a compliance officer
+and a behavioural coach). The team's budget is 5 s per card.
+
+| model | blind score /5 | judges' best | median | max |
+|---|---|---|---|---|
+| **Sonnet 5.5 (chosen)** | **4.39** | 9/18 | 3.96 s | 4.59 s |
+| Opus 5.5 | 4.19 | 7/18 | 4.91 s | 9.05 s |
+| Haiku 5.5 | 3.80 | 1/18 | 2.97 s | 5.39 s |
+| Haiku, no reasoning | 3.51 | 1/18 | 2.85 s | 3.24 s |
+
+**Adversarial audit** of the same cards (claim-by-claim against the plan,
+plus red-team; damage 0-3): Sonnet 1 critical / 2 major, damage avg 1.00, 0 of 6
+scenes ≥2; Opus 0 / 2, 1.00; Haiku 0 / 8, 2.00, 5 of 6 ≥2; Haiku without
+reasoning answered the out-of-scope stock question instead of deferring. The
+audit's notes on Sonnet (a true statement filed as DO_NOT_CLAIM, the $180,000
+not said aloud) are fixed in the prompt; all 3 live t2 runs now say it.
+
+Haiku was the first pick for speed. The judges ranked it last, weakest on
+guardrails (2.60 on the out-of-scope stock question). Sonnet beat it on
+quality and still stays under 5 s. Also fixed by the benchmark: a too-strict
+figure check that dropped good cards when the client said a number ("65",
+"2008"), and Haiku never resolving a concern the client accepted.
+
+**The quote that changed the build** (Block 1, Tester 2): "I like it when they
+are able to cite their sources and when the sources were made." → pre-flight
+checks now carry the source's publish date and the date checked (#16); the meeting card will show
+each prepared fact's source (asked of B).
+
+**Other changes from tester feedback:**
+- Tester 2's hidden problem, word meaning: the engine now flags a client
+  hearing "scrutinize" as an audit, or saying "going to the basement", as a
+  `misunderstanding`, and suggests clarifying phrasing (4/4 live runs, under 5 s).
+- Tester 1 ("Really just time and effort"; wants a notice "just minutes after
+  the meeting"): client requests are logged as open `request: …` items for an
+  end-of-meeting still-open list (3/3 live runs). B asked for a "Copy as tasks"
+  button.
+
+**Not changed, on purpose:** the frozen contract, the live-card core, demo
+turns t1-t6. Google Tasks is not integrated; copying the items as text is enough.
+
 ## 2026-10-10 (14:15) - Block 1 sense check: first two tester summaries
 
 13 testers texted, 2 completed, 11 failed (no reply or declined); the check is

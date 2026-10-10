@@ -93,10 +93,11 @@ Rules:
   - PREPARED_FACT only for a figure or statement copied from one of the sources, with that source's id in sourceId. Copy figures exactly as the source writes them.
   - CALCULATED only when you show the math in the math field, built from prepared figures.
   - SUGGESTION for framing, ideas and anything that rests on an assumption.
-  - DO_NOT_CLAIM for something the evidence does not support and the advisor should not assert.
+  - DO_NOT_CLAIM for something the evidence does not support and the advisor should not assert. Write it as the claim to avoid (for example "That the reserve covers every emergency"), never as a true statement from the plan.
 - In facts, write every figure in digits exactly as the source writes it, with its unit ($, %), never in words.
 - Figures belong in facts. concern, recommendedMove, phrasing, why and deferReason may only repeat a figure that appears in a source or in a CALCULATED fact on this card; otherwise leave numbers out of them.
-- List under doNotClaim what the evidence does not support, so the advisor does not say it.
+- List under doNotClaim what the evidence does not support, so the advisor does not say it. The phrasing must never assert anything on that list.
+- When a prepared figure answers the client's concern (for example the reserve amount), say that figure in the phrasing, exactly as the source writes it.
 - If the client asks about anything in mandate.outOfScope, or anything outside the Mandate, set defer to true, give a deferReason, write a phrasing that politely defers the topic (for example to a follow-up or a specialist), and include no PREPARED_FACT.
 - If nothing decision-relevant happened (small talk, a plain acknowledgement), set relevant to false. The other fields may then be brief placeholders.
 - moment is the one type that fits best from: ${MOMENT_TYPES.join(", ")}.
@@ -105,6 +106,7 @@ Rules:
 - recommendedMove is the advisor's next move in one sentence of at most 20 words. phrasing is at most 30 words the advisor could say aloud, in plain spoken language. why is one sentence of at most 20 words on why this move fits what the client said.
 - Give at most 3 facts and at most 2 doNotClaim items. concern is at most 15 words.
 - concernUpdates.open lists short topics (one to three words, for example "liquidity") for new concerns the client raised in this turn. Do not reopen a topic that is already open.
+- When the client asks the advisor to do something after the meeting (send, check, call, set up), also add it to concernUpdates.open as "request: " plus a few words (for example "request: send college options"), so it is not forgotten. Resolve it only when the advisor confirms it is done.
 - concernUpdates.resolve lists topics, copied exactly from the open concerns in the ledger, that the latest client turn shows are settled for now. Resolve a concern when the client accepts the answer or moves on from it, for example "okay, that helps", "that makes sense", "fair enough", or turning to a different worry. A new worry in the same turn does not keep the old one open. Leave both lists empty when nothing changed.
 
 Keep every field short; the advisor reads it mid-conversation.`;
