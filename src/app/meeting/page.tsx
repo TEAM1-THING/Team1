@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Concerns from "@/components/meeting/Concerns";
 import MomentCard from "@/components/meeting/Card";
 import EndScreen from "@/components/meeting/EndScreen";
+import Find, { FIND_INPUT_ID } from "@/components/meeting/Find";
 import Transcript from "@/components/meeting/Transcript";
 import { LIVE_PAUSE_MS, isLiveTurn, relabel, windowThrough } from "@/components/meeting/live";
 import { followUpTasks, postMoment, processTurn } from "@/components/meeting/replay";
@@ -167,7 +168,15 @@ export default function MeetingPage() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (ended) return; // the end screen is on top; shortcuts would drive the hidden meeting
-      if (e.metaKey || e.ctrlKey || e.altKey || (e.target as HTMLElement).closest("input, textarea, button, summary")) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement;
+      // "/" works from a focused button too (just after clicking Next turn), never from a text field.
+      if (e.key === "/" && !target.closest("input, textarea, select, [contenteditable]")) {
+        e.preventDefault();
+        document.getElementById(FIND_INPUT_ID)?.focus();
+        return;
+      }
+      if (target.closest("input, textarea, button, summary")) return;
       if (e.key === "ArrowRight") nextTurn();
       else if (e.key === "a") setAuto((v) => !v);
       else if (e.key === "h") setHidden((v) => !v);
@@ -211,9 +220,20 @@ export default function MeetingPage() {
         }
       `}</style>
 
-      <p role="note" className="relative z-10 border-b border-white/5 bg-sky-400/10 px-4 py-1.5 text-center text-xs text-sky-100">
-        This meeting uses Second Chair. All participants have been told and agreed.
-      </p>
+      <div role="note" className="relative z-10 border-b border-white/5 bg-sky-400/10 px-4 py-1.5 text-center text-xs text-sky-100">
+        <p>This meeting uses Second Chair. All participants have been told and agreed.</p>
+        {/* #34: words the advisor can say to ask. Each clause matches what runs:
+            MicInput.tsx sends audio to Chrome's (Google's) speech service;
+            engine/moment.ts sends the recent lines and the client file to
+            Anthropic; record.ts saves cards and concerns to the records app; no
+            audio is stored by this app. */}
+        <p className="mt-0.5 text-sky-200/70">
+          Ask first: &ldquo;I&apos;d like to use an AI assistant called Second Chair today. It transcribes our conversation
+          using Google&apos;s speech service, and sends what we say, with the details of your plan, to an AI service
+          (Anthropic) that suggests what I should check or say. We don&apos;t save audio, but I keep a written record of
+          its notes and the concerns you raise. Is that all right with you?&rdquo;
+        </p>
+      </div>
 
       <header inert={!!ended} className="sc-glass relative z-10 mx-4 mt-4 flex flex-wrap items-center gap-1 rounded-2xl border border-white/10 bg-slate-900/70 p-1.5 pl-4 backdrop-blur-xl sm:mx-auto sm:rounded-full">
         <span className="mr-2 flex items-center gap-2 text-sm">
@@ -271,6 +291,7 @@ export default function MeetingPage() {
 
       <main inert={!!ended} className="relative z-10 mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 gap-6 p-4 md:p-6 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,580px)_minmax(0,280px)] lg:grid-rows-[minmax(0,1fr)]">
         <div className="order-3 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
+          <Find sources={prep?.sources ?? []} />
           <Transcript turns={turns} onToggle={toggleSpeaker} />
         </div>
         <div className={`order-1 space-y-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto lg:pr-1 ${hidden ? "invisible" : ""}`} aria-live="polite" aria-busy={waiting}>
@@ -284,11 +305,26 @@ export default function MeetingPage() {
           {current ? (
             <MomentCard key={current.id} card={current} sources={prep?.sources} />
           ) : (
-            !waiting && (
+            !waiting &&
+            (turns.length === 0 ? (
+              // #33: a first-time visitor sees what this is and what to press.
+              <div className="rounded-2xl border border-dashed border-white/10 p-5 text-sm text-slate-300">
+                <p className="mb-2 font-semibold text-slate-100">A replay of a sample client meeting</p>
+                <p className="mb-2">
+                  Press <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-xs">→</kbd> or Next turn to hear each line.
+                  When the client says something that needs a careful answer, a card appears here: what to say, and the
+                  facts from your own materials behind it.
+                </p>
+                <p className="text-slate-400">
+                  Press <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-xs">/</kbd> to find any figure in your
+                  materials.
+                </p>
+              </div>
+            ) : (
               <p className="rounded-2xl border border-dashed border-white/10 p-5 text-sm text-slate-400">
-                A card appears here when the client says something that needs a careful answer.
+                No card yet. One appears when the client says something that needs a careful answer.
               </p>
-            )
+            ))
           )}
           {previous && <MomentCard key={previous.id} card={previous} dimmed />}
         </div>

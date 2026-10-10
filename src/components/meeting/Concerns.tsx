@@ -9,7 +9,11 @@ export default function Concerns({ concerns }: { concerns: Concern[] }) {
         Client concerns
         <span className="text-xs font-normal text-slate-500">{open} open</span>
       </h2>
-      {sorted.length === 0 && <p className="text-sm text-slate-500">Nothing raised yet.</p>}
+      {sorted.length === 0 && (
+        <p className="text-sm text-slate-500">
+          Nothing raised yet. Worries and requests the client voices are listed here, and struck through once answered.
+        </p>
+      )}
       <ul className="space-y-1.5">
         {sorted.map((c) => (
           <li key={c.id} className="flex items-baseline gap-2 text-sm">
