@@ -83,6 +83,7 @@ export default function MomentCard({
               )}
             </li>
           ))}
+          <li className="text-xs text-slate-500">Anything we can&apos;t trace is shown as a suggestion, never a fact.</li>
         </ul>
       )}
 
