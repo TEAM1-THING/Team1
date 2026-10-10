@@ -30,10 +30,14 @@ export function updateSource(sources: PrepSource[], id: string, patch: Partial<P
   return sources.map((s) => (s.id === id ? { ...s, ...patch } : s));
 }
 
-// What /api/mandate and /api/preflight are sent: the plan text only.
+// What /api/mandate is sent: the plan text only.
 export const sourcesBody = (sources: PrepSource[]) => ({
   sources: sources.filter((s) => s.text.trim()).map((s) => ({ text: s.text })),
 });
+
+// What /api/preflight is sent: the whole Prep, cleaned, so the route checks
+// the Mandate on screen rather than falling back to the demo.
+export const preflightBody = (prep: Prep) => ({ prep: clean(prep) });
 
 export function clean(prep: Prep): Prep {
   const { clientFile, mandate } = prep;

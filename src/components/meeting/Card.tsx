@@ -14,16 +14,22 @@ function Chip({ label }: { label: keyof typeof LABELS }) {
   );
 }
 
+// Where a fact came from, and when that document was made (tester feedback:
+// "I like it when they ... cite their sources and when the sources were made").
+function sourceLine(sourceId: string | undefined, sources: PrepSource[]): string | null {
+  const s = sourceId ? sources.find((x) => x.id === sourceId) : undefined;
+  return s ? `from ${s.title}${s.date ? ` · ${s.date}` : ""}` : null;
+}
+
 export default function MomentCard({
   card,
-  sources = [],
   dimmed = false,
+  sources = [],
 }: {
   card: Card;
-  sources?: PrepSource[];
   dimmed?: boolean;
+  sources?: PrepSource[];
 }) {
-  const sourceTitle = (id?: string) => sources.find((s) => s.id === id)?.title;
   if (dimmed) {
     // The previous card collapses to its headline so the new one owns the eye.
     return (
@@ -72,8 +78,8 @@ export default function MomentCard({
                 <span className="text-slate-200">{f.text}</span>
               </div>
               {f.math && <div className="mt-1 font-mono text-xs text-amber-200/90">{f.math}</div>}
-              {f.label === "PREPARED_FACT" && sourceTitle(f.sourceId) && (
-                <div className="mt-1 text-xs text-slate-400">From: {sourceTitle(f.sourceId)}</div>
+              {f.label === "PREPARED_FACT" && sourceLine(f.sourceId, sources) && (
+                <div className="mt-1 text-xs text-emerald-200/70">{sourceLine(f.sourceId, sources)}</div>
               )}
             </li>
           ))}

@@ -4,6 +4,7 @@
 import * as z from "zod/v4";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { FALLBACK_BETA, LIVE_MODEL, LIVE_TIMEOUT_MS, getClient, supportsFallback } from "./client";
+import { classifyUtterance } from "./gate";
 import { demoPrep, demoTranscript } from "../../data/demo";
 import { mockMoment } from "../mock";
 import { enforceNumberTrace, parseNumber } from "../provenance";
@@ -450,6 +451,8 @@ export async function runMoment(
   const { prep, turns, state } = req;
   const latest = turns.at(-1);
   if (!latest || latest.speaker !== "client") return { card: null, state };
+  // Plain statements and filler do not run; questions and worries do.
+  if (!classifyUtterance(latest.text).run) return { card: null, state };
   try {
     const out = await callClaude(req, latest, signal, opts);
     if (typeof out === "string") return fallback(prep, state, latest, out);
