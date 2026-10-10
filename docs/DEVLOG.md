@@ -4,6 +4,18 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (15:30) - Track B: live mic has no speaker separation (parked)
+
+The live mic labels everything it hears as the client, the advisor's own
+speech included. `MicInput.tsx:99` hands the meeting screen text only (Chrome's
+speech API has no speaker information), and `src/app/meeting/page.tsx:70`
+marks every mic line `speaker: "client"`, so advisor lines go to the engine as
+client turns and can raise wrong cards and concerns. The scripted replay is
+unaffected. **Parked by B for now:** if the mic is demoed, only the client
+should speak. Cheapest fix when wanted: a Client / Me toggle on the meeting
+screen that sets the speaker of each mic line (B's files only, no contract
+change); advisor lines then stay as context and raise no cards.
+
 ## 2026-10-10 (15:10) - Track D: Vercel live, records app published
 
 **Vercel is live:** https://second-chair-seven.vercel.app (project on D's
