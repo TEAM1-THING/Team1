@@ -18,11 +18,57 @@ Current positioning, competitor map, guardrails and build order:
 Event facts and the in-person / online toggle:
 [section 01](docs/handoff/2026-10-10-01-brainstorm-to-build.md) (partly superseded).
 
+## Stack
+
+Next.js 15 (App Router, TypeScript, Tailwind) deployed on Vercel. Claude API
+for the engine (`@anthropic-ai/sdk`, key in `ANTHROPIC_API_KEY`, never in the
+tree). zod for the shared contract. Vitest for tests. Base44 hosts the separate
+after-meeting record app. Bright Data powers the pre-meeting check.
+
 ## Verification
 
-There is no gate yet and no stack chosen. Do not claim anything is done
-without running it. When a stack exists, put its one trusted command here.
-This repository is not bound to Felix.
+```bash
+npm run check
+```
+
+Type check plus Vitest. Run it before calling anything done. CI runs it and
+`npm run build` on every pull request and on `main`; a red CI does not merge.
+On the machine that bound it, Felix governs this repo (project `team1`) and
+`felix gate` runs the same command.
+
+## Team build: four tracks, zero-friction merge
+
+The plan, stages and production blockers (PBs) are GitHub issues labelled
+`PB`; the tracking issue is pinned. Each track owns its paths. **Never edit a
+file another track owns**; if you need a change there, ask its owner.
+
+| Track | Share | Branch | Owns exactly these paths |
+|---|---|---|---|
+| A Engine + integration | 50% | `feat/engine` | `src/app/api/**`, `src/lib/types.ts`, `src/lib/provenance.ts`, `src/lib/mock.ts`, `src/lib/engine/**`, `src/app/layout.tsx`, `src/app/globals.css`, `package.json`, `package-lock.json`, `.github/**`, `tests/provenance.test.ts`, `tests/engine-*.test.ts` |
+| B Meeting screen | 20% | `feat/ui` | `src/app/meeting/**`, `src/components/meeting/**`, `tests/ui-*.test.ts` |
+| C Prep + landing | 15% | `feat/prep` | `src/app/page.tsx`, `src/app/prep/**`, `src/components/prep/**`, `src/data/**`, `tests/prep-*.test.ts` |
+| D Ship: deploy, Base44, mic | 15% | `feat/ship` | `src/components/speech/**`, `src/lib/record.ts`, `vercel.json`, `docs/base44/**`, `tests/ship-*.test.ts`, the Vercel and Base44 dashboards |
+
+Seams are already stubbed on `main`, so every track builds against them today:
+
+- `src/lib/types.ts` is the contract. **Frozen.** Only track A changes it, and
+  says so in the team chat before pushing.
+- `/api/moment`, `/api/mandate`, `/api/preflight` answer from canned data now;
+  track A swaps in Claude and Bright Data behind the same shapes.
+- `loadPrep()` / `savePrep()` in `src/lib/store.ts` (frozen) carry the Prep
+  from the prep screen to the meeting screen.
+- `<MicInput onTurn />` and `exportRecord(prep, state)` are stubs the meeting
+  screen calls; track D fills them in without touching the meeting screen.
+
+Merge rules:
+
+- Work only on your branch. Commit and push to it as often as you like.
+  Only track A pushes or merges to `main`.
+- Do not add npm packages. If you truly need one, track A adds it on `main`
+  and you merge `main` into your branch.
+- Merge `origin/main` into your branch at 2:00 and again before your PR.
+- Open your PR to `main` by **2:30** with `npm run check` green locally.
+  Code freeze **3:15**; after that, fixes only.
 
 ## Invariants
 
@@ -55,5 +101,5 @@ These came from decisions already made, not from habit.
   `docs/handoff/` unchanged.
 - Whenever `HANDOFF.md`, `docs/handoff/`, `docs/DEVLOG.md` or this file
   changes, commit and push it to `main` right away so the team sees it. Stage
-  those paths by name and look at `git status` first. Everything else: commit
-  and push only when asked.
+  those paths by name and look at `git status` first. Feature work follows the
+  merge rules above.

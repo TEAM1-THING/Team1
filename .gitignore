@@ -22,3 +22,11 @@ dist/
 .next/
 __pycache__/
 *.pyc
+
+# next.js / vercel
+.next/
+out/
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+coverage/
