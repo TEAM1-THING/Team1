@@ -1,6 +1,6 @@
 // The number-trace check. Invariant: no number reaches the advisor as a
 // PREPARED_FACT unless it appears in the advisor's own materials.
-import type { Card, CardFact, Prep } from "./types";
+import type { Card, CardFact, FileConflict, Prep, PrepSource } from "./types";
 
 const NUMBER = /\$?\d[\d,]*(?:\.\d+)?\s*(?:[kKmM](?![a-zA-Z])|%)?/g;
 
@@ -51,4 +51,40 @@ export function enforceFact(fact: CardFact, known: Set<number>): CardFact {
 export function enforceNumberTrace(card: Card, prep: Prep): Card {
   const known = preparedNumbers(prep);
   return { ...card, facts: card.facts.map((f) => enforceFact(f, known)) };
+}
+
+// A conflict value is a figure, not a passage.
+const MAX_CONFLICT_VALUE_CHARS = 80;
+
+// Files that disagree. Keep a value only if every number in it appears in the
+// source it names, and a conflict only if two or more different figures from
+// two or more sources survive. The same figure written two ways ("$180K" and
+// "180,000") is not a conflict.
+export function traceConflicts(
+  conflicts: FileConflict[],
+  sources: Pick<PrepSource, "id" | "text">[],
+): FileConflict[] {
+  const bySource = new Map(sources.map((s) => [s.id, new Set(extractNumbers(s.text))]));
+  const out: FileConflict[] = [];
+  for (const c of conflicts) {
+    const quantity = c.quantity.trim();
+    const seen = new Set<string>();
+    const figures = new Set<string>();
+    const files = new Set<string>();
+    const values = c.values.flatMap((v) => {
+      const value = v.value.trim();
+      const nums = extractNumbers(value);
+      const known = bySource.get(v.sourceId);
+      if (!known || value.length > MAX_CONFLICT_VALUE_CHARS || nums.length === 0) return [];
+      if (!nums.every((n) => known.has(n))) return [];
+      const figure = nums.join("|");
+      if (seen.has(`${figure}@${v.sourceId}`)) return [];
+      seen.add(`${figure}@${v.sourceId}`);
+      figures.add(figure);
+      files.add(v.sourceId);
+      return [{ value, sourceId: v.sourceId }];
+    });
+    if (quantity && figures.size >= 2 && files.size >= 2) out.push({ quantity, values });
+  }
+  return out;
 }
