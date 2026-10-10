@@ -214,6 +214,8 @@ export function createOverlay(onChange: (v: OverlayView) => void, showAtLaunch: 
   }
 
   const barHeight = () => Math.round(BAR_HEIGHT * zoom) + 2;
+  // A drag in progress: where the cursor and the window were when it began.
+  let dragFrom: { x: number; y: number; bounds: Rectangle } | null = null;
 
   const self = {
     win,
@@ -225,7 +227,7 @@ export function createOverlay(onChange: (v: OverlayView) => void, showAtLaunch: 
     },
     // Called on every hit change from the preload; touches only the mouse state.
     setHit(hit: Hit) {
-      if (mode.hit === hit) return;
+      if (mode.hit === hit || dragFrom) return;
       mode.hit = hit;
       if (config.debug) console.log(`[overlay] pointer over ${hit}: ${ignoreMouse(mode) ? "clicks pass through" : "catching clicks"}`);
       win.setIgnoreMouseEvents(ignoreMouse(mode), { forward: true });
@@ -245,6 +247,22 @@ export function createOverlay(onChange: (v: OverlayView) => void, showAtLaunch: 
         win.setFocusable(false);
       }
       apply();
+    },
+    // The title bar drags the window: it follows the cursor's movement since
+    // the press, keeping its size, until the button is released.
+    drag(phase: "start" | "move" | "end") {
+      const c = screen.getCursorScreenPoint();
+      if (phase === "start") {
+        dragFrom = { x: c.x, y: c.y, bounds: win.getBounds() };
+        return;
+      }
+      if (!dragFrom) return;
+      const { x, y, bounds } = dragFrom;
+      win.setBounds({ ...bounds, x: bounds.x + c.x - x, y: bounds.y + c.y - y });
+      if (phase === "end") {
+        dragFrom = null;
+        persist();
+      }
     },
     toggleGhost() {
       mode.ghost = !mode.ghost;

@@ -3,6 +3,8 @@
 // only ever about screen share: slashed = hidden from it, open = visible.
 // It is the drag handle for the frameless window, and it stays clickable in
 // click-through mode so the advisor can always get back with the mouse.
+// Dragging is done here rather than with -webkit-app-region: the system drag
+// stops responding on a window that toggles click-through, as this one does.
 import { ipcRenderer } from "electron";
 import { BAR_HEIGHT } from "../core/clickThrough";
 
@@ -34,7 +36,8 @@ const CSS = `
   display: flex; align-items: center; gap: 8px; padding: 0 6px 0 12px; box-sizing: border-box;
   background: #0d1219; border-bottom: 1px solid rgb(255 255 255 / .08); border-radius: 14px 14px 0 0;
   font: 500 13px/1 var(--font-geist-sans, system-ui), system-ui, sans-serif; color: #f2ede2;
-  -webkit-app-region: drag; user-select: none; cursor: default; }
+  user-select: none; cursor: grab; touch-action: none; }
+#sc-bar[data-dragging] { cursor: grabbing; }
 #sc-bar .sc-name { letter-spacing: -.01em; white-space: nowrap; }
 #sc-bar .sc-state { display: inline-flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden;
   color: rgb(242 237 226 / .62); font-weight: 400; font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
@@ -43,7 +46,7 @@ const CSS = `
 #sc-bar[data-listening] .sc-state { color: #fecdd3; }
 #sc-bar[data-ghost] .sc-state, #sc-bar[data-typing] .sc-state { color: #8ec5f2; }
 #sc-bar .sc-gap { flex: 1; }
-#sc-bar button { all: unset; -webkit-app-region: no-drag; display: grid; place-items: center; width: 28px; height: 28px;
+#sc-bar button { all: unset; display: grid; place-items: center; width: 28px; height: 28px;
   border-radius: 8px; color: rgb(242 237 226 / .7); cursor: pointer; }
 #sc-bar button:hover { background: rgb(255 255 255 / .08); color: #f2ede2; }
 #sc-bar button:focus-visible { outline: 2px solid #8ec5f2; outline-offset: 1px; }
@@ -94,6 +97,11 @@ function tips(s: BarStatus): Record<string, Tip> {
   };
 }
 
+// While the bar is being dragged the pointer can run ahead of the window, so
+// the preload holds its hit report until the drag ends.
+let dragging = false;
+export const barDragging = () => dragging;
+
 export function mountBar(): (s: BarStatus) => void {
   let status: BarStatus = { listening: false, ghost: false, typing: false, collapsed: false, mac: true, shareHidden: true };
   const bar = document.createElement("div");
@@ -137,6 +145,32 @@ export function mountBar(): (s: BarStatus) => void {
   bar.addEventListener("pointerleave", () => point(null, 0));
   bar.addEventListener("focusin", (e) => point((e.target as HTMLElement).dataset.action ?? null, 0));
   bar.addEventListener("focusout", () => point(null, 0));
+
+  // Drag: main moves the window by how far the pointer has moved on screen.
+  let moveFrame = 0;
+  bar.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || (e.target as Element).closest("button")) return;
+    bar.setPointerCapture(e.pointerId);
+    dragging = true;
+    bar.setAttribute("data-dragging", "");
+    ipcRenderer.send("sc:drag", "start");
+  });
+  bar.addEventListener("pointermove", () => {
+    if (!dragging || moveFrame) return;
+    moveFrame = requestAnimationFrame(() => {
+      moveFrame = 0;
+      if (dragging) ipcRenderer.send("sc:drag", "move");
+    });
+  });
+  const endDrag = () => {
+    if (!dragging) return;
+    dragging = false;
+    bar.removeAttribute("data-dragging");
+    ipcRenderer.send("sc:drag", "end");
+  };
+  bar.addEventListener("pointerup", endDrag);
+  bar.addEventListener("pointercancel", endDrag);
+  bar.addEventListener("lostpointercapture", endDrag);
 
   bar.addEventListener("click", (e) => {
     const action = (e.target as Element).closest("button")?.dataset.action;

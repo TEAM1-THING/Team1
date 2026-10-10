@@ -130,6 +130,9 @@ function start() {
     if (fromOverlay(e.sender) && typeof name === "string" && Object.hasOwn(barActions, name)) barActions[name]();
   });
   ipcMain.on("sc:typing", (e, on) => fromOverlay(e.sender) && overlay.setTyping(on === true));
+  ipcMain.on("sc:drag", (e, phase) => {
+    if (fromOverlay(e.sender) && (phase === "start" || phase === "move" || phase === "end")) overlay.drag(phase);
+  });
 
   app.on("before-quit", () => {
     quitting = true;

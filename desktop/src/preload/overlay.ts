@@ -8,7 +8,7 @@
 //     included) drives desktop system-audio capture
 import { contextBridge, ipcRenderer } from "electron";
 import { isPainted, type Hit } from "../core/clickThrough";
-import { mountBar, type BarStatus } from "./bar";
+import { barDragging, mountBar, type BarStatus } from "./bar";
 
 // ---- Title bar ----------------------------------------------------------------
 
@@ -68,7 +68,7 @@ const report = (next: Hit) => {
 const probe = () => {
   frame ||= requestAnimationFrame(() => {
     frame = 0;
-    if (px >= 0) report(hitAt(px, py));
+    if (px >= 0 && !barDragging()) report(hitAt(px, py));
   });
 };
 window.addEventListener(
@@ -83,7 +83,7 @@ window.addEventListener(
 window.addEventListener("DOMContentLoaded", () => {
   document.documentElement.addEventListener("mouseleave", () => {
     px = -1;
-    report("none");
+    if (!barDragging()) report("none");
   });
   updateBar = mountBar();
   if (pendingStatus) updateBar(pendingStatus);

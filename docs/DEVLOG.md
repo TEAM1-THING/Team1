@@ -4,6 +4,18 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (17:05) - Desktop: the panel drags reliably
+
+The title bar used `-webkit-app-region: drag`, and on macOS that stops
+responding on a window that toggles click-through, as the panel does on every
+pointer move: the panel could not be moved. The bar now drags it itself: a
+press on the bar (not a button) and main moves the window by how far the
+cursor has moved, keeping its size, until release; the position is saved. The
+hit report is held during the drag so the panel never turns click-through
+under the pointer. Grab cursor on the bar. Driven on a throwaway copy: the
+panel follows the pointer, stops on release, buttons still click, double-click
+still shrinks it. Not yet tried with a physical mouse.
+
 ## 2026-10-10 (16:43) - README: start to finish
 
 `README.md` (new): the website with no install, then the Mac app (download,
