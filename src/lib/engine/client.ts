@@ -5,9 +5,10 @@ import Anthropic from "@anthropic-ai/sdk";
 // Prep-time calls (Mandate draft, pre-flight): quality over speed.
 export const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5-5";
 
-// Live cards: the team's latency budget is 5 s end to end, so the live path
-// uses the fastest model. Chosen by benchmark; override per deployment.
-export const LIVE_MODEL = process.env.LIVE_MODEL || "claude-haiku-5-5";
+// Live cards: the team's budget is 5 s. Benchmark (6 scenes x 2 runs, 18
+// blind judgements per model): Sonnet 5.5 scored highest (4.39/5 vs Opus 4.19,
+// Haiku 3.80) at median 3.96 s, max 4.59 s. Override per deployment.
+export const LIVE_MODEL = process.env.LIVE_MODEL || "claude-sonnet-5-5";
 
 // A live card that arrives late is useless; past this the route falls back.
 export const LIVE_TIMEOUT_MS = 5_000;

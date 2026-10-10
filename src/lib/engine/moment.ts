@@ -100,6 +100,7 @@ Rules:
 - If the client asks about anything in mandate.outOfScope, or anything outside the Mandate, set defer to true, give a deferReason, write a phrasing that politely defers the topic (for example to a follow-up or a specialist), and include no PREPARED_FACT.
 - If nothing decision-relevant happened (small talk, a plain acknowledgement), set relevant to false. The other fields may then be brief placeholders.
 - moment is the one type that fits best from: ${MOMENT_TYPES.join(", ")}.
+- Watch for word meaning, which advisors often miss: the client reacting to a word differently than the advisor meant it (for example hearing "scrutinize" as being audited), or using slang or a regional idiom whose meaning matters (for example "going to the basement" can mean being in financial trouble). Call that a misunderstanding, name the word and both readings in concern, and suggest phrasing that checks or clarifies the meaning in plain words before moving on.
 - concern is what sits underneath the client's words, in one line.
 - recommendedMove is the advisor's next move in one sentence of at most 20 words. phrasing is at most 30 words the advisor could say aloud, in plain spoken language. why is one sentence of at most 20 words on why this move fits what the client said.
 - Give at most 3 facts and at most 2 doNotClaim items. concern is at most 15 words.
@@ -394,9 +395,9 @@ async function callClaude(
 ): Promise<LlmMoment | string> {
   const client = getClient();
   const model = opts.model ?? LIVE_MODEL;
-  // Benchmark: Haiku without the reasoning step was the fastest variant (max
-  // 3.2 s over 12 calls, all live). LIVE_THINKING=on restores it.
-  const thinkingOff = opts.thinkingOff ?? (model.startsWith("claude-haiku") && process.env.LIVE_THINKING !== "on");
+  // Reasoning stays on by default: Haiku without it was fastest but scored
+  // lowest with blind judges (3.51/5), weakest on guardrails.
+  const thinkingOff = opts.thinkingOff ?? false;
   const parts = buildMomentParts(req.prep, req.turns, req.state, latest);
   if (!client) return "no client";
   if (signal?.aborted) return "request aborted";
