@@ -3,7 +3,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { ClientFile, Mandate, Meeting, PrepSource } from "@/lib/types";
+import type { ClientFile, FileConflict, Mandate, Meeting, PrepSource } from "@/lib/types";
 import { btnGhost, btnPrimary } from "./ui";
 
 export type IngestResponse = {
@@ -14,6 +14,7 @@ export type IngestResponse = {
   mandateSource: "claude" | "fallback";
   files: { name: string; read: boolean; note?: string }[];
   missing: string[];
+  conflicts?: FileConflict[]; // figures the files disagree on, traced to each file
   source: "claude" | "text-only";
 };
 
