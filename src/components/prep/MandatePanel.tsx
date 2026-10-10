@@ -6,15 +6,14 @@ import { useState } from "react";
 import type { PreflightCheck } from "@/app/api/preflight/route";
 import type { Mandate, PrepSource } from "@/lib/types";
 import { fromLines, readMandate, sourcesBody, toLines } from "./prepModel";
-import { Field, inputClass } from "./ui";
+import { btnGhost, Field, inputClass } from "./ui";
 
+// Same pill colours as the meeting screen's provenance chips.
 const CHIP: Record<PreflightCheck["status"], string> = {
-  ok: "bg-green-100 text-green-800",
-  stale: "bg-amber-100 text-amber-800",
-  unverified: "bg-neutral-200 text-neutral-700",
+  ok: "bg-emerald-400/15 text-emerald-300",
+  stale: "bg-amber-400/15 text-amber-300",
+  unverified: "bg-zinc-400/15 text-zinc-300",
 };
-
-const buttonClass = "rounded border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100 disabled:opacity-50";
 
 async function post(url: string, sources: PrepSource[]): Promise<unknown> {
   const res = await fetch(url, {
@@ -76,10 +75,10 @@ export function MandatePanel({ sources, value, onChange }: Props) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        <button type="button" className={buttonClass} disabled={drafting} onClick={draft}>
+        <button type="button" className={btnGhost} disabled={drafting} onClick={draft}>
           {drafting ? "Drafting…" : "Draft Mandate from my plan"}
         </button>
-        <span className="text-sm text-neutral-600">Review and edit every field before the meeting.</span>
+        <span className="text-sm text-slate-400">Review and edit every field before the meeting.</span>
       </div>
 
       <Field label="Thesis">
@@ -94,27 +93,27 @@ export function MandatePanel({ sources, value, onChange }: Props) {
         {lines("outOfScope", "Out of scope")}
       </div>
 
-      <div className="flex flex-col gap-3 rounded border border-neutral-200 p-4">
+      <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
         <div className="flex flex-wrap items-center gap-3">
-          <button type="button" className={buttonClass} disabled={checking} onClick={preflight}>
+          <button type="button" className={btnGhost} disabled={checking} onClick={preflight}>
             {checking ? "Checking…" : "Run pre-flight"}
           </button>
-          <span className="text-sm text-neutral-600">Checks the plan&apos;s figures against live public data.</span>
+          <span className="text-sm text-slate-400">Checks the plan&apos;s figures against live public data.</span>
         </div>
-        {checks && checks.length === 0 && <p className="text-sm text-neutral-600">No figures to check.</p>}
+        {checks && checks.length === 0 && <p className="text-sm text-slate-400">No figures to check.</p>}
         {checks && checks.length > 0 && (
           <ul className="flex flex-col gap-3">
             {checks.map((c, i) => (
               <li key={i} className="flex flex-col gap-1 text-sm sm:flex-row sm:items-start sm:gap-3">
-                <span className={`w-fit shrink-0 rounded px-2 py-0.5 text-xs font-semibold uppercase ${CHIP[c.status] ?? CHIP.unverified}`}>
+                <span className={`w-fit shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium uppercase ${CHIP[c.status] ?? CHIP.unverified}`}>
                   {c.status}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium break-words">“{c.claim}”</p>
-                  <p className="break-words text-neutral-600">{c.note}</p>
+                  <p className="font-medium break-words text-slate-100">“{c.claim}”</p>
+                  <p className="break-words text-slate-400">{c.note}</p>
                 </div>
                 {c.sourceUrl && (
-                  <a className="shrink-0 underline" href={c.sourceUrl} target="_blank" rel="noreferrer">
+                  <a className="shrink-0 text-indigo-300 underline hover:text-indigo-200" href={c.sourceUrl} target="_blank" rel="noreferrer">
                     source ↗
                   </a>
                 )}
@@ -125,7 +124,7 @@ export function MandatePanel({ sources, value, onChange }: Props) {
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-rose-300">
           {error}
         </p>
       )}

@@ -2,7 +2,7 @@
 // Owned by the prep track.
 import type { PrepSource } from "@/lib/types";
 import { addSource, removeSource, updateSource } from "./prepModel";
-import { inputClass } from "./ui";
+import { btnGhost, inputClass } from "./ui";
 
 const KINDS: PrepSource["kind"][] = ["plan", "deck", "client_file", "note"];
 
@@ -14,12 +14,12 @@ export function SourcesEditor({ value, onChange }: { value: PrepSource[]; onChan
           <div className="flex gap-2">
             <select
               aria-label="Kind"
-              className="rounded border border-neutral-300 bg-white px-2 text-sm"
+              className="rounded-xl border border-white/15 bg-slate-950/40 px-2 text-sm text-slate-100"
               value={s.kind}
               onChange={(e) => onChange(updateSource(value, s.id, { kind: e.target.value as PrepSource["kind"] }))}
             >
               {KINDS.map((k) => (
-                <option key={k} value={k}>
+                <option key={k} value={k} className="bg-slate-900">
                   {k.replace("_", " ")}
                 </option>
               ))}
@@ -34,7 +34,7 @@ export function SourcesEditor({ value, onChange }: { value: PrepSource[]; onChan
             <button
               type="button"
               aria-label={`Remove ${s.title || "source"}`}
-              className="rounded px-2 text-neutral-500 hover:bg-neutral-100 hover:text-black"
+              className="rounded-full px-2.5 text-slate-400 hover:bg-white/10 hover:text-white"
               onClick={() => onChange(removeSource(value, s.id))}
             >
               ✕
@@ -52,7 +52,7 @@ export function SourcesEditor({ value, onChange }: { value: PrepSource[]; onChan
       ))}
       <button
         type="button"
-        className="self-start rounded border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
+        className={`self-start ${btnGhost}`}
         onClick={() => onChange(addSource(value))}
       >
         + Add source
