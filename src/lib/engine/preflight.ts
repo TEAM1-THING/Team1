@@ -11,11 +11,15 @@ import type { Prep } from "@/lib/types";
 import { FALLBACK_BETA, MODEL, getClient } from "./client";
 import { serpSearch, type SerpResult } from "./brightdata";
 
+// Block 1 tester: "I like it when they are able to cite their sources and when
+// the sources were made." Every cited source carries its date and when we checked.
 export type PreflightCheck = {
   claim: string; // the figure or assumption from the plan
   status: "ok" | "stale" | "unverified";
   note: string;
   sourceUrl?: string;
+  sourceDate?: string; // publish date shown by Google, when present
+  checkedAt?: string; // YYYY-MM-DD this check ran
 };
 export type PreflightResult = { checks: PreflightCheck[]; source: "brightdata" | "fallback" };
 
@@ -216,10 +220,15 @@ function traced(note: string, claim: string, cited?: SerpResult): boolean {
   return extractNumbers(note).every((n) => allowed.has(n));
 }
 
+// The cited source with its publish date (when Google shows one) and today's date.
+function cite(r: SerpResult): Pick<PreflightCheck, "sourceUrl" | "sourceDate" | "checkedAt"> {
+  return { sourceUrl: r.url, ...(r.date ? { sourceDate: r.date } : {}), checkedAt: new Date().toISOString().slice(0, 10) };
+}
+
 function toCheck(p: Picked, own: SerpResult[], v: JudgeOutput["checks"][number] | undefined): PreflightCheck {
   const top = own[0];
   if (!top) return { claim: p.claim, status: "unverified", note: NOTE_UNAVAILABLE };
-  if (!v) return { claim: p.claim, status: "unverified", note: NOTE_NOT_COMPARED, sourceUrl: top.url };
+  if (!v) return { claim: p.claim, status: "unverified", note: NOTE_NOT_COMPARED, ...cite(top) };
   const cited = v.sourceUrl.trim();
   const note = oneLine(v.note);
   // Only a result fetched for this same assumption may be cited.
@@ -230,9 +239,9 @@ function toCheck(p: Picked, own: SerpResult[], v: JudgeOutput["checks"][number] 
     return { claim: p.claim, status: "unverified", note: keep ? note : cited ? NOTE_UNMATCHED : NOTE_UNCLEAR };
   }
   if (note === "" || !traced(note, p.claim, source)) {
-    return { claim: p.claim, status: "unverified", note: NOTE_NOT_COMPARED, sourceUrl: source.url };
+    return { claim: p.claim, status: "unverified", note: NOTE_NOT_COMPARED, ...cite(source) };
   }
-  return { claim: p.claim, status: v.status, note, sourceUrl: source.url };
+  return { claim: p.claim, status: v.status, note, ...cite(source) };
 }
 
 // `signal` is the caller's (the HTTP request's): when it aborts, in-flight
