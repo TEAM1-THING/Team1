@@ -6,9 +6,11 @@
 // The advisor can move it (title bar), resize it (edges), collapse it to the
 // bar, and it reopens where they left it.
 import { app, BrowserWindow, screen, shell, type Rectangle } from "electron";
+import { once } from "node:events";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { BAR_HEIGHT, ignoreMouse, initialMode, onScreen, type Hit, type OverlayMode } from "../core/clickThrough";
+import type { DeepLink } from "../core/deepLink";
 import { asset, config, dist } from "./config";
 
 // Turns the meeting page into one solid panel under the title bar, so its text
@@ -30,11 +32,14 @@ html[data-sc-ghost] body > :not(#sc-bar) { opacity: .45; }
 html[data-sc-ghost] body { background: rgb(13 18 25 / .55) !important; }
 `;
 
+const NO_BANNER_CSS = `[class~="bg-[#0d1219]"] > p[role="note"] { display: none !important; }`;
+const PREP_KEY = "secondchair.prep"; // where the meeting page reads the prep (src/lib/store.ts)
+
 const MARGIN = 16;
 const MIN = { width: 340, height: 240 };
 const ZOOM = { min: 0.7, max: 1.3, step: 0.1, start: 0.9 };
 
-type Saved = { bounds?: Rectangle; zoom?: number };
+type Saved = { bounds?: Rectangle; zoom?: number; paired?: boolean; notice?: boolean };
 const savedPath = () => path.join(app.getPath("userData"), "overlay.json");
 function load(): Saved {
   try {
@@ -66,6 +71,9 @@ export function createOverlay(onChange: (v: OverlayView) => void) {
   let collapsed = false;
   let expandedHeight = start.height;
   let listening = false;
+  let paired = saved.paired === true;
+  let notice = saved.notice ?? config.disclosureNotice;
+  let noticeCss: string | null = null;
 
   const win = new BrowserWindow({
     ...start,
@@ -114,7 +122,16 @@ export function createOverlay(onChange: (v: OverlayView) => void) {
   win.setIgnoreMouseEvents(true, { forward: true });
 
   const wc = win.webContents;
-  wc.on("dom-ready", () => void wc.insertCSS(OVERLAY_CSS));
+  // The disclosure notice toggles live, so its rule is inserted on its own.
+  const applyNotice = async () => {
+    if (noticeCss) await wc.removeInsertedCSS(noticeCss).catch(() => {});
+    noticeCss = notice ? null : await wc.insertCSS(NO_BANNER_CSS);
+  };
+  wc.on("dom-ready", () => {
+    noticeCss = null; // a new document starts without it
+    void wc.insertCSS(OVERLAY_CSS);
+    void applyNotice();
+  });
   wc.on("did-finish-load", () => {
     wc.setZoomFactor(zoom);
     publish();
@@ -153,7 +170,7 @@ export function createOverlay(onChange: (v: OverlayView) => void) {
       const b = win.getBounds();
       const bounds = { ...b, height: collapsed ? expandedHeight : b.height };
       try {
-        writeFileSync(savedPath(), JSON.stringify({ bounds, zoom } satisfies Saved));
+        writeFileSync(savedPath(), JSON.stringify({ bounds, zoom, paired, notice } satisfies Saved));
       } catch (e) {
         console.warn(`[overlay] could not save position: ${e}`);
       }
@@ -258,6 +275,52 @@ export function createOverlay(onChange: (v: OverlayView) => void) {
       wc.setZoomFactor(zoom);
       if (collapsed) win.setBounds({ ...win.getBounds(), height: barHeight() });
       persist();
+    },
+    // Just under the camera on the display it is on, so reading a card keeps
+    // the advisor's eyes near the lens and on the client.
+    placeUnderCamera() {
+      const { workArea: wa } = screen.getDisplayMatching(win.getBounds());
+      const b = win.getBounds();
+      win.setBounds({ ...b, x: Math.round(wa.x + (wa.width - b.width) / 2), y: wa.y + 8 });
+      persist();
+    },
+    get notice() {
+      return notice;
+    },
+    setNotice(on: boolean) {
+      notice = on;
+      void applyNotice();
+      persist();
+      publish();
+    },
+    get paired() {
+      return paired;
+    },
+    // Opens the website once with a marker; from then on that browser sends
+    // its meeting links here instead of showing the meeting itself.
+    pairBrowser() {
+      paired = true;
+      persist();
+      void shell.openExternal(`${origin}/?sc-desktop=paired`);
+    },
+    // A link from the website: show the meeting here, with the prep the
+    // advisor made in the browser when the link carries one.
+    async openLink(link: DeepLink) {
+      if (collapsed) self.toggleCollapsed();
+      if (!win.isVisible()) win.showInactive();
+      const target = origin + link.path;
+      try {
+        if (link.prep) {
+          if (wc.isLoading()) await once(wc, "did-stop-loading");
+          // localStorage is per origin, so the page must be ours before writing.
+          if (new URL(wc.getURL() || "about:blank").origin !== origin) await win.loadURL(target);
+          await wc.executeJavaScript(`localStorage.setItem(${JSON.stringify(PREP_KEY)}, ${JSON.stringify(link.prep)})`);
+        }
+        await win.loadURL(target);
+      } catch (e) {
+        console.error(`[link] could not open ${target}: ${e}`);
+      }
+      publish();
     },
     resetPosition() {
       collapsed = false;

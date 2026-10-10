@@ -9,9 +9,14 @@ export function createAudioWindow() {
   const ses = session.fromPartition("sc-audio");
   ses.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === "media"));
   ses.setPermissionCheckHandler((_wc, permission) => permission === "media");
-  // Windows: system audio via loopback rides on a screen capture request. The
-  // video track is stopped as soon as it arrives; only the audio is used.
-  ses.setDisplayMediaRequestHandler(async (_req, cb) => {
+  // System audio rides on a capture request; only its audio is used.
+  // macOS 14.2+ (Electron 39+): loopback is a Core Audio tap, which needs
+  // NSAudioCaptureUsageDescription in the app's Info.plist (the packaged build
+  // has it) and asks for "system audio recording" only. The video is this
+  // hidden window's own frame, so no Screen Recording permission is needed.
+  // Windows: the documented screen-plus-loopback pair.
+  ses.setDisplayMediaRequestHandler(async (req, cb) => {
+    if (process.platform === "darwin") return cb({ video: req.frame ?? undefined, audio: "loopback" });
     const [screen] = await desktopCapturer.getSources({ types: ["screen"], thumbnailSize: { width: 0, height: 0 } });
     cb(screen ? { video: screen, audio: "loopback" } : null);
   });

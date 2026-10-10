@@ -7,7 +7,11 @@
 //   pipeline          utility process; speech-to-text with backpressure
 // Main hands each pair a MessagePort once, then stays out of the data path:
 // audio goes audio -> pipeline -> overlay without crossing the main process.
+//
+// Links: the website opens secondchair://open?path=/meeting (with the
+// advisor's prep in the fragment) and the meeting appears in the overlay.
 import { app, globalShortcut, ipcMain, MessageChannelMain, utilityProcess, type UtilityProcess, type WebContents } from "electron";
+import { parseDeepLink, SCHEME } from "../core/deepLink";
 import { createAudioWindow } from "./audio";
 import { config, dist } from "./config";
 import { actions, createTray, registerHotkeys } from "./controls";
@@ -15,9 +19,24 @@ import { createOverlay } from "./overlay";
 
 type Role = "overlay" | "audio";
 
+// Links can arrive before the overlay exists (the link launched the app).
+const waiting: string[] = process.argv.filter((a) => a.startsWith(`${SCHEME}://`));
+let openLink: ((url: string) => void) | null = null;
+const receive = (url: string) => (openLink ? openLink(url) : waiting.push(url));
+
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
+  // macOS delivers links as open-url, possibly before ready; Windows and Linux
+  // start a second instance with the link in its arguments.
+  app.on("open-url", (e, url) => {
+    e.preventDefault();
+    receive(url);
+  });
+  app.on("second-instance", (_e, argv) => argv.filter((a) => a.startsWith(`${SCHEME}://`)).forEach(receive));
+  // Only a packaged build owns the scheme; in development it would point the
+  // OS at the bare Electron binary instead of this app.
+  if (app.isPackaged && !app.isDefaultProtocolClient(SCHEME)) app.setAsDefaultProtocolClient(SCHEME);
   app.whenReady().then(start);
   app.on("will-quit", () => globalShortcut.unregisterAll());
 }
@@ -37,6 +56,16 @@ function start() {
   const tray = createTray(overlay, list);
   overlay.setListening(false); // first render of the tray
   registerHotkeys(list);
+
+  openLink = (url) => {
+    const link = parseDeepLink(url);
+    if (link) void overlay.openLink(link);
+    else console.warn(`[link] ignored ${url.slice(0, 80)}`);
+  };
+  waiting.splice(0).forEach(openLink);
+  // First run of an installed build: tell the advisor's browser that meeting
+  // links can open here from now on (the website only tries once it knows).
+  if (app.isPackaged && !overlay.paired) overlay.pairBrowser();
 
   let pipeline = forkPipeline();
 

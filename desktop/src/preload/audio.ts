@@ -22,7 +22,7 @@ class CaptureError extends Error {
 const q = new URLSearchParams(location.search);
 const platform = q.get("platform") ?? "";
 const devicePattern = q.get("device") ?? "BlackHole";
-const selfTest = q.get("source") === "tone";
+const source = q.get("source") ?? "system"; // "system" | "device" | "tone"
 
 // The far end of the call arrives already processed; echo cancellation would
 // cancel it outright, and gain control would pump the voice detector.
@@ -45,19 +45,32 @@ function toneStream(): MediaStream {
 }
 
 async function systemAudio(): Promise<MediaStream> {
-  if (selfTest) return toneStream();
-  if (platform === "win32") {
-    // Main answers this with { audio: "loopback" }; the video track is dropped.
-    const s = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: RAW });
-    for (const t of s.getVideoTracks()) {
-      t.stop();
-      s.removeTrack(t);
+  if (source === "tone") return toneStream();
+  if (source === "system" && (platform === "win32" || platform === "darwin")) {
+    try {
+      return await loopback();
+    } catch (e) {
+      // Windows has no fallback; an older Mac falls through to a virtual device.
+      if (platform === "win32") throw e;
+      console.warn(`[audio] system audio loopback unavailable (${e instanceof Error ? e.message : e}); trying a virtual device`);
     }
-    if (!s.getAudioTracks().length) throw new CaptureError("audio-capture", "System audio loopback returned no track.");
-    return s;
   }
-  // macOS and Linux: Electron has no loopback, so the call's output is routed
-  // through a virtual audio device and read as an input.
+  return virtualDevice();
+}
+
+// Main answers this request with { audio: "loopback" }; the video track is dropped at once.
+async function loopback(): Promise<MediaStream> {
+  const s = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: RAW });
+  for (const t of s.getVideoTracks()) {
+    t.stop();
+    s.removeTrack(t);
+  }
+  if (!s.getAudioTracks().length) throw new CaptureError("audio-capture", "System audio loopback returned no track.");
+  return s;
+}
+
+// The call's output routed through a virtual audio device (BlackHole) and read as an input.
+async function virtualDevice(): Promise<MediaStream> {
   const re = new RegExp(devicePattern, "i");
   const device = (await navigator.mediaDevices.enumerateDevices()).find((d) => d.kind === "audioinput" && re.test(d.label));
   if (!device) {

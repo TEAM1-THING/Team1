@@ -22,6 +22,26 @@ ipcRenderer.on("sc:status", (_e, s: BarStatus) => {
   else pendingStatus = s;
 });
 
+// ---- Consent: the recording notice the advisor says aloud -------------------
+
+// The overlay is hidden from the other side of the call, so a notice shown in
+// it informs nobody: the notice is spoken aloud. The page's consent checkbox (ship track's MicInput) is
+// relabeled here to the words the advisor says before starting the mic; it
+// still has to be ticked, and Second Chair is never named to the client.
+const NOTICE_LABEL = "Told everyone: \u201cthis meeting is being recorded\u201d";
+const NOTICE_TITLE =
+  "Before you turn on the mic, say that the meeting is being recorded. In California every party must know a call is recorded; carrying on after the notice is the usual way they agree. Not legal advice.";
+function relabelConsent() {
+  for (const label of document.querySelectorAll("label")) {
+    const box = label.querySelector('input[type="checkbox"]');
+    if (!box || label.dataset.scNotice === "1" || !/All parties consent/i.test(label.textContent ?? "")) continue;
+    for (const n of [...label.childNodes]) if (n.nodeType === Node.TEXT_NODE) n.remove();
+    label.append(NOTICE_LABEL);
+    label.title = NOTICE_TITLE;
+    label.dataset.scNotice = "1";
+  }
+}
+
 // ---- Input: click-through hit-testing --------------------------------------
 
 function hitAt(x: number, y: number): Hit {
@@ -67,6 +87,9 @@ window.addEventListener("DOMContentLoaded", () => {
   });
   updateBar = mountBar();
   if (pendingStatus) updateBar(pendingStatus);
+  // MicInput re-mounts the checkbox each time the mic stops.
+  relabelConsent();
+  new MutationObserver(relabelConsent).observe(document.body, { childList: true, subtree: true });
 });
 
 // ---- Focus: typing mode -----------------------------------------------------
@@ -110,11 +133,8 @@ window.addEventListener("sc:mic", (e) => {
 
 // Runs in the page's own world, so it must not reference anything outside
 // itself. Events carry strings only: they cross the world boundary intact.
-//
-// Lag: the meeting page ignores a turn that arrives while /api/moment is still
-// answering the previous one. While the page shows aria-busy, sentences wait
-// here and go in as one merged turn the moment it is free, so nothing the
-// client says is lost and the engine sees whole thoughts.
+// Each finished sentence goes straight to the page, which shows it at once and
+// keeps only the newest analysis running.
 function installSpeechShim() {
   type Self = {
     continuous: boolean;
@@ -124,53 +144,23 @@ function installSpeechShim() {
     onerror: ((e: unknown) => void) | null;
     onend: (() => void) | null;
     listener: ((e: Event) => void) | null;
-    held: string[];
-    watcher: MutationObserver | null;
-  };
-  const busy = () => document.querySelector('[aria-busy="true"]') !== null;
-  const deliver = (self: Self, text: string) => {
-    const result = Object.assign([{ transcript: text, confidence: 1 }], { isFinal: true });
-    self.onresult?.({ resultIndex: 0, results: [result] });
-  };
-  const hold = (self: Self, text: string) => {
-    self.held.push(text);
-    self.watcher ??= new MutationObserver(() => {
-      if (busy() || !self.held.length) return;
-      self.watcher?.disconnect();
-      self.watcher = null;
-      deliver(self, self.held.splice(0).join(" "));
-    });
-    self.watcher.observe(document.body, { attributes: true, attributeFilter: ["aria-busy"], subtree: true });
   };
   const end = (self: Self) => {
     if (!self.listener) return;
     window.removeEventListener("sc:speech", self.listener);
     self.listener = null;
-    self.watcher?.disconnect();
-    self.watcher = null;
-    self.held = [];
     setTimeout(() => self.onend?.(), 0);
   };
   function DesktopSpeechRecognition(this: Self) {
-    Object.assign(this, {
-      continuous: false,
-      interimResults: false,
-      lang: "en-US",
-      onresult: null,
-      onerror: null,
-      onend: null,
-      listener: null,
-      held: [],
-      watcher: null,
-    });
+    Object.assign(this, { continuous: false, interimResults: false, lang: "en-US", onresult: null, onerror: null, onend: null, listener: null });
   }
   DesktopSpeechRecognition.prototype.start = function (this: Self) {
     if (this.listener) throw new DOMException("Recognition has already started.", "InvalidStateError");
     this.listener = (ev) => {
       const m = JSON.parse(String((ev as CustomEvent).detail));
       if (m.type === "final") {
-        if (busy() || this.held.length) hold(this, m.text);
-        else deliver(this, m.text);
+        const result = Object.assign([{ transcript: m.text, confidence: 1 }], { isFinal: true });
+        this.onresult?.({ resultIndex: 0, results: [result] });
       } else if (m.type === "error") {
         this.onerror?.({ error: m.code, message: m.message });
         end(this);

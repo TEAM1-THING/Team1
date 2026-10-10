@@ -23,7 +23,15 @@ export const config = {
   // Dev self-test: "tone" replaces the call's audio with a pulsed tone, so the
   // whole chain (audio thread, pipeline, speech service, meeting page) runs
   // without a virtual audio driver.
-  audioSource: env.SC_AUDIO_SOURCE === "tone" ? "tone" : "system",
+  // "system" (default): the call's sound by OS loopback (Windows; macOS 14.2+
+  // through Core Audio taps), falling back to a virtual device on older Macs.
+  // "device": always the virtual device. "tone": dev self-test, no capture.
+  audioSource: (["device", "tone"].includes(env.SC_AUDIO_SOURCE ?? "") ? env.SC_AUDIO_SOURCE : "system") as "system" | "device" | "tone",
+  // Testing the undisclosed-meeting scenario: the meeting page's "everyone has
+  // been told" notice is hidden in the overlay unless this is "1" (also a
+  // menu-bar toggle). Recording still needs the page's all-parties consent
+  // checkbox, which is never hidden.
+  disclosureNotice: env.SC_CONSENT_BANNER === "1",
   debug: env.SC_DEBUG === "1",
 };
 
