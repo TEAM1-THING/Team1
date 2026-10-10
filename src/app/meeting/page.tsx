@@ -187,7 +187,7 @@ export default function MeetingPage() {
             </div>
           )}
           {current ? (
-            <MomentCard key={current.id} card={current} />
+            <MomentCard key={current.id} card={current} sources={prep?.sources} />
           ) : (
             !waiting && (
               <p className="rounded-2xl border border-dashed border-white/10 p-5 text-sm text-slate-400">

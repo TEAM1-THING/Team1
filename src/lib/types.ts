@@ -30,6 +30,7 @@ export const PrepSource = z.object({
   title: z.string(),
   kind: z.enum(["plan", "client_file", "deck", "note"]),
   text: z.string(),
+  date: z.string().optional(), // when the document was made, as written in it
 });
 export type PrepSource = z.infer<typeof PrepSource>;
 
