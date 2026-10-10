@@ -4,6 +4,48 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (14:40) - live model by benchmark; the quote that changed the build
+
+**Merged to `main`:** B #14 (meeting screen), A #15 (live engine, Mandate
+draft, Bright Data pre-flight). CI gate green on both. #16 (dated sources,
+request logging) is open. C and D PRs not yet open. **Every Vercel deploy fails,
+`main` included**, while GitHub CI's clean build passes: a Vercel project
+setting on D's account, not code.
+
+**Live model, decided by measurement** (`scripts/bench/`, live API, 6 scenes
+× 2 runs, 18 blind judgements per model from an advisor, a compliance officer
+and a behavioural coach). The team's budget is 5 s per card.
+
+| model | blind score /5 | judges' best | median | max |
+|---|---|---|---|---|
+| **Sonnet 5.5 (chosen)** | **4.39** | 9/18 | 3.96 s | 4.59 s |
+| Opus 5.5 | 4.19 | 7/18 | 4.91 s | 9.05 s |
+| Haiku 5.5 | 3.80 | 1/18 | 2.97 s | 5.39 s |
+| Haiku, no reasoning | 3.51 | 1/18 | 2.85 s | 3.24 s |
+
+Haiku was the first pick for speed. The judges ranked it last, weakest on
+guardrails (2.60 on the out-of-scope stock question). Sonnet beat it on
+quality and still stays under 5 s. Also fixed by the benchmark: a too-strict
+figure check that dropped good cards when the client said a number ("65",
+"2008"), and Haiku never resolving a concern the client accepted.
+
+**The quote that changed the build** (Block 1, Tester 2): "I like it when they
+are able to cite their sources and when the sources were made." → pre-flight
+checks now carry the source's publish date and the date checked (#16); the meeting card will show
+each prepared fact's source (asked of B).
+
+**Other changes from tester feedback:**
+- Tester 2's hidden problem, word meaning: the engine now flags a client
+  hearing "scrutinize" as an audit, or saying "going to the basement", as a
+  `misunderstanding`, and suggests clarifying phrasing (4/4 live runs, under 5 s).
+- Tester 1 ("Really just time and effort"; wants a notice "just minutes after
+  the meeting"): client requests are logged as open `request: …` items for an
+  end-of-meeting still-open list (3/3 live runs). B asked for a "Copy as tasks"
+  button.
+
+**Not changed, on purpose:** the frozen contract, the live-card core, demo
+turns t1-t6. Google Tasks is not integrated; copying the items as text is enough.
+
 ## 2026-10-10 (14:15) - Block 1 sense check: first two tester summaries
 
 13 testers texted, 2 completed, 11 failed (no reply or declined); the check is
