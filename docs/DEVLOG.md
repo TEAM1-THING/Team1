@@ -4,6 +4,22 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (15:45) - Track D: records app drops sign-in for now; End meeting hands the record over
+
+**Decided (supersedes 15:10):** the records app runs **without sign-in or a
+database** for the sense check. Records stay in the browser and leave as raw
+JSON files; the compliance sign-off is a typed reviewer name and time written
+into the file (not checked against an account). A shared database with
+sign-in, possibly Supabase, is queued for after the second sense check. The
+sign-in + saved-records version is kept as the Base44 checkpoint "records:
+load record handed over by End meeting".
+
+**Built:** End meeting now opens https://second-chair-view.base44.app with the
+record in the link's fragment (never sent to a server); the app loads it ready
+to review, sign off and download (records app published; our half is #25).
+Records app fixes: times in the viewer's zone, phrasing labelled SUGGESTION.
+D1 (#4) closed. D2 (#8) waits on the Chrome mic test.
+
 ## 2026-10-10 (15:30) - Track B: live mic has no speaker separation (parked)
 
 The live mic labels everything it hears as the client, the advisor's own
