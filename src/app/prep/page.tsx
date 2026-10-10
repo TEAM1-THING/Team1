@@ -55,7 +55,7 @@ export default function PrepPage() {
 
         <Step n={3} title="Mandate" hint="The bounds every improvised answer stays inside. Anything outside gets a defer suggestion.">
           <MandatePanel
-            sources={prep.sources}
+            prep={prep}
             value={prep.mandate}
             onChange={(mandate) => {
               set({ mandate });
