@@ -23,6 +23,13 @@ and a behavioural coach). The team's budget is 5 s per card.
 | Haiku 5.5 | 3.80 | 1/18 | 2.97 s | 5.39 s |
 | Haiku, no reasoning | 3.51 | 1/18 | 2.85 s | 3.24 s |
 
+**Adversarial audit** of the same cards (claim-by-claim against the plan,
+plus red-team; damage 0-3): Sonnet 1 critical / 2 major, damage avg 1.00, 0 of 6
+scenes ≥2; Opus 0 / 2, 1.00; Haiku 0 / 8, 2.00, 5 of 6 ≥2; Haiku without
+reasoning answered the out-of-scope stock question instead of deferring. The
+audit's notes on Sonnet (a true statement filed as DO_NOT_CLAIM, the $180,000
+not said aloud) are fixed in the prompt; all 3 live t2 runs now say it.
+
 Haiku was the first pick for speed. The judges ranked it last, weakest on
 guardrails (2.60 on the out-of-scope stock question). Sonnet beat it on
 quality and still stays under 5 s. Also fixed by the benchmark: a too-strict
