@@ -1,7 +1,7 @@
 "use client";
 // Find in your materials (#32): a search box over the advisor's own sources.
 // "/" focuses it from anywhere on the meeting screen; Escape clears it.
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { PrepSource } from "@/lib/types";
 import { figureParts, findInMaterials } from "./find";
 import { LABELS } from "./replay";
@@ -10,7 +10,8 @@ export const FIND_INPUT_ID = "find-in-materials";
 
 export default function Find({ sources }: { sources: PrepSource[] }) {
   const [query, setQuery] = useState("");
-  const hits = findInMaterials(sources, query);
+  // Re-run only when the words or the materials change, not on every meeting update.
+  const hits = useMemo(() => findInMaterials(sources, query), [sources, query]);
   const q = query.trim();
 
   return (
@@ -28,7 +29,7 @@ export default function Find({ sources }: { sources: PrepSource[] }) {
             }
           }}
           placeholder="Find in your materials"
-          aria-describedby="find-hint"
+          aria-describedby={query.trim() ? undefined : "find-hint"}
           className="min-w-0 flex-1 bg-transparent text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none"
         />
         <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-xs text-slate-400">/</kbd>

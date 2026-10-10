@@ -168,9 +168,16 @@ export default function MeetingPage() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (ended) return; // the end screen is on top; shortcuts would drive the hidden meeting
-      if (e.metaKey || e.ctrlKey || e.altKey || (e.target as HTMLElement).closest("input, textarea, button, summary")) return;
-      if (e.key === "/") document.getElementById(FIND_INPUT_ID)?.focus();
-      else if (e.key === "ArrowRight") nextTurn();
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement;
+      // "/" works from a focused button too (just after clicking Next turn), never from a text field.
+      if (e.key === "/" && !target.closest("input, textarea, select, [contenteditable]")) {
+        e.preventDefault();
+        document.getElementById(FIND_INPUT_ID)?.focus();
+        return;
+      }
+      if (target.closest("input, textarea, button, summary")) return;
+      if (e.key === "ArrowRight") nextTurn();
       else if (e.key === "a") setAuto((v) => !v);
       else if (e.key === "h") setHidden((v) => !v);
       else return;
@@ -215,13 +222,16 @@ export default function MeetingPage() {
 
       <div role="note" className="relative z-10 border-b border-white/5 bg-sky-400/10 px-4 py-1.5 text-center text-xs text-sky-100">
         <p>This meeting uses Second Chair. All participants have been told and agreed.</p>
-        {/* #34: words the advisor can say to ask. Accurate to what runs: speech to
-            text in Chrome, figures from the advisor's own materials, and a saved
-            record of cards and concerns, never audio. */}
+        {/* #34: words the advisor can say to ask. Each clause matches what runs:
+            MicInput.tsx sends audio to Chrome's (Google's) speech service;
+            engine/moment.ts sends the recent lines and the client file to
+            Anthropic; record.ts saves cards and concerns to the records app; no
+            audio is stored by this app. */}
         <p className="mt-0.5 text-sky-200/70">
-          Ask first: &ldquo;I use an AI assistant called Second Chair. It listens while we talk and shows me figures from
-          the plan I prepared for you. Chrome turns what we say into text, and I keep written notes of its suggestions,
-          not an audio recording. Is that all right with you?&rdquo;
+          Ask first: &ldquo;I&apos;d like to use an AI assistant called Second Chair today. It transcribes our conversation
+          using Google&apos;s speech service, and sends what we say, with the details of your plan, to an AI service
+          (Anthropic) that suggests what I should check or say. We don&apos;t save audio, but I keep a written record of
+          its notes and the concerns you raise. Is that all right with you?&rdquo;
         </p>
       </div>
 

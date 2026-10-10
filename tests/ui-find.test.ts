@@ -39,7 +39,32 @@ describe("findInMaterials", () => {
   });
 });
 
+describe("findInMaterials on real-world text", () => {
+  const src = (text: string) => [{ id: "s", title: "Notes", kind: "note" as const, text }];
+
+  it("does not cut a line after an abbreviation", () => {
+    expect(findInMaterials(src("Keep a buffer, e.g. 5% of assets. Review yearly."), "buffer")[0].line).toBe(
+      "Keep a buffer, e.g. 5% of assets.",
+    );
+    expect(findInMaterials(src("Hold U.S. Treasury bills at 4.1%. Then rebalance."), "treasury")[0].line).toBe(
+      "Hold U.S. Treasury bills at 4.1%.",
+    );
+  });
+
+  it("shows a short window around the match in a huge unpunctuated source", () => {
+    const text = `${"word ".repeat(50000)}reserve of $180,000 ${"word ".repeat(50000)}`;
+    const [hit] = findInMaterials(src(text), "reserve");
+    expect(hit.line.length).toBeLessThanOrEqual(320);
+    expect(hit.line).toContain("reserve of $180,000");
+  });
+});
+
 describe("figureParts", () => {
+  it("keeps signs and magnitude suffixes on a figure", () => {
+    const figures = figureParts("Down -5% to $1.2M, then 300k.").filter((p) => p.figure).map((p) => p.text);
+    expect(figures).toEqual(["-5%", "$1.2M", "300k"]);
+  });
+
   it("marks the figures in a line and keeps the text intact", () => {
     const line = "Keep a $180,000 liquid reserve, equal to 24 months of expenses at 5%.";
     const parts = figureParts(line);
