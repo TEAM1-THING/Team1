@@ -5,9 +5,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Concerns from "@/components/meeting/Concerns";
 import MomentCard from "@/components/meeting/Card";
 import Transcript from "@/components/meeting/Transcript";
+import { LIVE_PAUSE_MS, isLiveTurn, relabel, windowThrough } from "@/components/meeting/live";
 import { postMoment, processTurn } from "@/components/meeting/replay";
 import MicInput from "@/components/speech/MicInput";
 import { demoTranscript } from "@/data/demo";
+import { echoesCard } from "@/lib/engine/gate";
 import { exportRecord } from "@/lib/record";
 import { loadPrep } from "@/lib/store";
 import { emptyState, type Card, type ConversationState, type Prep, type TranscriptTurn } from "@/lib/types";
@@ -27,7 +29,12 @@ export default function MeetingPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Mirrors of the state above, read by the auto-play timer and mic callback.
-  const live = useRef({ turns, convo, nextIdx, busy: false, startedAt: Date.now(), micCount: 0 });
+  const live = useRef({ turns, convo, nextIdx, busy: false, startedAt: Date.now(), micCount: 0, lastPhrasing: "" });
+  // The one live analysis in flight, and the pause timer before the next.
+  const pending = useRef<{ ctrl: AbortController | null; timer: ReturnType<typeof setTimeout> | null }>({
+    ctrl: null,
+    timer: null,
+  });
 
   useEffect(() => setPrep(loadPrep()), []);
 
@@ -43,7 +50,10 @@ export default function MeetingPage() {
         const res = await processTurn(prep, nextTurns, live.current.convo, postMoment);
         live.current.convo = res.state;
         setConvo(res.state);
-        if (res.card) setCards((cs) => [...cs, res.card!]);
+        if (res.card) {
+          live.current.lastPhrasing = res.card.phrasing;
+          setCards((cs) => [...cs, res.card!]);
+        }
         setError(null);
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
@@ -63,13 +73,79 @@ export default function MeetingPage() {
     void step(demoTranscript[i]);
   }, [step]);
 
+  // Live mic. Every line shows the moment it is heard; nothing is dropped while
+  // a card is being made. Analysis is newest-wins: a line that arrives
+  // mid-analysis cancels the stale request, and after a short pause one request
+  // covers everything said so far. The previous card stays up meanwhile.
+  const setLiveTurns = useCallback((next: TranscriptTurn[]) => {
+    live.current.turns = next;
+    setTurns(next);
+  }, []);
+
+  const analyze = useCallback(
+    async (turnId: string) => {
+      if (!prep) return;
+      pending.current.ctrl?.abort();
+      const ctrl = new AbortController();
+      pending.current.ctrl = ctrl;
+      setBusy(true);
+      try {
+        const req = { prep, turns: windowThrough(live.current.turns, turnId), state: live.current.convo };
+        const res = await postMoment(req, ctrl.signal);
+        if (ctrl.signal.aborted) return;
+        // The engine heard the advisor: relabel the line, no card.
+        if (res.speaker === "advisor") setLiveTurns(relabel(live.current.turns, turnId, "advisor"));
+        live.current.convo = res.state;
+        setConvo(res.state);
+        if (res.card) {
+          live.current.lastPhrasing = res.card.phrasing;
+          setCards((cs) => [...cs, res.card!]);
+        }
+        setError(null);
+      } catch (e) {
+        if (!ctrl.signal.aborted) setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        if (pending.current.ctrl === ctrl) {
+          pending.current.ctrl = null;
+          setBusy(false);
+        }
+      }
+    },
+    [prep, setLiveTurns],
+  );
+
+  const schedule = useCallback(
+    (turnId: string) => {
+      if (pending.current.timer) clearTimeout(pending.current.timer);
+      pending.current.ctrl?.abort();
+      pending.current.timer = setTimeout(() => void analyze(turnId), LIVE_PAUSE_MS);
+    },
+    [analyze],
+  );
+
   const onMicTurn = useCallback(
     (text: string) => {
       live.current.micCount += 1;
       const t = Math.round((Date.now() - live.current.startedAt) / 1000);
-      void step({ id: `m${live.current.micCount}`, speaker: "client", text, t });
+      // The advisor reading the card aloud is labeled at once, with no call.
+      const speaker = echoesCard(text, live.current.lastPhrasing) ? "advisor" : "client";
+      const turn: TranscriptTurn = { id: `m${live.current.micCount}`, speaker, text, t };
+      setLiveTurns([...live.current.turns, turn]);
+      if (speaker === "client") schedule(turn.id);
     },
-    [step],
+    [schedule, setLiveTurns],
+  );
+
+  // A click on a live line's label flips its speaker; a line made the client's is analyzed.
+  const toggleSpeaker = useCallback(
+    (id: string) => {
+      const turn = live.current.turns.find((x) => x.id === id);
+      if (!turn || !isLiveTurn(id)) return;
+      const speaker = turn.speaker === "client" ? "advisor" : "client";
+      setLiveTurns(relabel(live.current.turns, id, speaker));
+      if (speaker === "client") schedule(id);
+    },
+    [schedule, setLiveTurns],
   );
 
   const done = nextIdx >= demoTranscript.length;
@@ -176,7 +252,7 @@ export default function MeetingPage() {
 
       <main className="relative z-10 mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 gap-6 p-4 md:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,580px)_minmax(0,280px)]">
         <div className="order-3 lg:order-1 lg:max-h-[calc(100dvh-150px)] lg:overflow-y-auto lg:pr-2">
-          <Transcript turns={turns} />
+          <Transcript turns={turns} onToggle={toggleSpeaker} />
         </div>
         <div className={`order-1 space-y-3 lg:order-2 ${hidden ? "invisible" : ""}`} aria-live="polite" aria-busy={waiting}>
           {waiting && (
