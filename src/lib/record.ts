@@ -1,7 +1,8 @@
 // After-meeting record: every card is a record (guardrail 5). Owned by the
 // ship track. The meeting screen only ever calls exportRecord.
 // Flow: download the record as JSON, then open the Base44 records app
-// (NEXT_PUBLIC_BASE44_URL) in a new tab so the advisor can upload it there.
+// (NEXT_PUBLIC_BASE44_URL) in a new tab with the record already loaded, so
+// the advisor only has to sign in and press Save record.
 import type { ConversationState, Prep } from "./types";
 
 export type MeetingRecord = {
@@ -32,10 +33,29 @@ export function base44Url(): string | null {
   return url && /^https?:\/\//.test(url) ? url : null;
 }
 
+// The record rides in the link's fragment (#record=<base64url JSON>), which
+// browsers never send to a server. The records app moves it into the tab's
+// sessionStorage before its sign-in check. Too big for a link: open the app
+// without it, and the advisor uploads the downloaded file instead.
+const MAX_LINK = 1_000_000; // Chrome accepts URLs up to about 2 MB
+
+export function encodeRecord(record: MeetingRecord): string {
+  let bin = "";
+  for (const byte of new TextEncoder().encode(JSON.stringify(record))) bin += String.fromCharCode(byte);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+export function recordLink(base: string, record: MeetingRecord): string {
+  const plain = base.replace(/#.*$/, "");
+  const link = `${plain}#record=${encodeRecord(record)}`;
+  return link.length <= MAX_LINK ? link : plain;
+}
+
 // Must not throw: every step is guarded so the meeting screen never breaks.
 export async function exportRecord(prep: Prep, state: ConversationState): Promise<void> {
+  let record: MeetingRecord | null = null;
   try {
-    const record = buildRecord(prep, state);
+    record = buildRecord(prep, state);
     const blob = new Blob([JSON.stringify(record, null, 2)], { type: "application/json" });
     const href = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -50,7 +70,15 @@ export async function exportRecord(prep: Prep, state: ConversationState): Promis
   }
   try {
     const url = base44Url();
-    if (url) window.open(url, "_blank", "noopener");
+    if (url) {
+      let link = url;
+      try {
+        if (record) link = recordLink(url, record);
+      } catch (e) {
+        console.error("exportRecord: could not put the record in the link", e);
+      }
+      window.open(link, "_blank", "noopener");
+    }
   } catch (e) {
     console.error("exportRecord: could not open the Base44 app", e);
   }
