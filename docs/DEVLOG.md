@@ -4,6 +4,27 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (13:15) - Stage 0 shipped, four tracks and twelve PBs opened
+
+- **Decided (user):** stack Next.js + Vercel, gate `npm run check`, Stage 0
+  scaffolded on `main` by this session. Split 50/20/15/15 with the user (LeavesJ,
+  Felix + Max) on track A; the lightest track (D) goes to whoever has the
+  fewest tokens. Base44 hosts the separate after-meeting records app (track D),
+  so it adds a prize track without touching the main code.
+- **Built:** `c7837ca` on `main`. Frozen contract `src/lib/types.ts`;
+  number-trace check `src/lib/provenance.ts` (untraced PREPARED_FACT drops to
+  CALCULATED with math, otherwise SUGGESTION); canned cards for the three demo
+  scenes; stubs for `/api/moment`, `/api/mandate`, `/api/preflight`,
+  `loadPrep`/`savePrep`, `<MicInput>`, `exportRecord`; CI runs check + build.
+  `npm run check` green (8 tests); `npm run build` green.
+- **Zero-friction merge design:** disjoint file ownership per track (table in
+  `CLAUDE.md`), every seam stubbed with its final shape, no new npm packages
+  except via track A, only A merges to `main` in order C → B → D → A.
+- **Opened:** branches `feat/engine`, `feat/ui`, `feat/prep`, `feat/ship`;
+  PB issues #1 to #12; pinned tracking issue #13.
+- **Felix:** `felix new team1 --no-commission`, gate set to `npm run check`.
+  It flagged that `frontend-design` is not installed for UI work; carrying on without it.
+
 ## 2026-10-10 (12:55) - first push; docs now pushed on every change
 
 - First commit on `main`: `CLAUDE.md`, `HANDOFF.md`, `docs/`, `.gitignore`.

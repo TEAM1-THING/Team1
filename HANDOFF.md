@@ -9,7 +9,17 @@ index below.
 
 ## Current state (2026-10-10, 12:35 PDT, end of session 1)
 
-**Session 1 was a brainstorm and repo setup. No product code exists.**
+**Update 13:15: the four-track MVP build is under way. Start at the pinned
+issue [#13](https://github.com/joshcodes42/Team1/issues/13).** Stage 0 is on
+`main` (`c7837ca`): Next.js 15 on Vercel, Claude engine, shared contract
+`src/lib/types.ts`, every seam stubbed, gate `npm run check`, CI on every PR.
+Four branches (`feat/engine`, `feat/ui`, `feat/prep`, `feat/ship`) and twelve
+PBs (#1 to #12, three stages × four tracks, split 50/20/15/15). Ownership and
+merge rules are in `CLAUDE.md`. Felix now governs this checkout on the binding
+machine (project `team1`, gate `npm run check`). Target: deployed link by 3:30
+for the Block 2 sense check. Lines below that say otherwise are older.
+
+**Session 1 was a brainstorm and repo setup.**
 
 - **Repo:** public `joshcodes42/Team1`. `CLAUDE.md`, `HANDOFF.md`, `docs/` and
   `.gitignore` were first committed and pushed to `main` at about 12:55. From
@@ -37,10 +47,9 @@ index below.
   ready-to-paste agent prompt. **Launched at 12:52 with a one-line opening added
   by the user (see the update above and the devlog).**
 - **Not decided yet:** the five guardrails in section 02 (especially: is the
-  client told?), the stack, speech and LLM providers, who owns what, and whether
-  to use Base44 (it unlocks that prize track).
-- **Not done on purpose:** Felix binding (`felix new team1 --no-commission`
-  writes into the Felix repo and adds a stop-gate here).
+  client told?). The MVP shows a consent banner in every mode. Decided at 13:05:
+  Next.js + Vercel, Claude, browser speech, Base44 for the records app, owners
+  per issue #13. Felix bound with `--no-commission`; `felix commission` not run.
 
 ## Start here next session
 
