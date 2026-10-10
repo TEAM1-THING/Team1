@@ -4,6 +4,25 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (16:15) - Track D done: live engine on production, record hand-off live
+
+**Bright Data fixed on production.** Pre-flight was returning `source:
+fallback`: the same key and zone answered correctly from a laptop (9 organic
+results for a CPI query), so the cause was the values stored in Vercel. The
+key was re-entered and `BRIGHTDATA_ZONE` removed (the code defaults to
+`serp_api1`). Pre-flight now returns `source: brightdata` with cited, dated
+sources. For A: `brightdata.ts` reads the key without `.trim()`, so a pasted
+newline would silently break it again.
+
+**Verified on production:** meeting cards come from Claude (not the canned
+text); a spoken sentence on Live mic became client turn m1 and a Disclosure
+card; End meeting (#25 merged) downloads the record and opens the records app
+with it loaded, no sign-in, address bar cleaned. D1 (#4), D2 (#8) and D3 (#12)
+are closed; screenshots and URLs are on #13.
+
+**Known limits:** the mic cannot tell speakers apart (B's note at 15:30);
+records are raw files until the database lands after the second sense check.
+
 ## 2026-10-10 (16:25) - Block 2, tester 1: "mixed" on the theme; speed is the value they see
 
 **Read:** they understood it as a live copilot ("this is listening and going
