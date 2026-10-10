@@ -236,6 +236,15 @@ describe("ingestFiles conflicts", () => {
     expect(r.conflicts).toEqual([]);
   });
 
+  it("drops a conflict whose files share the figure, or whose label has an untraced number", async () => {
+    fakeRead([
+      reserve([1, "$180,000"], [1, "$7,500"], [2, "$180,000"]), // both files say $180,000
+      { ...reserve([1, "$180,000"], [2, "$200,000"]), quantity: "reserve for 36 months" }, // 36 is in no file
+    ]);
+    const r = await ingestFiles([PLAN, { ...SUMMARY, data: Buffer.from(`${SUMMARY.data} Was $180,000.`) }]);
+    expect(r.conflicts).toEqual([]);
+  });
+
   it("reports no conflicts when the files agree", async () => {
     fakeRead([]);
     const r = await ingestFiles([PLAN, AGREEING]);

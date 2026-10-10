@@ -4,6 +4,95 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (16:50) - Track D: records database on Supabase; hand-off by id (#45)
+
+**Built: records database** (Supabase project "second chair", us-west-1). The
+records app now signs users in (email + password) and saves meeting records.
+Postgres row-level security, tested as advisor, compliance and signed out:
+advisors save as themselves and read only their own; compliance reads all and
+signs off through `sign_off`, which stamps the reviewer's own name, email and
+time; saved records cannot be edited or deleted from the apps; signed-out
+visitors read nothing. Compliance is granted in SQL only. Supabase's security
+check is clean apart from `sign_off` being callable by signed-in users, which
+is intended. Confirmed by hand: a record saved from the live app is listed and
+signed off.
+
+**#45 (A's review of #25):** End meeting now stores the record as a one-time
+hand-off and opens the records app with only its id (`#handoff=<id>`, single
+use, expires in an hour), so client details never sit in a URL or history.
+Database and records app are live; the meeting-screen change is #47. B: the End
+screen's reopen link should switch to `openRecordsApp(record)`.
+
+**For B:** `main` has both `find.ts` and `Find.tsx` in
+`src/components/meeting/`, so `npm run check` and `npm run build` fail on
+macOS (case-insensitive disk). Linux CI and Vercel are unaffected.
+
+## 2026-10-10 (16:50) - Clarified: the answer stays the core
+
+The team's call on the 16:45 decision: the core thesis does not change.
+Second Chair gives the advisor the answer to say. Block 2 changes what kind
+of answer: an advisory response, not a fact readout. Naming the worry is the
+lead-in, not the product. The suggested response stays the headline of the
+card and is built the way good advisors answer: acknowledge the feeling,
+connect it to the client's own goal, answer with the plan's figures, end with
+a question. Figures keep their provenance labels. Issue #37 rewritten to say
+so; tracking issue #44.
+
+---
+
+## 2026-10-10 (16:45) - Block 2 closed; decided: advisory copilot, not a finance data tool
+
+**Tester 2 (session 2, "mixed"):** saw it as reading the client: "you don't
+necessarily have a great way of determining what their worry is in a meeting
+unless they tell you." And the core of it: "doing that and responding to that
+worry is is more difficult than if someone gives you an idea of what the worry
+is." One more input, not a replacement for judgment. They prepare for worries
+in advance by asking the client for information first. Dislikes: "I am
+concerned with how an AI tool would capture my meeting and concerns in that
+meeting and use that or share that and help the tool grow"; answers that
+change when a question is slightly reworded; AI in finance "has to be audited
+over time and has to have some sort of grading for how well it did". Fit: no,
+because their current clients do not need financial worries addressed.
+
+**Block 2 result:** 2 of 2 completed, both "mixed" on Catch what humans miss.
+Tester 1 valued speed (finding a number); tester 2 valued having the worry
+named so they can focus on the answer.
+
+**Decided:** Second Chair is an advisory copilot. It reads the person (the
+worry behind the words, what they want to learn or decide, life events) and
+suggests the advisor's move, so the advisor can focus on responding; the
+advisor's own figures back the move up. Data lookup stays, as the support
+layer, not the headline. The hidden problem, in tester 2's words: spotting the
+worry and answering it at the same time is what slips.
+
+**Changes the build (issues filed, label `feedback`):** advisory-first card
+(the person and the move lead, facts back it up); anticipate likely worries at
+prep; a client picture beyond financial worries; a plain statement that
+meetings are not stored on a server or used to train AI; the same question
+reworded gets the same facts; grade each card at the end so the record can be
+audited over time; landing copy in the advisory voice.
+
+---
+
+## 2026-10-10 (16:15) - Track D done: live engine on production, record hand-off live
+
+**Bright Data fixed on production.** Pre-flight was returning `source:
+fallback`: the same key and zone answered correctly from a laptop (9 organic
+results for a CPI query), so the cause was the values stored in Vercel. The
+key was re-entered and `BRIGHTDATA_ZONE` removed (the code defaults to
+`serp_api1`). Pre-flight now returns `source: brightdata` with cited, dated
+sources. For A: `brightdata.ts` reads the key without `.trim()`, so a pasted
+newline would silently break it again.
+
+**Verified on production:** meeting cards come from Claude (not the canned
+text); a spoken sentence on Live mic became client turn m1 and a Disclosure
+card; End meeting (#25 merged) downloads the record and opens the records app
+with it loaded, no sign-in, address bar cleaned. D1 (#4), D2 (#8) and D3 (#12)
+are closed; screenshots and URLs are on #13.
+
+**Known limits:** the mic cannot tell speakers apart (B's note at 15:30);
+records are raw files until the database lands after the second sense check.
+
 ## 2026-10-10 (16:25) - Block 2, tester 1: "mixed" on the theme; speed is the value they see
 
 **Read:** they understood it as a live copilot ("this is listening and going
