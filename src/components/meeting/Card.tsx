@@ -1,4 +1,4 @@
-import type { Card } from "@/lib/types";
+import type { Card, PrepSource } from "@/lib/types";
 import { LABELS } from "./replay";
 
 const momentText = (m: string) => {
@@ -14,7 +14,16 @@ function Chip({ label }: { label: keyof typeof LABELS }) {
   );
 }
 
-export default function MomentCard({ card, dimmed = false }: { card: Card; dimmed?: boolean }) {
+export default function MomentCard({
+  card,
+  sources = [],
+  dimmed = false,
+}: {
+  card: Card;
+  sources?: PrepSource[];
+  dimmed?: boolean;
+}) {
+  const sourceTitle = (id?: string) => sources.find((s) => s.id === id)?.title;
   if (dimmed) {
     // The previous card collapses to its headline so the new one owns the eye.
     return (
@@ -63,8 +72,12 @@ export default function MomentCard({ card, dimmed = false }: { card: Card; dimme
                 <span className="text-slate-200">{f.text}</span>
               </div>
               {f.math && <div className="mt-1 font-mono text-xs text-amber-200/90">{f.math}</div>}
+              {f.label === "PREPARED_FACT" && sourceTitle(f.sourceId) && (
+                <div className="mt-1 text-xs text-slate-400">From: {sourceTitle(f.sourceId)}</div>
+              )}
             </li>
           ))}
+          <li className="text-xs text-slate-500">Anything we can&apos;t trace is shown as a suggestion, never a fact.</li>
         </ul>
       )}
 

@@ -2,7 +2,7 @@
 // path the screen takes, and checks the PB B1 "done when" outcomes.
 import { describe, expect, it } from "vitest";
 import { POST } from "@/app/api/moment/route";
-import { processTurn, type PostMoment } from "@/components/meeting/replay";
+import { followUpTasks, processTurn, type PostMoment } from "@/components/meeting/replay";
 import { demoPrep, demoTranscript } from "@/data/demo";
 import { emptyState, type Card, type MomentResponse } from "@/lib/types";
 
@@ -51,5 +51,15 @@ describe("meeting replay", () => {
     const calculated = cards.flatMap((c) => c.facts).filter((f) => f.label === "CALCULATED");
     expect(calculated.length).toBeGreaterThan(0);
     for (const f of calculated) expect(f.math).toBeTruthy();
+  });
+
+  it("end-of-meeting tasks list exactly the concerns still open", async () => {
+    const { state } = await replayAll();
+    const tasks = followUpTasks(state.concerns, demoPrep.clientFile.name);
+    const open = state.concerns.filter((c) => c.status === "open");
+    expect(tasks).toHaveLength(open.length);
+    expect(tasks.length).toBeGreaterThan(0);
+    for (const c of open) expect(tasks.some((t) => t.includes(c.topic))).toBe(true);
+    expect(tasks.some((t) => t.includes("liquidity"))).toBe(false);
   });
 });

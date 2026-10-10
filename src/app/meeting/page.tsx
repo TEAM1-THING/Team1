@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Concerns from "@/components/meeting/Concerns";
 import MomentCard from "@/components/meeting/Card";
 import Transcript from "@/components/meeting/Transcript";
-import { postMoment, processTurn } from "@/components/meeting/replay";
+import { followUpTasks, postMoment, processTurn } from "@/components/meeting/replay";
 import MicInput from "@/components/speech/MicInput";
 import { demoTranscript } from "@/data/demo";
 import { exportRecord } from "@/lib/record";
@@ -84,6 +84,17 @@ export default function MeetingPage() {
   }, [auto, done, nextTurn]);
 
   const [hidden, setHidden] = useState(false);
+  const [ended, setEnded] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+  const tasks = prep ? followUpTasks(convo.concerns, prep.clientFile.name) : [];
+  const copyTasks = async () => {
+    try {
+      await navigator.clipboard.writeText(tasks.join("\n"));
+      setCopied(`Copied ${tasks.length} ${tasks.length === 1 ? "task" : "tasks"}.`);
+    } catch {
+      setCopied("Copy was blocked by the browser. Select the list and copy it by hand.");
+    }
+  };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || (e.target as HTMLElement).closest("input, textarea, button, summary")) return;
@@ -160,7 +171,12 @@ export default function MeetingPage() {
         </button>
         <button
           type="button"
-          onClick={() => prep && void exportRecord(prep, { ...convo, cards })}
+          onClick={() => {
+            if (!prep) return;
+            setEnded(true);
+            setAuto(false);
+            void exportRecord(prep, { ...convo, cards });
+          }}
           disabled={!prep}
           className={`${btn} bg-rose-500/90 font-medium text-rose-50 hover:bg-rose-500`}
         >
@@ -179,6 +195,29 @@ export default function MeetingPage() {
           <Transcript turns={turns} />
         </div>
         <div className={`order-1 space-y-3 lg:order-2 ${hidden ? "invisible" : ""}`} aria-live="polite" aria-busy={waiting}>
+          {ended && (
+            <section aria-labelledby="followups-h" className="sc-arrive sc-glass rounded-2xl border border-sky-300/30 bg-slate-900/80 p-5 backdrop-blur-xl">
+              <h2 id="followups-h" className="mb-1 text-base font-semibold text-slate-50">Follow-ups from this meeting</h2>
+              <p className="mb-3 text-sm text-slate-400">
+                {tasks.length ? "Concerns the client raised that are still open." : "No open concerns. Nothing to follow up."}
+              </p>
+              {tasks.length > 0 && (
+                <>
+                  <ul className="mb-4 list-disc space-y-1 pl-5 text-sm text-slate-200">
+                    {tasks.map((t) => (
+                      <li key={t}>{t}</li>
+                    ))}
+                  </ul>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button type="button" onClick={() => void copyTasks()} className={`${btn} bg-slate-100 font-medium text-slate-900 hover:bg-sky-100`}>
+                      Copy as tasks
+                    </button>
+                    {copied && <span role="status" className="text-sm text-slate-400">{copied}</span>}
+                  </div>
+                </>
+              )}
+            </section>
+          )}
           {waiting && (
             <div aria-label="Reading the client's last turn" className="sc-glass space-y-3 rounded-2xl border border-white/10 bg-slate-900/60 p-5 backdrop-blur-xl">
               <div className="h-3 w-24 rounded-full bg-white/10 motion-safe:animate-pulse" />
@@ -187,7 +226,7 @@ export default function MeetingPage() {
             </div>
           )}
           {current ? (
-            <MomentCard key={current.id} card={current} />
+            <MomentCard key={current.id} card={current} sources={prep?.sources} />
           ) : (
             !waiting && (
               <p className="rounded-2xl border border-dashed border-white/10 p-5 text-sm text-slate-400">
