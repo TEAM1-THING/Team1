@@ -21,6 +21,9 @@ function sourceLine(sourceId: string | undefined, sources: PrepSource[]): string
   return s ? `from ${s.title}${s.date ? ` · ${s.date}` : ""}` : null;
 }
 
+// One glance, like Cluely's single answer block: what to say, the facts behind
+// it, what not to say. The move and the reasoning wait behind "Details".
+// Every figure still carries its provenance chip.
 export default function MomentCard({
   card,
   dimmed = false,
@@ -45,18 +48,19 @@ export default function MomentCard({
     );
   }
 
+  const backing = card.facts.filter((f) => f.label !== "DO_NOT_CLAIM");
+  const avoid = [...card.facts.filter((f) => f.label === "DO_NOT_CLAIM").map((f) => f.text), ...card.doNotClaim];
+
   return (
     <article
       data-testid="current-card"
       className="sc-arrive sc-glass rounded-2xl border border-white/10 bg-slate-900/75 p-5 text-slate-100 backdrop-blur-xl"
     >
-      <header className="mb-1 flex items-baseline gap-2">
-        <span className="text-sm font-semibold text-sky-300">{momentText(card.moment)}</span>
-        <span className="text-xs text-slate-500">heard at {card.turnId}</span>
-      </header>
-      <p className="mb-4 text-[15px] leading-snug text-slate-300">{card.concern}</p>
+      <p className="mb-3 text-sm leading-snug text-slate-400">
+        <span className="font-semibold text-sky-300">{momentText(card.moment)}.</span> {card.concern}
+      </p>
 
-      <blockquote className="mb-5">
+      <blockquote className="mb-4">
         <div className="mb-1.5">
           <Chip label="SUGGESTION" />
         </div>
@@ -70,33 +74,29 @@ export default function MomentCard({
           {card.deferReason && <span className="mt-1 block text-orange-300/80">{card.deferReason}</span>}
         </div>
       ) : (
-        <ul className="mb-4 space-y-2.5">
-          {card.facts.map((f, i) => (
-            <li key={i} className={`border-l-2 pl-3 text-sm ${LABELS[f.label].rule}`}>
-              <div className="flex items-start gap-2">
-                <Chip label={f.label} />
-                <span className="text-slate-200">{f.text}</span>
-              </div>
-              {f.math && <div className="mt-1 font-mono text-xs text-amber-200/90">{f.math}</div>}
-              {f.label === "PREPARED_FACT" && sourceLine(f.sourceId, sources) && (
-                <div className="mt-1 text-xs text-emerald-200/70">{sourceLine(f.sourceId, sources)}</div>
-              )}
-            </li>
-          ))}
-          <li className="text-xs text-slate-500">Anything we can&apos;t trace is shown as a suggestion, never a fact.</li>
-        </ul>
+        backing.length > 0 && (
+          <ul data-testid="backing" className="mb-3 space-y-1.5">
+            {backing.map((f, i) => (
+              <li key={i} className={`border-l-2 pl-3 text-sm ${LABELS[f.label].rule}`}>
+                <div className="flex items-start gap-2">
+                  <Chip label={f.label} />
+                  <span className="text-slate-200">{f.text}</span>
+                </div>
+                {f.math && <div className="mt-0.5 font-mono text-xs text-amber-200/90">{f.math}</div>}
+                {f.label === "PREPARED_FACT" && sourceLine(f.sourceId, sources) && (
+                  <div className="mt-0.5 text-xs text-emerald-200/70">{sourceLine(f.sourceId, sources)}</div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )
       )}
 
-      <p className="mb-3 text-sm text-slate-300">
-        <span className="font-semibold text-slate-100">Next move. </span>
-        {card.recommendedMove}
-      </p>
-
-      {card.doNotClaim.length > 0 && (
-        <div className="mb-3 rounded-xl bg-white/5 px-3 py-2 text-sm">
+      {avoid.length > 0 && (
+        <div data-testid="avoid" className="mb-3 flex items-start gap-2 text-sm">
           <Chip label="DO_NOT_CLAIM" />
-          <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-slate-400">
-            {card.doNotClaim.map((d, i) => (
+          <ul className="space-y-0.5 text-slate-400">
+            {avoid.map((d, i) => (
               <li key={i}>{d}</li>
             ))}
           </ul>
@@ -104,8 +104,18 @@ export default function MomentCard({
       )}
 
       <details className="text-sm text-slate-400">
-        <summary className="cursor-pointer select-none hover:text-slate-200">Why this card</summary>
-        <p className="mt-1.5 text-slate-300">{card.why}</p>
+        <summary className="cursor-pointer select-none hover:text-slate-200">Details</summary>
+        <div className="mt-2 space-y-2 text-slate-300">
+          <p>
+            <span className="font-semibold text-slate-100">Next move. </span>
+            {card.recommendedMove}
+          </p>
+          <p>
+            <span className="font-semibold text-slate-100">Why. </span>
+            {card.why}
+          </p>
+          <p className="text-xs text-slate-500">Anything we can&apos;t trace is shown as a suggestion, never a fact.</p>
+        </div>
       </details>
     </article>
   );
