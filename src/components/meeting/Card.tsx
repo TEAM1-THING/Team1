@@ -1,4 +1,4 @@
-import type { Card } from "@/lib/types";
+import type { Card, PrepSource } from "@/lib/types";
 import { LABELS } from "./replay";
 
 const momentText = (m: string) => {
@@ -14,7 +14,22 @@ function Chip({ label }: { label: keyof typeof LABELS }) {
   );
 }
 
-export default function MomentCard({ card, dimmed = false }: { card: Card; dimmed?: boolean }) {
+// Where a fact came from, and when that document was made (tester feedback:
+// "I like it when they ... cite their sources and when the sources were made").
+function sourceLine(sourceId: string | undefined, sources: PrepSource[]): string | null {
+  const s = sourceId ? sources.find((x) => x.id === sourceId) : undefined;
+  return s ? `from ${s.title}${s.date ? ` · ${s.date}` : ""}` : null;
+}
+
+export default function MomentCard({
+  card,
+  dimmed = false,
+  sources = [],
+}: {
+  card: Card;
+  dimmed?: boolean;
+  sources?: PrepSource[];
+}) {
   if (dimmed) {
     // The previous card collapses to its headline so the new one owns the eye.
     return (
@@ -63,8 +78,12 @@ export default function MomentCard({ card, dimmed = false }: { card: Card; dimme
                 <span className="text-slate-200">{f.text}</span>
               </div>
               {f.math && <div className="mt-1 font-mono text-xs text-amber-200/90">{f.math}</div>}
+              {f.label === "PREPARED_FACT" && sourceLine(f.sourceId, sources) && (
+                <div className="mt-1 text-xs text-emerald-200/70">{sourceLine(f.sourceId, sources)}</div>
+              )}
             </li>
           ))}
+          <li className="text-xs text-slate-500">Anything we can&apos;t trace is shown as a suggestion, never a fact.</li>
         </ul>
       )}
 

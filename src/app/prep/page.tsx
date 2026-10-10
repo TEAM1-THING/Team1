@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ClientFileForm } from "@/components/prep/ClientFileForm";
+import { FileDrop, type IngestResponse } from "@/components/prep/FileDrop";
 import { MandatePanel } from "@/components/prep/MandatePanel";
 import { confirmPrep } from "@/components/prep/prepModel";
 import { SourcesEditor } from "@/components/prep/SourcesEditor";
@@ -14,12 +15,31 @@ import { demoPrep } from "@/data/demo";
 import { savePrep } from "@/lib/store";
 import type { Prep } from "@/lib/types";
 
+const FIELD_NAMES: Record<string, string> = {
+  name: "client name",
+  age: "age",
+  horizonYears: "years to goal",
+  cashOnHand: "cash on hand",
+  investable: "investable assets",
+  riskTolerance: "risk tolerance",
+};
+
 export default function PrepPage() {
   const router = useRouter();
   const [prep, setPrep] = useState<Prep>({ ...demoPrep, confirmed: false });
   const [mandateOk, setMandateOk] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Files first; the forms below are where the advisor checks what was read.
+  const [reviewing, setReviewing] = useState(false);
+  const [missing, setMissing] = useState<string[]>([]);
   const set = (patch: Partial<Prep>) => setPrep((p) => ({ ...p, ...patch }));
+
+  function read(r: IngestResponse) {
+    setPrep({ clientFile: r.clientFile, sources: r.sources, mandate: r.mandate, confirmed: false });
+    setMissing(r.missing);
+    setMandateOk(false);
+    setReviewing(true);
+  }
 
   function start() {
     try {
@@ -45,17 +65,41 @@ export default function PrepPage() {
           <span className="text-sm text-slate-400">Prepare a meeting</span>
         </header>
 
-        <Step n={1} title="Client file">
+        <Step n={1} title="Your materials" hint="Second Chair reads your files and fills in the prep. You check it below.">
+          <FileDrop onRead={read} />
+          {!reviewing && (
+            <button
+              type="button"
+              className="self-start text-xs text-slate-400 underline hover:text-slate-200"
+              onClick={() => setReviewing(true)}
+            >
+              Enter the prep by hand instead
+            </button>
+          )}
+        </Step>
+
+        {reviewing && missing.length > 0 && (
+          <p role="note" className="rounded-xl bg-amber-500/15 px-4 py-2 text-sm text-amber-100">
+            Not found in your files, so please fill in: {missing.map((m) => FIELD_NAMES[m] ?? m).join(", ")}.
+          </p>
+        )}
+
+        {reviewing && (
+        <Step n={2} title="Client file" hint="Read from your files. Check and edit.">
           <ClientFileForm value={prep.clientFile} onChange={(clientFile) => set({ clientFile })} />
         </Step>
+        )}
 
-        <Step n={2} title="Plan and materials" hint="What you prepared. Prepared facts on the cards trace back to these.">
+        {reviewing && (
+        <Step n={3} title="Plan and materials" hint="What was read from each file. Prepared facts on the cards trace back to these.">
           <SourcesEditor value={prep.sources} onChange={(sources) => set({ sources })} />
         </Step>
+        )}
 
-        <Step n={3} title="Mandate" hint="The bounds every improvised answer stays inside. Anything outside gets a defer suggestion.">
+        {reviewing && (
+        <Step n={4} title="Mandate" hint="The bounds every improvised answer stays inside. Anything outside gets a defer suggestion.">
           <MandatePanel
-            sources={prep.sources}
+            prep={prep}
             value={prep.mandate}
             onChange={(mandate) => {
               set({ mandate });
@@ -63,8 +107,10 @@ export default function PrepPage() {
             }}
           />
         </Step>
+        )}
       </main>
 
+      {reviewing && (
       <footer className="fixed inset-x-0 bottom-0 z-20 px-4 pb-4">
         <div className="mx-auto flex max-w-3xl flex-col gap-2 rounded-2xl border border-white/15 bg-slate-900/80 p-3 shadow-xl shadow-black/30 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-end sm:gap-4 sm:pl-5">
           {error && (
@@ -81,6 +127,7 @@ export default function PrepPage() {
           </button>
         </div>
       </footer>
+      )}
     </Backdrop>
   );
 }

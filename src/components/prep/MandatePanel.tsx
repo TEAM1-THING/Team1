@@ -4,8 +4,8 @@
 
 import { useState } from "react";
 import type { PreflightCheck } from "@/app/api/preflight/route";
-import type { Mandate, PrepSource } from "@/lib/types";
-import { fromLines, readMandate, sourcesBody, toLines } from "./prepModel";
+import type { Mandate, Prep } from "@/lib/types";
+import { fromLines, preflightBody, readMandate, sourcesBody, toLines } from "./prepModel";
 import { btnGhost, Field, inputClass } from "./ui";
 
 // Same pill colours as the meeting screen's provenance chips.
@@ -15,19 +15,19 @@ const CHIP: Record<PreflightCheck["status"], string> = {
   unverified: "bg-zinc-400/15 text-zinc-300",
 };
 
-async function post(url: string, sources: PrepSource[]): Promise<unknown> {
+async function post(url: string, body: unknown): Promise<unknown> {
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(sourcesBody(sources)),
+    body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`${url} answered ${res.status}`);
   return res.json();
 }
 
-type Props = { sources: PrepSource[]; value: Mandate; onChange: (next: Mandate) => void };
+type Props = { prep: Prep; value: Mandate; onChange: (next: Mandate) => void };
 
-export function MandatePanel({ sources, value, onChange }: Props) {
+export function MandatePanel({ prep, value, onChange }: Props) {
   const [drafting, setDrafting] = useState(false);
   const [checking, setChecking] = useState(false);
   const [checks, setChecks] = useState<PreflightCheck[] | null>(null);
@@ -38,7 +38,7 @@ export function MandatePanel({ sources, value, onChange }: Props) {
     setDrafting(true);
     setError(null);
     try {
-      const mandate = readMandate(await post("/api/mandate", sources));
+      const mandate = readMandate(await post("/api/mandate", sourcesBody(prep.sources)));
       if (!mandate) throw new Error("The Mandate draft came back in an unexpected shape.");
       onChange(mandate);
     } catch (e) {
@@ -52,7 +52,7 @@ export function MandatePanel({ sources, value, onChange }: Props) {
     setChecking(true);
     setError(null);
     try {
-      const json = (await post("/api/preflight", sources)) as { checks?: PreflightCheck[] };
+      const json = (await post("/api/preflight", preflightBody(prep))) as { checks?: PreflightCheck[] };
       setChecks(json.checks ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Pre-flight failed.");
@@ -111,6 +111,13 @@ export function MandatePanel({ sources, value, onChange }: Props) {
                 <div className="min-w-0 flex-1">
                   <p className="font-medium break-words text-slate-100">“{c.claim}”</p>
                   <p className="break-words text-slate-400">{c.note}</p>
+                  {(c.checkedAt || c.sourceDate) && (
+                    <p className="text-xs text-slate-500">
+                      {[c.checkedAt && `checked ${c.checkedAt}`, c.sourceDate && `published ${c.sourceDate}`]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  )}
                 </div>
                 {c.sourceUrl && (
                   <a className="shrink-0 text-indigo-300 underline hover:text-indigo-200" href={c.sourceUrl} target="_blank" rel="noreferrer">
