@@ -20,7 +20,7 @@ export default function MomentCard({ card, dimmed = false }: { card: Card; dimme
     return (
       <article
         data-testid="previous-card"
-        className="rounded-2xl border border-white/10 bg-slate-900/40 px-5 py-3 text-slate-400 opacity-60 backdrop-blur-md"
+        className="sc-glass rounded-2xl border border-white/5 bg-slate-900/40 px-5 py-3 text-slate-400 opacity-60 backdrop-blur-md"
       >
         <p className="text-xs">
           Earlier, {card.turnId}: {momentText(card.moment).toLowerCase()}
@@ -33,10 +33,10 @@ export default function MomentCard({ card, dimmed = false }: { card: Card; dimme
   return (
     <article
       data-testid="current-card"
-      className="sc-arrive rounded-2xl border border-white/15 bg-slate-900/75 p-5 text-slate-100 shadow-2xl shadow-black/40 backdrop-blur-xl"
+      className="sc-arrive sc-glass rounded-2xl border border-white/10 bg-slate-900/75 p-5 text-slate-100 backdrop-blur-xl"
     >
       <header className="mb-1 flex items-baseline gap-2">
-        <span className="text-sm font-semibold text-indigo-300">{momentText(card.moment)}</span>
+        <span className="text-sm font-semibold text-sky-300">{momentText(card.moment)}</span>
         <span className="text-xs text-slate-500">heard at {card.turnId}</span>
       </header>
       <p className="mb-4 text-[15px] leading-snug text-slate-300">{card.concern}</p>
@@ -45,7 +45,7 @@ export default function MomentCard({ card, dimmed = false }: { card: Card; dimme
         <div className="mb-1.5">
           <Chip label="SUGGESTION" />
         </div>
-        <p className="text-xl leading-relaxed font-medium text-white">“{card.phrasing}”</p>
+        <p className="text-[21px] leading-relaxed font-medium tracking-tight text-slate-50">“{card.phrasing}”</p>
       </blockquote>
 
       {card.defer ? (

@@ -4,7 +4,7 @@ export default function Concerns({ concerns }: { concerns: Concern[] }) {
   const sorted = [...concerns].sort((a, b) => Number(a.status === "resolved") - Number(b.status === "resolved"));
   const open = concerns.filter((c) => c.status === "open").length;
   return (
-    <section aria-labelledby="concerns-h" className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 backdrop-blur-md">
+    <section aria-labelledby="concerns-h" className="sc-glass rounded-2xl border border-white/10 bg-slate-900/60 p-4 backdrop-blur-xl">
       <h2 id="concerns-h" className="mb-3 flex items-baseline justify-between text-sm font-semibold text-slate-200">
         Client concerns
         <span className="text-xs font-normal text-slate-500">{open} open</span>

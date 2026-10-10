@@ -14,7 +14,7 @@ export default function Transcript({ turns }: { turns: TranscriptTurn[] }) {
         {turns.map((t, i) => {
           const latest = i === turns.length - 1;
           return (
-            <li key={t.id} className={`text-[15px] leading-snug ${latest ? "text-white" : "text-slate-400"}`}>
+            <li key={t.id} className={`text-[15px] leading-snug ${latest ? "text-slate-50" : "text-slate-400"}`}>
               <span className={`mr-2 text-xs font-semibold ${t.speaker === "client" ? "text-sky-300" : "text-slate-500"}`}>
                 {t.speaker === "client" ? "Client" : "You"}
               </span>
