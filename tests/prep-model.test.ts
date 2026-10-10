@@ -3,6 +3,7 @@ import {
   addSource,
   confirmPrep,
   fromLines,
+  preflightBody,
   readMandate,
   removeSource,
   sourcesBody,
@@ -53,6 +54,13 @@ describe("sources", () => {
     const edited = updateSource(added, fresh.id, { text: "Note" });
     expect(edited.find((s) => s.id === fresh.id)?.text).toBe("Note");
     expect(removeSource(edited, fresh.id)).toEqual(demoPrep.sources);
+  });
+
+  it("sends pre-flight a Prep the route accepts, with the edited Mandate", () => {
+    const p = { ...draft(), mandate: { ...demoPrep.mandate, assumptions: ["7% return", ""] } };
+    const body = preflightBody(p);
+    expect(Prep.safeParse(body.prep).success).toBe(true);
+    expect(body.prep.mandate.assumptions).toEqual(["7% return"]);
   });
 
   it("sends only non-empty source text to the API", () => {
