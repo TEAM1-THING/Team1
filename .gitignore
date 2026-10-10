@@ -30,3 +30,6 @@ out/
 *.tsbuildinfo
 next-env.d.ts
 coverage/
+
+# Playwright MCP snapshots and downloads
+.playwright-mcp/
