@@ -4,6 +4,50 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (14:15) - Block 1 sense check: first two tester summaries
+
+13 testers texted, 2 completed, 11 failed (no reply or declined); the check is
+still open. SenseAI's verdicts: Tester 1 **contradicted** our assumption,
+Tester 2 **unclear**.
+
+**Tester 1** (uses a meeting recorder; reads every transcript afterwards)
+- Missed a client's request for help on a call, found it later in the
+  transcript; a 24-hour delay, fixed with an apology call. "Oh, he was fine. I
+  I mean, just simply made a phone call."
+- Cost of misses: "Really just time and effort. Nothing nothing later." Not
+  trust, not deals.
+- Already has a method: a "rule of three" follow-up questions in every meeting.
+- **Wants a notice of missed items minutes after the meeting, added to Google
+  Tasks, more than live help.** The miss was a forgotten request, not a hidden
+  worry or a contradiction.
+- Copilot vs note-taker: could not restate what the tool does (garbled answer).
+  Would doubt it "if it was completely off course or did not do a very good job
+  of listening and summarizing".
+
+**Tester 2** (takes notes in every meeting, with permission)
+- A missed point years ago: "it was a it was a potential loss of the client";
+  won back in about half an hour. Has not missed since taking notes.
+- Hidden problem: **word meaning.** Watches colloquialisms and slang ("going to
+  the basement" means financial trouble up north). Their own word "scrutinize"
+  made a client panic, thinking they were being audited; calmed by clarifying.
+- Copilot vs note-taker: read it as live clarification and verification ("help
+  add some clarification... verify things"). Not a note-taker.
+- Trust: an AI tool gave them a **fake source** about a week ago; 15 to 20
+  minutes to correct. "It would have to be more consistent than I am." "I like
+  it when they are able to cite their sources and when the sources were made."
+
+**Candidate quotes that should change the build** (team to decide):
+- Tester 2 on cited, dated sources → show source and as-of date on every
+  PREPARED_FACT and pre-flight check; we already refuse untraced numbers and
+  invented URLs, so say so on screen.
+- Tester 1 on minutes-after notice → an end-of-meeting list of requests and
+  concerns still open, exportable as tasks.
+- Tester 2 on word meaning → the `misunderstanding` moment: catch a client
+  reacting to a word and suggest a clarification.
+
+Disclosure to clients did not come up in either summary. n = 2; treat as
+direction, not proof. A workflow is now analysing both for concrete changes.
+
 ## 2026-10-10 (13:15) - Stage 0 shipped, four tracks and twelve PBs opened
 
 - **Decided (user):** stack Next.js + Vercel, gate `npm run check`, Stage 0
