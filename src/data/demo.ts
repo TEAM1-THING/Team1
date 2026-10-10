@@ -17,6 +17,7 @@ export const demoPrep: Prep = {
     {
       id: "plan-1",
       title: "Retirement plan, prepared for Dana Whitfield",
+      date: "September 28, 2026",
       kind: "plan",
       text:
         "Invest $1,200,000 of $1,500,000 investable assets in a 60/40 portfolio. " +
@@ -27,6 +28,7 @@ export const demoPrep: Prep = {
     {
       id: "plan-2",
       title: "Cash-reserve analysis",
+      date: "September 28, 2026",
       kind: "deck",
       text:
         "Monthly expenses $7,500. Reserve target 24 months = $180,000. " +
