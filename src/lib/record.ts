@@ -25,6 +25,8 @@ export function recordFileName(record: MeetingRecord): string {
   return `second-chair-record-${who}-${record.endedAt.slice(0, 10)}.json`;
 }
 
+// Next.js inlines NEXT_PUBLIC_* at build time: after setting or changing it in
+// Vercel, redeploy for the browser bundle to see it.
 export function base44Url(): string | null {
   const url = process.env.NEXT_PUBLIC_BASE44_URL?.trim();
   return url && /^https?:\/\//.test(url) ? url : null;

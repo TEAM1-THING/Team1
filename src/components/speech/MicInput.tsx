@@ -2,7 +2,9 @@
 // Live mic input. Owned by the ship track. The meeting screen renders
 // <MicInput onTurn={...} /> and must work whether or not speech is supported.
 // Contract: call onTurn once per finished client utterance.
-// Uses the browser Web Speech API (Chrome: webkitSpeechRecognition).
+// Uses the browser Web Speech API (Chrome: webkitSpeechRecognition), which
+// sends the audio to the browser's speech service. Recording needs everyone's
+// consent (California is all-party), so the mic stays off until it is confirmed.
 import { useEffect, useRef, useState } from "react";
 
 export type MicInputProps = { onTurn: (text: string) => void };
@@ -38,32 +40,62 @@ export function finalTexts(e: RecognitionEvent): string[] {
   return out;
 }
 
+// Errors a restart cannot fix. Any other error ("no-speech", "aborted") ends
+// the session and onend starts a new one.
+export const FATAL_ERRORS: Record<string, string> = {
+  "not-allowed": "Microphone permission denied.",
+  "service-not-allowed": "Speech service blocked in this browser.",
+  "audio-capture": "No microphone found.",
+  network: "Speech service unreachable.",
+  "language-not-supported": "Language not supported.",
+};
+
+const CONSENT_NOTE =
+  "Live transcription records the client. Everyone in the meeting must agree first (California requires all-party consent). Chrome sends the audio to its speech service.";
+
 export default function MicInput({ onTurn }: MicInputProps) {
-  const [supported, setSupported] = useState(false);
+  const [supported, setSupported] = useState<boolean | null>(null); // null until checked in the browser
+  const [consent, setConsent] = useState(false);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState("");
   const [error, setError] = useState("");
+  // The live recognizer, or null when the mic is off. Handlers of any other
+  // recognizer are ignored, so one that ends late can never restart or emit.
   const recRef = useRef<Recognition | null>(null);
-  const wantRef = useRef(false); // user wants the mic on; restart after Chrome's auto-stop
   const onTurnRef = useRef(onTurn);
-  onTurnRef.current = onTurn;
+
+  useEffect(() => {
+    onTurnRef.current = onTurn;
+  }, [onTurn]);
 
   useEffect(() => {
     setSupported(getRecognitionCtor(window) !== null);
     return () => {
-      wantRef.current = false;
-      recRef.current?.stop();
+      const rec = recRef.current;
+      recRef.current = null;
+      rec?.stop();
     };
   }, []);
 
+  function off(message = "") {
+    const rec = recRef.current;
+    recRef.current = null;
+    rec?.stop();
+    setListening(false);
+    setInterim("");
+    setError(message);
+  }
+
   function start() {
     const Ctor = getRecognitionCtor(window);
-    if (!Ctor) return;
+    if (!Ctor || recRef.current) return;
     const rec = new Ctor();
+    const live = () => recRef.current === rec;
     rec.continuous = true;
     rec.interimResults = true;
     rec.lang = "en-US";
     rec.onresult = (e) => {
+      if (!live()) return;
       for (const text of finalTexts(e)) onTurnRef.current(text);
       let pending = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -72,62 +104,61 @@ export default function MicInput({ onTurn }: MicInputProps) {
       setInterim(pending.trim());
     };
     rec.onerror = (e) => {
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        wantRef.current = false;
-        setError("Microphone permission denied.");
-      }
+      if (live() && FATAL_ERRORS[e.error]) off(FATAL_ERRORS[e.error]);
     };
+    // Chrome ends a session after a pause; keep listening until stopped.
     rec.onend = () => {
-      setInterim("");
-      if (wantRef.current) {
-        try {
-          rec.start();
-          return;
-        } catch {
-          // fall through to stopped state
-        }
+      if (!live()) return;
+      try {
+        rec.start();
+      } catch {
+        off("The microphone stopped.");
       }
-      setListening(false);
     };
     recRef.current = rec;
-    wantRef.current = true;
     setError("");
     try {
       rec.start();
       setListening(true);
     } catch {
-      wantRef.current = false;
-      setError("Could not start the microphone.");
+      off("Could not start the microphone.");
     }
-  }
-
-  function stop() {
-    wantRef.current = false;
-    recRef.current?.stop();
-    setListening(false);
   }
 
   if (!supported) {
     return (
-      <button type="button" disabled className="rounded border px-3 py-1 text-sm opacity-50" title="Live mic needs Chrome">
-        Live mic (use Chrome)
+      <button
+        type="button"
+        disabled
+        className="rounded border px-3 py-1 text-sm opacity-50"
+        title={supported === false ? "Live mic needs Chrome" : undefined}
+      >
+        {supported === false ? "Live mic (use Chrome)" : "Live mic"}
       </button>
     );
   }
 
   return (
-    <div className="flex items-center gap-2 text-sm">
+    <span className="inline-flex flex-wrap items-center gap-2 text-sm">
+      {!listening && (
+        <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs opacity-80" title={CONSENT_NOTE}>
+          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+          All parties consent
+        </label>
+      )}
       <button
         type="button"
-        onClick={listening ? stop : start}
-        className="flex items-center gap-2 rounded border px-3 py-1"
+        onClick={listening ? () => off() : start}
+        disabled={!listening && !consent}
+        title={listening ? "Stop live transcription" : consent ? "Start live transcription" : CONSENT_NOTE}
+        className="inline-flex items-center gap-2 rounded border px-3 py-1 disabled:opacity-50"
         aria-pressed={listening}
       >
         {listening && <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-600" aria-hidden />}
         {listening ? "Stop mic" : "Live mic"}
       </button>
-      {interim && <span className="italic opacity-60">{interim}</span>}
-      {error && <span className="text-red-600">{error}</span>}
-    </div>
+      {interim && <span className="max-w-[16rem] truncate italic opacity-60">{interim}</span>}
+      {error && <span className="text-red-500">{error}</span>}
+    </span>
   );
 }

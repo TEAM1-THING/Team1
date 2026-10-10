@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { finalTexts, getRecognitionCtor } from "@/components/speech/MicInput";
+import { FATAL_ERRORS, finalTexts, getRecognitionCtor } from "@/components/speech/MicInput";
 import { demoPrep } from "@/data/demo";
 import { mockMoment } from "@/lib/mock";
 import { base44Url, buildRecord, recordFileName } from "@/lib/record";
@@ -25,7 +25,9 @@ describe("buildRecord", () => {
 describe("base44Url", () => {
   const original = process.env.NEXT_PUBLIC_BASE44_URL;
   afterEach(() => {
-    process.env.NEXT_PUBLIC_BASE44_URL = original;
+    // Assigning undefined to process.env stores the string "undefined".
+    if (original === undefined) delete process.env.NEXT_PUBLIC_BASE44_URL;
+    else process.env.NEXT_PUBLIC_BASE44_URL = original;
   });
 
   it("returns null when unset or not http(s)", () => {
@@ -57,5 +59,12 @@ describe("MicInput helpers", () => {
       { isFinal: false, 0: { transcript: "my son is" } },
     ];
     expect(finalTexts({ resultIndex: 1, results })).toEqual(["I want to wait six months."]);
+  });
+
+  it("stops on errors a restart cannot fix, restarts on silence", () => {
+    expect(FATAL_ERRORS["not-allowed"]).toBeTruthy();
+    expect(FATAL_ERRORS.network).toBeTruthy();
+    expect(FATAL_ERRORS["no-speech"]).toBeUndefined();
+    expect(FATAL_ERRORS.aborted).toBeUndefined();
   });
 });
