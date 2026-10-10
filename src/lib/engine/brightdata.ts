@@ -25,7 +25,8 @@ const MAX_TITLE = 200;
 const MAX_SNIPPET = 400;
 const ZONE_NAME = /^[A-Za-z0-9_-]{1,64}$/;
 
-export type SerpResult = { title: string; url: string; snippet: string };
+// date: the publish date Google shows for the result, when it shows one.
+export type SerpResult = { title: string; url: string; snippet: string; date?: string };
 
 export function brightDataConfigured(): boolean {
   return Boolean(process.env.BRIGHTDATA_API_KEY);
@@ -78,7 +79,8 @@ export function normalizeOrganic(organic: unknown[]): SerpResult[] {
     const url = safeLink(r.link);
     if (!url || seen.has(url)) continue;
     seen.add(url);
-    out.push({ url, title: text(r.title, MAX_TITLE), snippet: text(r.description, MAX_SNIPPET) });
+    const date = text(r.date ?? r.display_date, 40);
+    out.push({ url, title: text(r.title, MAX_TITLE), snippet: text(r.description, MAX_SNIPPET), ...(date ? { date } : {}) });
     if (out.length >= MAX_RESULTS) break;
   }
   return out;

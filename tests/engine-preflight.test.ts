@@ -17,6 +17,8 @@ import {
 } from "@/lib/engine/preflight";
 import type { Prep } from "@/lib/types";
 
+const TODAY = new Date().toISOString().slice(0, 10);
+
 const RETURN_URL = "https://example.org/60-40-returns";
 const CPI_URL = "https://www.bls.gov/cpi/";
 
@@ -169,6 +171,7 @@ describe("runPreflight", () => {
       status: "stale",
       note: "Results cite about 8% a year for 60/40, above the 5% assumed.",
       sourceUrl: RETURN_URL,
+      checkedAt: TODAY,
     });
     expect(r.checks[1]).toEqual({ claim: "Expenses of $7,500 a month", status: "unverified", note: NOTE_UNMATCHED });
 
@@ -214,8 +217,8 @@ describe("runPreflight", () => {
     const r = await runPreflight(demoPrep);
     expect(r.source).toBe("brightdata");
     expect(r.checks).toEqual([
-      { claim: "5% average annual return", status: "unverified", note: NOTE_NOT_COMPARED, sourceUrl: RETURN_URL },
-      { claim: "Expenses of $7,500 a month", status: "unverified", note: NOTE_NOT_COMPARED, sourceUrl: CPI_URL },
+      { claim: "5% average annual return", status: "unverified", note: NOTE_NOT_COMPARED, sourceUrl: RETURN_URL, checkedAt: TODAY },
+      { claim: "Expenses of $7,500 a month", status: "unverified", note: NOTE_NOT_COMPARED, sourceUrl: CPI_URL, checkedAt: TODAY },
     ]);
   });
 
@@ -266,6 +269,7 @@ describe("runPreflight", () => {
       status: "unverified",
       note: NOTE_NOT_COMPARED,
       sourceUrl: CPI_URL,
+      checkedAt: TODAY,
     });
   });
 
