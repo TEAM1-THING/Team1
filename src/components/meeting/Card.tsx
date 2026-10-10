@@ -1,69 +1,93 @@
 import type { Card } from "@/lib/types";
 import { LABELS } from "./replay";
 
-const momentText = (m: string) => m.replace(/_/g, " ");
+const momentText = (m: string) => {
+  const s = m.replace(/_/g, " ");
+  return s[0].toUpperCase() + s.slice(1);
+};
+
+function Chip({ label }: { label: keyof typeof LABELS }) {
+  return (
+    <span className={`inline-block shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${LABELS[label].chip}`}>
+      {LABELS[label].text}
+    </span>
+  );
+}
 
 export default function MomentCard({ card, dimmed = false }: { card: Card; dimmed?: boolean }) {
+  if (dimmed) {
+    // The previous card collapses to its headline so the new one owns the eye.
+    return (
+      <article
+        data-testid="previous-card"
+        className="rounded-2xl border border-white/10 bg-slate-900/40 px-5 py-3 text-slate-400 opacity-60 backdrop-blur-md"
+      >
+        <p className="text-xs">
+          Earlier, {card.turnId}: {momentText(card.moment).toLowerCase()}
+        </p>
+        <p className="truncate text-sm">{card.concern}</p>
+      </article>
+    );
+  }
+
   return (
     <article
-      data-testid={dimmed ? "previous-card" : "current-card"}
-      className={`rounded-lg border border-neutral-300 bg-white p-4 text-neutral-900 shadow-sm transition-opacity ${
-        dimmed ? "opacity-40" : ""
-      }`}
+      data-testid="current-card"
+      className="sc-arrive rounded-2xl border border-white/15 bg-slate-900/75 p-5 text-slate-100 shadow-2xl shadow-black/40 backdrop-blur-xl"
     >
-      <header className="mb-2 flex items-center gap-2">
-        <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-white">
-          {momentText(card.moment)}
-        </span>
-        <span className="text-xs text-neutral-500">at {card.turnId}</span>
+      <header className="mb-1 flex items-baseline gap-2">
+        <span className="text-sm font-semibold text-indigo-300">{momentText(card.moment)}</span>
+        <span className="text-xs text-slate-500">heard at {card.turnId}</span>
       </header>
-      <p className="mb-3 text-base font-semibold">{card.concern}</p>
+      <p className="mb-4 text-[15px] leading-snug text-slate-300">{card.concern}</p>
+
+      <blockquote className="mb-5">
+        <div className="mb-1.5">
+          <Chip label="SUGGESTION" />
+        </div>
+        <p className="text-xl leading-relaxed font-medium text-white">“{card.phrasing}”</p>
+      </blockquote>
 
       {card.defer ? (
-        <div className="mb-3 rounded border border-orange-300 bg-orange-50 p-3 text-sm text-orange-900">
-          <strong>Defer.</strong> Outside the Mandate: do not answer now.
-          {card.deferReason && <span> {card.deferReason}</span>}
+        <div className="mb-4 rounded-xl bg-orange-400/10 px-4 py-3 text-sm text-orange-200">
+          <strong className="font-semibold">Defer this one.</strong> It is outside the confirmed Mandate, so offer to
+          follow up rather than answer now.
+          {card.deferReason && <span className="mt-1 block text-orange-300/80">{card.deferReason}</span>}
         </div>
       ) : (
-        <ul className="mb-3 space-y-2">
+        <ul className="mb-4 space-y-2.5">
           {card.facts.map((f, i) => (
-            <li key={i} className="text-sm">
-              <span className={`mr-2 inline-block rounded border px-1.5 py-0.5 text-xs font-medium ${LABELS[f.label].chip}`}>
-                {LABELS[f.label].text}
-              </span>
-              {f.text}
-              {f.math && <div className="ml-1 mt-1 font-mono text-xs text-amber-800">{f.math}</div>}
+            <li key={i} className={`border-l-2 pl-3 text-sm ${LABELS[f.label].rule}`}>
+              <div className="flex items-start gap-2">
+                <Chip label={f.label} />
+                <span className="text-slate-200">{f.text}</span>
+              </div>
+              {f.math && <div className="mt-1 font-mono text-xs text-amber-200/90">{f.math}</div>}
             </li>
           ))}
         </ul>
       )}
 
-      <p className="mb-2 text-sm">
-        <span className="font-semibold">Move: </span>
+      <p className="mb-3 text-sm text-slate-300">
+        <span className="font-semibold text-slate-100">Next move. </span>
         {card.recommendedMove}
       </p>
-      <blockquote className="mb-2 border-l-4 border-rose-300 bg-rose-50 px-3 py-2 text-sm italic">
-        <span className={`mr-2 not-italic rounded border px-1.5 py-0.5 text-xs ${LABELS.SUGGESTION.chip}`}>
-          {LABELS.SUGGESTION.text}
-        </span>
-        “{card.phrasing}”
-      </blockquote>
-      <details className="mb-2 text-sm">
-        <summary className="cursor-pointer text-neutral-600">Why</summary>
-        <p className="mt-1">{card.why}</p>
-      </details>
+
       {card.doNotClaim.length > 0 && (
-        <div className="text-sm">
-          <span className={`mr-2 rounded border px-1.5 py-0.5 text-xs ${LABELS.DO_NOT_CLAIM.chip}`}>
-            {LABELS.DO_NOT_CLAIM.text}
-          </span>
-          <ul className="mt-1 list-disc pl-5 text-neutral-600">
+        <div className="mb-3 rounded-xl bg-white/5 px-3 py-2 text-sm">
+          <Chip label="DO_NOT_CLAIM" />
+          <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-slate-400">
             {card.doNotClaim.map((d, i) => (
               <li key={i}>{d}</li>
             ))}
           </ul>
         </div>
       )}
+
+      <details className="text-sm text-slate-400">
+        <summary className="cursor-pointer select-none hover:text-slate-200">Why this card</summary>
+        <p className="mt-1.5 text-slate-300">{card.why}</p>
+      </details>
     </article>
   );
 }

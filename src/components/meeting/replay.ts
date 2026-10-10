@@ -26,9 +26,10 @@ export const postMoment: PostMoment = async (req) => {
   return (await res.json()) as MomentResponse;
 };
 
+// chip: the label pill; rule: the left edge of the fact it labels.
 export const LABELS = {
-  PREPARED_FACT: { text: "Prepared fact", chip: "bg-emerald-100 text-emerald-900 border-emerald-300" },
-  CALCULATED: { text: "Calculation", chip: "bg-amber-100 text-amber-900 border-amber-300" },
-  SUGGESTION: { text: "Suggestion", chip: "bg-rose-100 text-rose-900 border-rose-300" },
-  DO_NOT_CLAIM: { text: "Do not claim", chip: "bg-neutral-200 text-neutral-700 border-neutral-300" },
+  PREPARED_FACT: { text: "Prepared fact", chip: "bg-emerald-400/15 text-emerald-300", rule: "border-emerald-400" },
+  CALCULATED: { text: "Calculation", chip: "bg-amber-400/15 text-amber-300", rule: "border-amber-400" },
+  SUGGESTION: { text: "Suggestion", chip: "bg-rose-400/15 text-rose-300", rule: "border-rose-400" },
+  DO_NOT_CLAIM: { text: "Do not claim", chip: "bg-zinc-400/15 text-zinc-300", rule: "border-zinc-500" },
 } as const;
