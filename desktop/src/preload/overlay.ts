@@ -2,7 +2,7 @@
 // adapts it to the desktop without changing any web file:
 //   - a title bar with the logo, live status and window controls
 //   - hit-testing, so the title bar and panel catch clicks and the transparent
-//     corners (or everything, in see-through mode) pass them to the call
+//     corners (or everything, in click-through mode) pass them to the call
 //   - hotkeys arrive as the keys the meeting page already handles
 //   - a SpeechRecognition shim, so the page's own mic button (consent checkbox
 //     included) drives desktop system-audio capture
@@ -28,7 +28,7 @@ ipcRenderer.on("sc:status", (_e, s: BarStatus) => {
 // it informs nobody: the notice is spoken aloud. The page's consent checkbox (ship track's MicInput) is
 // relabeled here to the words the advisor says before starting the mic; it
 // still has to be ticked, and Second Chair is never named to the client.
-const NOTICE_LABEL = "Told everyone: \u201cthis meeting is being recorded\u201d";
+const NOTICE_LABEL = "I said: \u201cThis meeting is being recorded.\u201d";
 const NOTICE_TITLE =
   "Before you turn on the mic, say that the meeting is being recorded. In California every party must know a call is recorded; carrying on after the notice is the usual way they agree. Not legal advice.";
 function relabelConsent() {

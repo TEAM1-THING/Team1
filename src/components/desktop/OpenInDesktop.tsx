@@ -67,7 +67,7 @@ export default function OpenInDesktop() {
     >
       {state === "paired" ? (
         <>
-          <span className="mr-auto">Meeting links in this browser now open in the Second Chair desktop overlay.</span>
+          <span className="mr-auto">Meeting links in this browser now open in the Second Chair desktop app.</span>
           <button
             type="button"
             className={`${btn} text-slate-300 hover:bg-white/10`}
@@ -84,7 +84,7 @@ export default function OpenInDesktop() {
         </>
       ) : (
         <>
-          <span className="mr-auto">Opening the meeting in the Second Chair overlay.</span>
+          <span className="mr-auto">Opening the meeting in the Second Chair desktop app.</span>
           <button type="button" className={`${btn} bg-slate-100 font-medium text-slate-900 hover:bg-sky-100`} onClick={open}>
             Open again
           </button>

@@ -102,8 +102,9 @@ function start() {
   ipcMain.on("sc:hit", (e, hit) => {
     if (fromOverlay(e.sender) && (hit === "bar" || hit === "content" || hit === "none")) overlay.setHit(hit);
   });
-  // The title bar's buttons. Only these three names are accepted.
+  // The title bar's buttons. Only these names are accepted.
   const barActions: Record<string, () => void> = {
+    share: () => overlay.setProtected(!overlay.protected),
     ghost: () => overlay.toggleGhost(),
     collapse: () => overlay.toggleCollapsed(),
     hide: () => overlay.toggleVisible(),

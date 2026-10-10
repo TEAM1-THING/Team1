@@ -20,11 +20,11 @@ describe("click-through decision", () => {
     expect(ignoreMouse({ ...m, hit: "bar" })).toBe(false);
   });
 
-  it("see-through mode passes the panel's clicks to the call", () => {
+  it("click-through mode passes the panel's clicks to the call", () => {
     expect(ignoreMouse({ ...m, ghost: true, hit: "content" })).toBe(true);
   });
 
-  it("the title bar stays clickable in see-through mode, so the mouse can turn it off", () => {
+  it("the title bar stays clickable in click-through mode, so the mouse can turn it off", () => {
     expect(ignoreMouse({ ...m, ghost: true, hit: "bar" })).toBe(false);
   });
 

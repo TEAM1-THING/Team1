@@ -4,6 +4,27 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (16:30) - Desktop: plain names, a separate screen-share button, hover labels
+
+Branch `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f`.
+
+- **One eye, one meaning.** The title bar's eye now only means screen share
+  (slashed: the client can't see the panel; open, in amber: they can). Click
+  through has its own pointer button.
+- **Every icon says what it does on hover.** The bar draws its own label,
+  because macOS shows native tooltips only for the active app, and the panel
+  never becomes active.
+- **Names say what the user gets.** "Panel" everywhere, never "overlay".
+  "Type into overlay" became "Type in the panel", "See-through" became "Pass
+  clicks to the call", "Collapse to title bar" became "Shrink to a thin bar",
+  and the replay controls sit under "Sample meeting" as "Play the next line"
+  and "Play or pause". The status reads "Not listening" (not "Mic off": the
+  source may be call audio).
+- **Consent checkbox wording:** "I said: 'This meeting is being recorded.'"
+  The client is told out loud, so the checkbox records that the advisor said it.
+- Open for track B: the meeting page's own "Next turn" and "Auto-play" buttons
+  could take the same names; not edited here (track B's file).
+
 ## 2026-10-10 (16:25) - Desktop: site links open the overlay; real macOS app; native call audio
 
 Branch `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f` (pushed, not merged).

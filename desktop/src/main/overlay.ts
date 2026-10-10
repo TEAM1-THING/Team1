@@ -1,7 +1,7 @@
 // The overlay window: a compact panel over the video call that the advisor
 // sees and the client does not. Three jobs:
 //   1. Capture: content protection keeps it out of screen share.
-//   2. Input: the panel catches clicks; see-through mode passes them to the call.
+//   2. Input: the panel catches clicks; click-through mode passes them to the call.
 //   3. Focus: it never takes focus from the call unless the advisor asks to type.
 // The advisor can move it (title bar), resize it (edges), collapse it to the
 // bar, and it reopens where they left it.
@@ -197,7 +197,7 @@ export function createOverlay(onChange: (v: OverlayView) => void) {
   // Tell the title bar and the tray what state the overlay is in.
   function publish() {
     if (win.isDestroyed()) return;
-    wc.send("sc:status", { listening, ghost: mode.ghost, typing: mode.typing, collapsed, mac });
+    wc.send("sc:status", { listening, ghost: mode.ghost, typing: mode.typing, collapsed, mac, shareHidden: win.isContentProtected() });
     onChange({ mode: { ...mode }, visible: win.isVisible(), collapsed, listening });
   }
 

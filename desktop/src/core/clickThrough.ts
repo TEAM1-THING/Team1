@@ -10,14 +10,14 @@ export type Hit = "bar" | "content" | "none";
 
 export type OverlayMode = {
   typing: boolean; // the advisor asked to type: the overlay owns keys and mouse
-  ghost: boolean; // see-through: clicks pass to the call, except on the title bar
+  ghost: boolean; // click-through: clicks pass to the call, except on the title bar
   hit: Hit;
 };
 
 export const initialMode = (): OverlayMode => ({ typing: false, ghost: false, hit: "none" });
 
 // Whether the window lets mouse events fall through to the app beneath it.
-// The title bar always catches them, so see-through mode can be switched off
+// The title bar always catches them, so click-through mode can be switched off
 // (and the window moved) with the mouse.
 export function ignoreMouse(m: OverlayMode): boolean {
   if (m.typing || m.hit === "bar") return false;

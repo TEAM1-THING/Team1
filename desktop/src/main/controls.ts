@@ -13,12 +13,12 @@ type Action = { id: string; label: string; accelerator: string; run: () => void 
 
 export function actions(overlay: Overlay): Action[] {
   return [
-    { id: "visible", label: "Show or hide overlay", accelerator: "Control+Alt+H", run: () => overlay.toggleVisible() },
-    { id: "typing", label: "Type into overlay", accelerator: "Control+Alt+Space", run: () => overlay.setTyping(!overlay.mode.typing) },
-    { id: "ghost", label: "See-through (clicks go to the call)", accelerator: "Control+Alt+G", run: () => overlay.toggleGhost() },
-    { id: "collapse", label: "Collapse to title bar", accelerator: "Control+Alt+B", run: () => overlay.toggleCollapsed() },
-    { id: "next", label: "Next turn (replay)", accelerator: "Control+Alt+Right", run: () => overlay.sendKey("ArrowRight") },
-    { id: "auto", label: "Auto-play (replay)", accelerator: "Control+Alt+P", run: () => overlay.sendKey("a") },
+    { id: "visible", label: "Show or hide the panel", accelerator: "Control+Alt+H", run: () => overlay.toggleVisible() },
+    { id: "typing", label: "Type in the panel", accelerator: "Control+Alt+Space", run: () => overlay.setTyping(!overlay.mode.typing) },
+    { id: "ghost", label: "Pass clicks to the call", accelerator: "Control+Alt+G", run: () => overlay.toggleGhost() },
+    { id: "collapse", label: "Shrink to a thin bar", accelerator: "Control+Alt+B", run: () => overlay.toggleCollapsed() },
+    { id: "next", label: "Play the next line", accelerator: "Control+Alt+Right", run: () => overlay.sendKey("ArrowRight") },
+    { id: "auto", label: "Play or pause", accelerator: "Control+Alt+P", run: () => overlay.sendKey("a") },
     { id: "quit", label: "Quit Second Chair", accelerator: "Control+Alt+Shift+Q", run: () => app.quit() },
   ];
 }
@@ -51,28 +51,31 @@ export function createTray(overlay: Overlay, list: Action[]) {
       Menu.buildFromTemplate([
         { label: listening ? "Second Chair: listening to the call" : "Second Chair", enabled: false },
         { type: "separator" },
-        item("visible", { label: visible ? "Hide overlay" : "Show overlay" }),
+        item("visible", { label: visible ? "Hide the panel" : "Show the panel" }),
         item("typing", { type: "checkbox", checked: mode.typing }),
         item("ghost", { type: "checkbox", checked: mode.ghost }),
         item("collapse", { type: "checkbox", checked: collapsed }),
         { type: "separator" },
         { label: "Larger text", click: () => overlay.zoomBy(1) },
         { label: "Smaller text", click: () => overlay.zoomBy(-1) },
-        { label: "Move under the camera", click: () => overlay.placeUnderCamera() },
+        { label: "Move under the webcam", click: () => overlay.placeUnderCamera() },
         { label: "Move back to the corner", click: () => overlay.resetPosition() },
-        { label: "Open meeting links in this app", click: () => overlay.pairBrowser() },
+        { label: "Open meeting links here, not in the browser", click: () => overlay.pairBrowser() },
         { type: "separator" },
-        item("next"),
-        item("auto"),
+        // The meeting page's "Next turn" and "Auto-play": they step through the
+        // sample conversation, so the menu says so.
+        { label: "Sample meeting", submenu: [item("next"), item("auto")] },
         { type: "separator" },
         {
-          label: "Show the \u201ceveryone was told\u201d notice",
+          label: "Show the \u201ceveryone agreed\u201d banner",
           type: "checkbox",
           checked: overlay.notice,
           click: (mi) => overlay.setNotice(mi.checked),
         },
         {
-          label: mac ? "Hide from screen share (not ScreenCaptureKit)" : "Hide from screen share",
+          label: "Hide from the client when you share your screen",
+          // Some Mac capture tools still record it; sharing one window is safe.
+          toolTip: mac ? "On a Mac, share one window, not your whole screen, to be sure." : undefined,
           type: "checkbox",
           checked: overlay.protected,
           click: (mi) => overlay.setProtected(mi.checked),
