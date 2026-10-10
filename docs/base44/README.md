@@ -7,8 +7,15 @@ every card is a record). On the meeting screen, **End meeting** downloads the
 record as JSON (`exportRecord` in `src/lib/record.ts`, the `MeetingRecord`
 shape) and opens this app at `NEXT_PUBLIC_BASE44_URL`, which is set in Vercel
 for Production and Preview. Next.js inlines that variable at build time, so
-redeploy after changing it. The advisor signs in, uploads or pastes the file
-and saves it. The record shows the client, the date, open and resolved
+redeploy after changing it. The link carries the record in its fragment
+(`#record=<base64url JSON>`), which browsers never send to a server; before
+the sign-in check the app moves it into the tab's sessionStorage and cleans
+the address bar (`src/lib/incoming-record.js` in the Base44 app). After
+signing in, the advisor sees the record and presses **Save record**. Upload or
+paste still works for older files and for records too big for a link (over
+about 1 MB). The full link can stay in the advisor's browser history, like the
+downloaded file on disk: one more reason to keep to demo data. The record
+shows the client, the date, open and resolved
 concerns, and every card with its labelled facts (green prepared fact, amber
 calculated with the math shown, red suggestion, grey do-not-claim), the
 suggested phrasing and the do-not-claim list. A compliance admin signs off
