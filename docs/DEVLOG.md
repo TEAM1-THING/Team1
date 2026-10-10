@@ -4,6 +4,40 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (16:45) - Block 2 closed; decided: advisory copilot, not a finance data tool
+
+**Tester 2 (session 2, "mixed"):** saw it as reading the client: "you don't
+necessarily have a great way of determining what their worry is in a meeting
+unless they tell you." And the core of it: "doing that and responding to that
+worry is is more difficult than if someone gives you an idea of what the worry
+is." One more input, not a replacement for judgment. They prepare for worries
+in advance by asking the client for information first. Dislikes: "I am
+concerned with how an AI tool would capture my meeting and concerns in that
+meeting and use that or share that and help the tool grow"; answers that
+change when a question is slightly reworded; AI in finance "has to be audited
+over time and has to have some sort of grading for how well it did". Fit: no,
+because their current clients do not need financial worries addressed.
+
+**Block 2 result:** 2 of 2 completed, both "mixed" on Catch what humans miss.
+Tester 1 valued speed (finding a number); tester 2 valued having the worry
+named so they can focus on the answer.
+
+**Decided:** Second Chair is an advisory copilot. It reads the person (the
+worry behind the words, what they want to learn or decide, life events) and
+suggests the advisor's move, so the advisor can focus on responding; the
+advisor's own figures back the move up. Data lookup stays, as the support
+layer, not the headline. The hidden problem, in tester 2's words: spotting the
+worry and answering it at the same time is what slips.
+
+**Changes the build (issues filed, label `feedback`):** advisory-first card
+(the person and the move lead, facts back it up); anticipate likely worries at
+prep; a client picture beyond financial worries; a plain statement that
+meetings are not stored on a server or used to train AI; the same question
+reworded gets the same facts; grade each card at the end so the record can be
+audited over time; landing copy in the advisory voice.
+
+---
+
 ## 2026-10-10 (16:15) - Track D done: live engine on production, record hand-off live
 
 **Bright Data fixed on production.** Pre-flight was returning `source:
