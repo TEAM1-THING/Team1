@@ -4,6 +4,37 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (15:10) - Track D: Vercel live, records app published
+
+**Vercel is live:** https://second-chair-seven.vercel.app (project on D's
+account, connected to `TEAM1-THING/Team1`). Every push to `main` deploys
+production; every branch gets a preview, which sits behind a Vercel login.
+The earlier failures were not a project setting: Vercel refuses to publish
+Next.js 15.5.4 ("Vulnerable version of Next.js detected"). Fixed on `main` by
+#17 (Vercel's bot, 15.5.9). D's `fix/next-15.5.27` branch showed 15.5.27
+passes too; not merged.
+
+**Env (Vercel):** Production has `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`,
+`BRIGHTDATA_API_KEY`, `BRIGHTDATA_ZONE` and `NEXT_PUBLIC_BASE44_URL`. Preview
+has only `ANTHROPIC_MODEL` and `NEXT_PUBLIC_BASE44_URL` so far. Open:
+`ANTHROPIC_MODEL` overrides the engine's Opus default for prep-time calls;
+A to decide whether to keep it.
+
+**Records app, decided: sign-in and saved records, not a public viewer.**
+Guardrail 5 (every card is a record) needs records that outlive the browser
+tab; compliance supervision needs a sign-off that stores who and when; stored
+client details need access control. Published at
+https://second-chair-view.base44.app: save a record, a records list, a
+compliance sign-off (admins only, stored with reviewer and time). Advisors see
+only their own records; only admins edit or delete. "Demo data only" banner.
+Notes and a sample record: `docs/base44/`.
+
+**Mic (`feat/ship`, PR pending):** Chrome speech recognition, one client turn
+per finished sentence. It stays off until "All parties consent" is ticked:
+the meeting screen had no consent notice (CLAUDE.md invariant). Fixed a
+stop/start race that sent every turn twice and a restart loop on network
+errors. End meeting downloads the record and opens the records app.
+
 ## 2026-10-10 (14:40) - live model by benchmark; the quote that changed the build
 
 **Merged to `main`:** B #14 (meeting screen), A #15 (live engine, Mandate
