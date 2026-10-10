@@ -147,11 +147,15 @@ click the Dock icon → Quit, or the menu-bar icon → **Quit Second Chair**.
 The sample meeting works without this. To transcribe a real call, the app needs
 a speech-to-text service. Any OpenAI-compatible one works (OpenAI, Groq, or a
 local Whisper server so audio never leaves your Mac). Quit the app, then start
-it from Terminal with your key; the key stays in your shell and is never saved:
+it from Terminal with your key (if the key is in `OPENAI_API_KEY`, the command
+reads it from there); the key stays in your shell and is never saved:
 
 ```bash
-SC_STT_URL=https://api.openai.com/v1/audio/transcriptions SC_STT_KEY=your-key "$HOME/Applications/Second Chair.app/Contents/MacOS/Second Chair"
+open -a "$HOME/Applications/Second Chair.app" --env SC_STT_URL=https://api.openai.com/v1/audio/transcriptions --env SC_STT_KEY="$OPENAI_API_KEY"
 ```
+
+If the app was already open, it only comes to the front and keeps its old
+settings, so quit it first.
 
 The first time you turn on the live mic, macOS asks whether Second Chair may
 record your computer's audio. Click **Allow**. If you clicked Don't Allow: open
@@ -160,7 +164,7 @@ Second Chair on, then quit and reopen it.
 
 ### Settings
 
-Set any of these the same way, in front of the command above.
+Add any of these to the command above the same way, each as another `--env`.
 
 | Setting | Default | What it changes |
 |---|---|---|
@@ -267,7 +271,7 @@ The live site deploys from `main` on Vercel.
 | Two panels on screen | Two copies are running (the installed app and one started from the code); quit one |
 | `Missing script: "install-app"` | Run it from the `Team1` folder, on the desktop branch (see Download and install) |
 | The menu still shows old names | You are running an old build: quit it and reinstall (see Update) |
-| `SC_STT_URL is not set` in Terminal | Live transcription is off; see Live transcription |
+| Live transcription is off, or you want to see its errors | Quit the app, then start it this way so its messages print in Terminal: `SC_STT_URL=https://api.openai.com/v1/audio/transcriptions SC_STT_KEY="$OPENAI_API_KEY" "$HOME/Applications/Second Chair.app/Contents/MacOS/Second Chair"`. If its window doesn't come forward, click Second Chair in the Dock |
 | The live mic hears nothing | Use the installed app (not `npm run app`), on macOS 14.2 or later, and check the permission under Live transcription |
 | `Could not find a production build` | Use `npm run dev`, or run `npm run build` first |
 | `Electron failed to install correctly` | Run `node desktop/node_modules/electron/install.js`, then try again |
