@@ -30,6 +30,18 @@ const CONCERN_CUES =
 const CHANGE_CUES =
   /\b(i'd like|i would like|i want|i'd rather|i would rather|i need|we need|instead|actually|change(d)? my mind|stop working|earlier|sooner|not anymore|let's (do|go|start|move)|go ahead|move forward|ready to|sign)\b|\d/;
 
+const words = (s: string) => s.toLowerCase().match(/[a-z0-9$,.']+/g)?.map((w) => w.replace(/[,.]+$/, "")) ?? [];
+
+// True when the line is mostly the card's suggested phrasing: the advisor
+// reading it aloud. Needs four words or more, so "okay" never matches.
+export function echoesCard(text: string, phrasing: string | undefined): boolean {
+  if (!phrasing) return false;
+  const said = words(text);
+  if (said.length < 4) return false;
+  const card = new Set(words(phrasing));
+  return said.filter((w) => card.has(w)).length / said.length >= 0.6;
+}
+
 export function classifyUtterance(raw: string): Gate {
   const text = raw.trim().toLowerCase();
   if (!text) return { kind: "filler", concern: false, run: false };

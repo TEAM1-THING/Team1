@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyUtterance } from "@/lib/engine/gate";
+import { classifyUtterance, echoesCard } from "@/lib/engine/gate";
 import { demoTranscript } from "@/data/demo";
 
 describe("classifyUtterance", () => {
@@ -54,5 +54,17 @@ describe("classifyUtterance", () => {
     for (const t of demoTranscript.filter((t) => t.speaker === "client")) {
       expect(classifyUtterance(t.text).run, t.id).toBe(true);
     }
+  });
+});
+
+describe("echoesCard", () => {
+  const phrasing = "That's a fair worry. The plan keeps a $180,000 liquid reserve, which is 24 months of expenses.";
+  it("matches the advisor reading the card, even loosely", () => {
+    expect(echoesCard("the plan keeps a $180,000 liquid reserve which is 24 months of expenses", phrasing)).toBe(true);
+  });
+  it("does not match a client line or a short reply", () => {
+    expect(echoesCard("I'm worried I won't have enough cash if something happens", phrasing)).toBe(false);
+    expect(echoesCard("a fair worry", phrasing)).toBe(false);
+    expect(echoesCard("the plan keeps a reserve", undefined)).toBe(false);
   });
 });

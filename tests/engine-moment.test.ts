@@ -21,6 +21,7 @@ const returning = (parsed_output: LlmMoment | null, stop_reason: string | null =
 const upTo = (id: string) => demoTranscript.slice(0, demoTranscript.findIndex((t) => t.id === id) + 1);
 
 const liveT2: LlmMoment = {
+  speaker: "client",
   relevant: true,
   moment: "objection",
   concern: "Worried that investing leaves too little cash for emergencies.",
@@ -273,7 +274,25 @@ describe("runMoment", () => {
     returning({ ...liveT2, relevant: false });
     const state = emptyState();
     const res = await runMoment({ prep: demoPrep, turns: upTo("t2"), state });
-    expect(res).toEqual({ card: null, state });
+    expect(res).toEqual({ card: null, state, speaker: "client" });
+  });
+
+  it("relabels a live line the model judges was the advisor, with no card", async () => {
+    returning({ ...liveT2, speaker: "advisor" });
+    const state = emptyState();
+    const turns = [{ id: "m1", speaker: "client" as const, t: 5, text: "Can you tell me what kind of emergency you're picturing?" }];
+    const res = await runMoment({ prep: demoPrep, turns, state });
+    expect(res).toEqual({ card: null, state, speaker: "advisor" });
+  });
+
+  it("labels the advisor reading the last card aloud without calling Claude", async () => {
+    const parse = returning(liveT2);
+    const card = mockMoment("t2", emptyState()).card!;
+    const state: ConversationState = { concerns: [], cards: [card] };
+    const turns = [{ id: "m2", speaker: "client" as const, t: 9, text: card.phrasing }];
+    const res = await runMoment({ prep: demoPrep, turns, state });
+    expect(res).toEqual({ card: null, state, speaker: "advisor" });
+    expect(parse).not.toHaveBeenCalled();
   });
 
   it("resolves the liquidity concern and opens the new one", async () => {

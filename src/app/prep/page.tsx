@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ClientFileForm } from "@/components/prep/ClientFileForm";
 import { FileDrop, type IngestResponse } from "@/components/prep/FileDrop";
+import { MeetingSummary } from "@/components/prep/MeetingSummary";
 import { MandatePanel } from "@/components/prep/MandatePanel";
 import { confirmPrep } from "@/components/prep/prepModel";
 import { SourcesEditor } from "@/components/prep/SourcesEditor";
@@ -22,7 +23,10 @@ const FIELD_NAMES: Record<string, string> = {
   cashOnHand: "cash on hand",
   investable: "investable assets",
   riskTolerance: "risk tolerance",
+  statedGoals: "goals",
+  statedConcerns: "concerns",
 };
+
 
 export default function PrepPage() {
   const router = useRouter();
@@ -35,7 +39,7 @@ export default function PrepPage() {
   const set = (patch: Partial<Prep>) => setPrep((p) => ({ ...p, ...patch }));
 
   function read(r: IngestResponse) {
-    setPrep({ clientFile: r.clientFile, sources: r.sources, mandate: r.mandate, confirmed: false });
+    setPrep({ meeting: r.meeting, clientFile: r.clientFile, sources: r.sources, mandate: r.mandate, confirmed: false });
     setMissing(r.missing);
     setMandateOk(false);
     setReviewing(true);
@@ -78,9 +82,14 @@ export default function PrepPage() {
           )}
         </Step>
 
+        {reviewing && prep.meeting && (
+          <MeetingSummary value={prep.meeting} onChange={(meeting) => set({ meeting })} />
+        )}
+
         {reviewing && missing.length > 0 && (
           <p role="note" className="rounded-xl bg-amber-500/15 px-4 py-2 text-sm text-amber-100">
-            Not found in your files, so please fill in: {missing.map((m) => FIELD_NAMES[m] ?? m).join(", ")}.
+            Not found in your files. Fill in if it matters for this meeting:{" "}
+            {missing.map((m) => FIELD_NAMES[m] ?? m).join(", ")}.
           </p>
         )}
 

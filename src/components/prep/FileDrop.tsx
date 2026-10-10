@@ -3,10 +3,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { ClientFile, Mandate, PrepSource } from "@/lib/types";
+import type { ClientFile, Mandate, Meeting, PrepSource } from "@/lib/types";
 import { btnGhost, btnPrimary } from "./ui";
 
 export type IngestResponse = {
+  meeting?: Meeting;
   clientFile: ClientFile;
   sources: PrepSource[];
   mandate: Mandate;

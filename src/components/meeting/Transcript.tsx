@@ -1,7 +1,9 @@
 import type { TranscriptTurn } from "@/lib/types";
+import { isLiveTurn } from "./live";
 
 // Reads like live captions under the call: newest line brightest.
-export default function Transcript({ turns }: { turns: TranscriptTurn[] }) {
+// onToggle: flips who said a live mic line, for when the guess is wrong.
+export default function Transcript({ turns, onToggle }: { turns: TranscriptTurn[]; onToggle?: (id: string) => void }) {
   return (
     <section aria-label="Transcript" aria-live="polite">
       {turns.length === 0 && (
@@ -15,9 +17,20 @@ export default function Transcript({ turns }: { turns: TranscriptTurn[] }) {
           const latest = i === turns.length - 1;
           return (
             <li key={t.id} className={`text-[15px] leading-snug ${latest ? "text-slate-50" : "text-slate-400"}`}>
-              <span className={`mr-2 text-xs font-semibold ${t.speaker === "client" ? "text-sky-300" : "text-slate-500"}`}>
-                {t.speaker === "client" ? "Client" : "You"}
-              </span>
+              {onToggle && isLiveTurn(t.id) ? (
+                <button
+                  type="button"
+                  title="Wrong speaker? Click to switch"
+                  onClick={() => onToggle(t.id)}
+                  className={`mr-2 rounded px-1 text-xs font-semibold underline decoration-dotted underline-offset-2 hover:bg-white/10 ${t.speaker === "client" ? "text-sky-300" : "text-slate-500"}`}
+                >
+                  {t.speaker === "client" ? "Client" : "You"}
+                </button>
+              ) : (
+                <span className={`mr-2 text-xs font-semibold ${t.speaker === "client" ? "text-sky-300" : "text-slate-500"}`}>
+                  {t.speaker === "client" ? "Client" : "You"}
+                </span>
+              )}
               {t.text}
             </li>
           );
