@@ -4,6 +4,19 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (16:50) - Clarified: the answer stays the core
+
+The team's call on the 16:45 decision: the core thesis does not change.
+Second Chair gives the advisor the answer to say. Block 2 changes what kind
+of answer: an advisory response, not a fact readout. Naming the worry is the
+lead-in, not the product. The suggested response stays the headline of the
+card and is built the way good advisors answer: acknowledge the feeling,
+connect it to the client's own goal, answer with the plan's figures, end with
+a question. Figures keep their provenance labels. Issue #37 rewritten to say
+so; tracking issue #44.
+
+---
+
 ## 2026-10-10 (16:45) - Block 2 closed; decided: advisory copilot, not a finance data tool
 
 **Tester 2 (session 2, "mixed"):** saw it as reading the client: "you don't
