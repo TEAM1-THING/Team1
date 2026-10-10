@@ -2,7 +2,7 @@
 // it through the real /api/moment handler.
 import type { Card, Concern, ConversationState, MomentRequest, MomentResponse, Prep, TranscriptTurn } from "@/lib/types";
 
-export type PostMoment = (req: MomentRequest) => Promise<MomentResponse>;
+export type PostMoment = (req: MomentRequest, signal?: AbortSignal) => Promise<MomentResponse>;
 
 // Only a client turn can raise a moment; advisor turns just extend the transcript.
 export async function processTurn(
@@ -16,11 +16,12 @@ export async function processTurn(
   return { card: res.card, state: res.state };
 }
 
-export const postMoment: PostMoment = async (req) => {
+export const postMoment: PostMoment = async (req, signal) => {
   const res = await fetch("/api/moment", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(req),
+    signal,
   });
   if (!res.ok) throw new Error(`/api/moment answered ${res.status}`);
   return (await res.json()) as MomentResponse;

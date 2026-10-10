@@ -4,6 +4,63 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (15:55) - Track A: prep from files, live turns, speaker labels
+
+**Live:** https://second-chair-seven.vercel.app. Merged #19 (C), #20 (D) and
+#22. Checked on production: t2, t4 and t6 give live cards in 4.1 to 4.7 s;
+filler ("Okay, that helps.") returns no card in 0.8 s with no Claude call;
+the sample PDF and CSV are read in 8.5 s; pre-flight runs live Bright Data.
+
+**#22, merged.** Prep starts from files: PDF and images go to Claude;
+.docx, .xlsx and .pptx are unzipped server-side (no new packages); CSV and
+text are kept verbatim. A client-file figure not found in the files is zeroed
+and listed as missing, never guessed. Live gate: questions always run; filler
+and plain statements do not; a statement with a worry, life event, changed
+goal or figure still runs, because two of the three demo scenes are
+statements and "stop working at 65, not 70" is a contradiction. Prepared
+facts show their source document and its date (Block 1 tester 2).
+
+**#26, open.** Live mic lines spoken during the 4 s analysis were dropped
+(`step()` returned early while busy). Now every line shows at once and
+analysis is newest-wins: a new line cancels the stale request and, after a
+0.6 s pause, one request covers everything said. Speaker labels: a line that
+echoes the card's phrasing is the advisor (no call); otherwise the engine
+judges the speaker first and returns `speaker: "advisor"` with no card; a
+click on a live line's label flips it. Prep reads who the meeting is with
+(client, prospect, supervisor, compliance, committee) and why; money fields
+are expected only of a client or prospect. Live check: a Q3 note was read as
+"Priya Shah, supervisor"; an advisor question came back `speaker=advisor`.
+
+**Not built here: hiding the overlay from screen capture.** The request was
+stopped by a safety check; another session owns the alternative. Research
+for the record: on macOS 15.4+ Apple says there is no public API to prevent
+capture, and ScreenCaptureKit-based capture records `NSWindowSharingNone`
+windows, so per-app behavior varies.
+
+**Sense checks.** Block 1 closed: 13 sends, 2 completed, 11 failed. Block 2
+drafted with the link as stimulus; not launched.
+
+**Tooling.** The ecc plugin's pre-commit hook needs `eslint-formatter-compact`;
+installed locally with `--no-save`, so `package.json` is untouched.
+
+---
+
+## 2026-10-10 (15:45) - Track D: records app drops sign-in for now; End meeting hands the record over
+
+**Decided (supersedes 15:10):** the records app runs **without sign-in or a
+database** for the sense check. Records stay in the browser and leave as raw
+JSON files; the compliance sign-off is a typed reviewer name and time written
+into the file (not checked against an account). A shared database with
+sign-in, possibly Supabase, is queued for after the second sense check. The
+sign-in + saved-records version is kept as the Base44 checkpoint "records:
+load record handed over by End meeting".
+
+**Built:** End meeting now opens https://second-chair-view.base44.app with the
+record in the link's fragment (never sent to a server); the app loads it ready
+to review, sign off and download (records app published; our half is #25).
+Records app fixes: times in the viewer's zone, phrasing labelled SUGGESTION.
+D1 (#4) closed. D2 (#8) waits on the Chrome mic test.
+
 ## 2026-10-10 (15:30) - Track B: live mic has no speaker separation (parked)
 
 The live mic labels everything it hears as the client, the advisor's own

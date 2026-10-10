@@ -9,7 +9,7 @@
 import * as z from "zod/v4";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { extractNumbers } from "@/lib/provenance";
-import { ClientFile, PrepSource } from "@/lib/types";
+import { ClientFile, type Meeting, PrepSource } from "@/lib/types";
 import { FALLBACK_BETA, LIVE_MODEL, getClient, supportsFallback } from "./client";
 import { draftMandate, type MandateDraftResult } from "./mandate";
 import { extractText, imageMediaType, kindOf, type FileKind } from "./office";
@@ -23,6 +23,7 @@ const MAX_TOKENS = 8_000;
 export type UploadedFile = { name: string; data: Buffer };
 export type FileReport = { name: string; read: boolean; note?: string };
 export type IngestResult = {
+  meeting?: Meeting;
   clientFile: ClientFile;
   sources: PrepSource[];
   mandate: MandateDraftResult["mandate"];
@@ -52,6 +53,13 @@ const IngestOutput = z.object({
         ),
     }),
   ),
+  meeting: z.object({
+    with: z.string().describe("Who the advisor is meeting: a name, or a description if no name is given."),
+    role: z
+      .string()
+      .describe("Their relation to the advisor in a word or two: client, prospect, supervisor, compliance, committee, colleague, other."),
+    purpose: z.string().describe("What the meeting is for, in one sentence, as the materials suggest."),
+  }),
   clientFile: z.object({
     name: z.string(),
     age: z.number(),
@@ -64,11 +72,16 @@ const IngestOutput = z.object({
     statedGoals: z.array(z.string()),
     statedConcerns: z.array(z.string()),
   }),
-  missing: z.array(z.string()).describe("Client-file fields the documents do not state."),
+  missing: z
+    .array(z.string())
+    .describe("Client-file fields the documents do not state. Money fields count only when the meeting is with a client or prospect."),
 });
 
 const SYSTEM = [
-  "You read a financial advisor's own meeting materials and fill in the prep for a client meeting.",
+  "You read a financial advisor's own meeting materials and fill in the prep for an upcoming meeting.",
+  "The materials can be anything: a plan, a client file, notes, a deck, a spreadsheet, a report, an email.",
+  "The meeting is not always with a client. Work out from the materials who it is with (a client, a prospect, a supervisor, compliance, a committee, a colleague) and what it is for.",
+  "clientFile describes that person: name is theirs, statedGoals is what they want from the meeting or their goals, statedConcerns is what they are likely to worry about or ask. The money fields apply only when stated.",
   "The advisor reviews everything you return before the meeting.",
   "",
   "Rules:",
@@ -199,6 +212,9 @@ const blankClient = (): ClientFile => ({
 });
 
 const NUMBER_FIELDS = ["age", "horizonYears", "cashOnHand", "investable"] as const;
+// Money fields are expected only of a client or prospect.
+const MONEY_FIELDS = new Set(["age", "horizonYears", "cashOnHand", "investable", "riskTolerance"]);
+const MONEY_ROLES = /client|prospect/;
 
 // Invariant: a client-file figure must appear in the documents. One that does
 // not is zeroed and reported missing, never passed on. horizonYears may be a
@@ -308,9 +324,19 @@ export async function ingestFiles(files: UploadedFile[], signal?: AbortSignal): 
       sources.map((s) => s.text),
       out.data.missing,
     );
+    const meeting: Meeting = {
+      with: out.data.meeting.with.trim() || traced.clientFile.name,
+      role: out.data.meeting.role.trim().toLowerCase() || "other",
+      purpose: out.data.meeting.purpose.trim(),
+    };
+    const missing = MONEY_ROLES.test(meeting.role)
+      ? traced.missing
+      : traced.missing.filter((f) => !MONEY_FIELDS.has(f));
     const m = await draftMandate(sources);
     return {
       ...traced,
+      missing,
+      meeting,
       sources,
       mandate: m.mandate,
       mandateSource: m.source,

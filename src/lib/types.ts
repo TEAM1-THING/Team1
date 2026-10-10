@@ -57,7 +57,17 @@ export const Mandate = z.object({
 });
 export type Mandate = z.infer<typeof Mandate>;
 
+// Who the meeting is with and what it is for. Not every meeting is with a
+// client: a prospect, a supervisor, compliance or a committee all count.
+export const Meeting = z.object({
+  with: z.string(), // name, or a description if no name is given
+  role: z.string(), // e.g. client, prospect, supervisor, compliance, committee
+  purpose: z.string(),
+});
+export type Meeting = z.infer<typeof Meeting>;
+
 export const Prep = z.object({
+  meeting: Meeting.optional(),
   clientFile: ClientFile,
   sources: z.array(PrepSource),
   mandate: Mandate,
@@ -122,6 +132,9 @@ export type MomentRequest = z.infer<typeof MomentRequest>;
 export const MomentResponse = z.object({
   card: Card.nullable(), // null when nothing decision-relevant happened
   state: ConversationState,
+  // Who the engine judged said the latest turn, when it judged. Live speech
+  // arrives unlabeled, so "advisor" tells the screen to relabel the line.
+  speaker: z.enum(["advisor", "client"]).optional(),
 });
 export type MomentResponse = z.infer<typeof MomentResponse>;
 
