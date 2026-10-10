@@ -6,7 +6,7 @@ import Concerns from "@/components/meeting/Concerns";
 import MomentCard from "@/components/meeting/Card";
 import Transcript from "@/components/meeting/Transcript";
 import { LIVE_PAUSE_MS, isLiveTurn, relabel, windowThrough } from "@/components/meeting/live";
-import { postMoment, processTurn } from "@/components/meeting/replay";
+import { followUpTasks, postMoment, processTurn } from "@/components/meeting/replay";
 import MicInput from "@/components/speech/MicInput";
 import { demoTranscript } from "@/data/demo";
 import { echoesCard } from "@/lib/engine/gate";
@@ -160,6 +160,17 @@ export default function MeetingPage() {
   }, [auto, done, nextTurn]);
 
   const [hidden, setHidden] = useState(false);
+  const [ended, setEnded] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+  const tasks = prep ? followUpTasks(convo.concerns, prep.clientFile.name) : [];
+  const copyTasks = async () => {
+    try {
+      await navigator.clipboard.writeText(tasks.join("\n"));
+      setCopied(`Copied ${tasks.length} ${tasks.length === 1 ? "task" : "tasks"}.`);
+    } catch {
+      setCopied("Copy was blocked by the browser. Select the list and copy it by hand.");
+    }
+  };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || (e.target as HTMLElement).closest("input, textarea, button, summary")) return;
@@ -183,7 +194,9 @@ export default function MeetingPage() {
     "rounded-full px-3 py-1.5 text-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 active:scale-[0.98] disabled:opacity-35 disabled:active:scale-100";
 
   return (
-    <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-[#0d1219] text-slate-100">
+    // Desktop: the page is exactly one screen and each column scrolls on its own.
+    // Phones stack the columns, so the page scrolls there.
+    <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-[#0d1219] text-slate-100 lg:h-[100dvh]">
       {/* The room behind the overlay: a dim call, so the glass reads as glass. */}
       <div
         aria-hidden
@@ -236,7 +249,12 @@ export default function MeetingPage() {
         </button>
         <button
           type="button"
-          onClick={() => prep && void exportRecord(prep, { ...convo, cards })}
+          onClick={() => {
+            if (!prep) return;
+            setEnded(true);
+            setAuto(false);
+            void exportRecord(prep, { ...convo, cards });
+          }}
           disabled={!prep}
           className={`${btn} bg-rose-500/90 font-medium text-rose-50 hover:bg-rose-500`}
         >
@@ -250,11 +268,34 @@ export default function MeetingPage() {
         </p>
       )}
 
-      <main className="relative z-10 mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 gap-6 p-4 md:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,580px)_minmax(0,280px)]">
-        <div className="order-3 lg:order-1 lg:max-h-[calc(100dvh-150px)] lg:overflow-y-auto lg:pr-2">
+      <main className="relative z-10 mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 gap-6 p-4 md:p-6 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,580px)_minmax(0,280px)] lg:grid-rows-[minmax(0,1fr)]">
+        <div className="order-3 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
           <Transcript turns={turns} onToggle={toggleSpeaker} />
         </div>
-        <div className={`order-1 space-y-3 lg:order-2 ${hidden ? "invisible" : ""}`} aria-live="polite" aria-busy={waiting}>
+        <div className={`order-1 space-y-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto lg:pr-1 ${hidden ? "invisible" : ""}`} aria-live="polite" aria-busy={waiting}>
+          {ended && (
+            <section aria-labelledby="followups-h" className="sc-arrive sc-glass rounded-2xl border border-sky-300/30 bg-slate-900/80 p-5 backdrop-blur-xl">
+              <h2 id="followups-h" className="mb-1 text-base font-semibold text-slate-50">Follow-ups from this meeting</h2>
+              <p className="mb-3 text-sm text-slate-400">
+                {tasks.length ? "Concerns the client raised that are still open." : "No open concerns. Nothing to follow up."}
+              </p>
+              {tasks.length > 0 && (
+                <>
+                  <ul className="mb-4 list-disc space-y-1 pl-5 text-sm text-slate-200">
+                    {tasks.map((t) => (
+                      <li key={t}>{t}</li>
+                    ))}
+                  </ul>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button type="button" onClick={() => void copyTasks()} className={`${btn} bg-slate-100 font-medium text-slate-900 hover:bg-sky-100`}>
+                      Copy as tasks
+                    </button>
+                    {copied && <span role="status" className="text-sm text-slate-400">{copied}</span>}
+                  </div>
+                </>
+              )}
+            </section>
+          )}
           {waiting && (
             <div aria-label="Reading the client's last turn" className="sc-glass space-y-3 rounded-2xl border border-white/10 bg-slate-900/60 p-5 backdrop-blur-xl">
               <div className="h-3 w-24 rounded-full bg-white/10 motion-safe:animate-pulse" />
@@ -273,7 +314,7 @@ export default function MeetingPage() {
           )}
           {previous && <MomentCard key={previous.id} card={previous} dimmed />}
         </div>
-        <div className={`order-2 lg:order-3 ${hidden ? "invisible" : ""}`}>
+        <div className={`order-2 lg:order-3 lg:min-h-0 lg:overflow-y-auto ${hidden ? "invisible" : ""}`}>
           <Concerns concerns={convo.concerns} />
         </div>
       </main>
