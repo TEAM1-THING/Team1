@@ -1,8 +1,8 @@
 // After-meeting record: every card is a record (guardrail 5). Owned by the
 // ship track. The meeting screen only ever calls exportRecord.
 // Flow: download the record as JSON, then open the Base44 records app
-// (NEXT_PUBLIC_BASE44_URL) in a new tab with the record already loaded, so
-// the advisor only has to sign in and press Save record.
+// (NEXT_PUBLIC_BASE44_URL) in a new tab with the record already loaded, ready
+// to review, sign off and download as a raw file.
 import type { ConversationState, Prep } from "./types";
 
 export type MeetingRecord = {
