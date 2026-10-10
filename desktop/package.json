@@ -1,0 +1,18 @@
+{
+  "name": "second-chair-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit -p .",
+    "start": "npm run build && electron .",
+    "check": "npm run typecheck && npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "electron": "^44.7.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.3"
+  }
+}

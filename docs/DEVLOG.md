@@ -4,6 +4,45 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (15:55) - Desktop overlay (Electron), on its own branch
+
+Branch `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f`, not merged (code freeze).
+New package `desktop/` with its own `package.json`, so the root package,
+lockfile and every track's files are untouched. Root `tsconfig.json` now
+excludes `desktop`. Run: `cd desktop && npm install && npm start`.
+
+**What it is:** the deployed `/meeting` page in a compact always-on-top panel
+over the call: title bar with the logo and live status, movable, resizable,
+collapsible to the bar, remembers its place and text size, menu-bar icon.
+Hotkeys are Control+Option (Ctrl+Alt): H hide, Space type, G see-through,
+B collapse, Right next turn, P auto-play, Shift+Q quit.
+
+**Decided:**
+- **Content protection is on, but it is not a promise on macOS.** Electron's
+  own docs: macOS apps that capture with ScreenCaptureKit (recent Zoom, Teams,
+  the macOS screenshot tool) capture the window anyway. Windows
+  (`WDA_EXCLUDEFROMCAPTURE`) works. On a Mac, share a window, not the desktop.
+  Not verified here: this shell has no Screen Recording permission.
+- **Focus:** a non-activating panel that never takes focus from the call; it
+  only does when the advisor asks to type, and Esc gives it back.
+- **Lag:** the main process never waits on audio, speech or the network.
+  System audio is captured in a hidden window, voice detection runs on the
+  audio thread, speech-to-text runs in a utility process with backpressure
+  (merges waiting sentences instead of queueing). Turns enter through the
+  meeting page's own mic button, consent checkbox included (shimmed
+  SpeechRecognition). **Found:** the meeting page drops a turn that arrives
+  while `/api/moment` is answering; the shim now holds those and sends them
+  as one merged turn when the page is free.
+- **Speech-to-text** is any OpenAI-compatible endpoint in `SC_STT_URL`
+  (local whisper keeps audio on the machine). macOS needs a virtual audio
+  device (BlackHole) for the call's sound; Electron has loopback on Windows only.
+- OCR and screen extraction dropped (finance tool, not code).
+
+**Verified** (CDP-driven, tone source and mock speech service): click-through
+zones, collapse, see-through, no sideways overflow, no page errors, tone to
+card in 9 s, nothing sent after Stop mic. 125 tests green. Not verified: real
+call audio (no BlackHole here), capture exclusion, Windows.
+
 ## 2026-10-10 (15:10) - Track D: Vercel live, records app published
 
 **Vercel is live:** https://second-chair-seven.vercel.app (project on D's

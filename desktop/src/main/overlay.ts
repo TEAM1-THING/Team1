@@ -1,0 +1,284 @@
+// The overlay window: a compact panel over the video call that the advisor
+// sees and the client does not. Three jobs:
+//   1. Capture: content protection keeps it out of screen share.
+//   2. Input: the panel catches clicks; see-through mode passes them to the call.
+//   3. Focus: it never takes focus from the call unless the advisor asks to type.
+// The advisor can move it (title bar), resize it (edges), collapse it to the
+// bar, and it reopens where they left it.
+import { app, BrowserWindow, screen, shell, type Rectangle } from "electron";
+import { readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import { BAR_HEIGHT, ignoreMouse, initialMode, onScreen, type Hit, type OverlayMode } from "../core/clickThrough";
+import { asset, config, dist } from "./config";
+
+// Turns the meeting page into one solid panel under the title bar, so its text
+// never sits on top of the app behind, wraps instead of running off the edge,
+// and scrolls inside the panel. Scoped by the meeting screen's own classes, so
+// no web file changes for the desktop.
+const OVERLAY_CSS = `
+html { background: transparent !important; }
+body { background: rgb(13 18 25 / .95) !important; border: 1px solid rgb(255 255 255 / .1); border-radius: 14px;
+  box-sizing: border-box; height: 100vh; margin: 0; padding-top: ${BAR_HEIGHT}px; overflow: hidden auto;
+  overflow-wrap: anywhere; scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / .2) transparent; }
+[class~="bg-[#0d1219]"] { background: transparent !important; min-height: 0 !important; }
+[class~="bg-[#0d1219]"] > [aria-hidden="true"].absolute.inset-0 { display: none !important; }
+body .truncate { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+body main { padding: 12px !important; gap: 12px !important; }
+body header span.font-semibold.tracking-tight { display: none !important; } /* the title bar already names it */
+html[data-sc-typing] body { border-color: #8ec5f2; box-shadow: inset 0 0 0 1px #8ec5f2; }
+html[data-sc-ghost] body > :not(#sc-bar) { opacity: .45; }
+html[data-sc-ghost] body { background: rgb(13 18 25 / .55) !important; }
+`;
+
+const MARGIN = 16;
+const MIN = { width: 340, height: 240 };
+const ZOOM = { min: 0.7, max: 1.3, step: 0.1, start: 0.9 };
+
+type Saved = { bounds?: Rectangle; zoom?: number };
+const savedPath = () => path.join(app.getPath("userData"), "overlay.json");
+function load(): Saved {
+  try {
+    return JSON.parse(readFileSync(savedPath(), "utf8")) as Saved;
+  } catch {
+    return {};
+  }
+}
+
+// Top-right of the display under the cursor, tall enough for a card, never the whole screen.
+function defaultBounds(): Rectangle {
+  const { workArea: wa } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  const width = Math.min(config.width, wa.width - 2 * MARGIN);
+  const height = Math.min(680, wa.height - 2 * MARGIN);
+  const x = config.side === "left" ? wa.x + MARGIN : wa.x + wa.width - width - MARGIN;
+  return { x, y: wa.y + MARGIN, width, height };
+}
+
+export type Overlay = ReturnType<typeof createOverlay>;
+export type OverlayView = { mode: OverlayMode; visible: boolean; collapsed: boolean; listening: boolean };
+
+export function createOverlay(onChange: (v: OverlayView) => void) {
+  const mode = initialMode();
+  const mac = process.platform === "darwin";
+  const saved = load();
+  const areas = screen.getAllDisplays().map((d) => d.workArea);
+  const start = saved.bounds && onScreen(saved.bounds, areas) ? saved.bounds : defaultBounds();
+  let zoom = Math.min(ZOOM.max, Math.max(ZOOM.min, saved.zoom ?? ZOOM.start));
+  let collapsed = false;
+  let expandedHeight = start.height;
+  let listening = false;
+
+  const win = new BrowserWindow({
+    ...start,
+    minWidth: MIN.width,
+    minHeight: MIN.height,
+    title: "Second Chair",
+    icon: asset("icon.png"),
+    show: false,
+    frame: false,
+    transparent: true,
+    backgroundColor: "#00000000",
+    hasShadow: true,
+    resizable: true,
+    movable: true,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    // Focus: never activate on click. A macOS panel is a non-activating
+    // NSPanel; a Windows toolbar window stays out of Alt-Tab.
+    focusable: false,
+    acceptFirstMouse: true,
+    hiddenInMissionControl: true,
+    ...(mac ? { type: "panel" } : process.platform === "win32" ? { type: "toolbar" } : {}),
+    webPreferences: {
+      preload: dist("preload-overlay.js"),
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false,
+      // The window is never focused; without this Chromium throttles its timers.
+      backgroundThrottling: false,
+      spellcheck: false,
+    },
+  });
+
+  // 1. Capture. Windows: SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE).
+  // macOS: NSWindow.sharingType = .none, which ScreenCaptureKit capturers
+  // ignore on current macOS, so share a window rather than the whole screen there.
+  win.setContentProtection(config.protect);
+  // Above full-screen Zoom and Teams, and on every Space.
+  win.setAlwaysOnTop(true, "screen-saver");
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
+  // 2. Input. The transparent corners pass clicks through from the start; the
+  // preload reports what the pointer is over, which `forward` lets it see.
+  win.setIgnoreMouseEvents(true, { forward: true });
+
+  const wc = win.webContents;
+  wc.on("dom-ready", () => void wc.insertCSS(OVERLAY_CSS));
+  wc.on("did-finish-load", () => {
+    wc.setZoomFactor(zoom);
+    publish();
+  });
+  wc.on("did-fail-load", (_e, code, desc, url, isMain) => {
+    if (!isMain || code === -3) return; // -3: aborted by a newer navigation
+    console.error(`[overlay] could not load ${url}: ${desc}. Retrying in 3 s.`);
+    setTimeout(() => !win.isDestroyed() && void win.loadURL(config.url), 3000);
+  });
+  wc.on("render-process-gone", (_e, d) => {
+    console.error(`[overlay] renderer gone (${d.reason}); reloading`);
+    if (!win.isDestroyed()) win.reload();
+  });
+
+  // The overlay only shows the meeting app. Other links (the records app) open
+  // in the advisor's browser; the exported record saves to Downloads without a dialog.
+  const origin = new URL(config.url).origin;
+  const external = (url: string) => /^https?:/.test(url) && void shell.openExternal(url);
+  wc.on("will-navigate", (e, url) => {
+    if (new URL(url).origin === origin) return;
+    e.preventDefault();
+    external(url);
+  });
+  wc.setWindowOpenHandler(({ url }) => {
+    external(url);
+    return { action: "deny" };
+  });
+  wc.session.on("will-download", (_e, item) => item.setSavePath(path.join(app.getPath("downloads"), item.getFilename())));
+
+  // Remember where the advisor put it, and at what text size.
+  let saveTimer: NodeJS.Timeout | undefined;
+  const persist = () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      if (win.isDestroyed()) return;
+      const b = win.getBounds();
+      const bounds = { ...b, height: collapsed ? expandedHeight : b.height };
+      try {
+        writeFileSync(savedPath(), JSON.stringify({ bounds, zoom } satisfies Saved));
+      } catch (e) {
+        console.warn(`[overlay] could not save position: ${e}`);
+      }
+    }, 400);
+  };
+  win.on("moved", persist);
+  win.on("resized", persist);
+
+  // A monitor unplugged mid-meeting must not strand the overlay off-screen.
+  const rescue = () => {
+    if (win.isDestroyed() || onScreen(win.getBounds(), screen.getAllDisplays().map((d) => d.workArea))) return;
+    self.resetPosition();
+  };
+  screen.on("display-removed", rescue);
+  screen.on("display-metrics-changed", rescue);
+  win.on("closed", () => {
+    screen.off("display-removed", rescue);
+    screen.off("display-metrics-changed", rescue);
+  });
+
+  win.once("ready-to-show", () => win.showInactive()); // 3. Focus: appear without taking it.
+  void win.loadURL(config.url);
+
+  // Tell the title bar and the tray what state the overlay is in.
+  function publish() {
+    if (win.isDestroyed()) return;
+    wc.send("sc:status", { listening, ghost: mode.ghost, typing: mode.typing, collapsed, mac });
+    onChange({ mode: { ...mode }, visible: win.isVisible(), collapsed, listening });
+  }
+
+  function apply() {
+    if (win.isDestroyed()) return;
+    if (config.debug) console.log(`[overlay] mode typing=${mode.typing} ghost=${mode.ghost} ignoreMouse=${ignoreMouse(mode)}`);
+    win.setIgnoreMouseEvents(ignoreMouse(mode), { forward: true });
+    publish();
+  }
+
+  const barHeight = () => Math.round(BAR_HEIGHT * zoom) + 2;
+
+  const self = {
+    win,
+    get mode() {
+      return { ...mode };
+    },
+    get protected() {
+      return win.isContentProtected();
+    },
+    // Called on every hit change from the preload; touches only the mouse state.
+    setHit(hit: Hit) {
+      if (mode.hit === hit) return;
+      mode.hit = hit;
+      if (config.debug) console.log(`[overlay] pointer over ${hit}: ${ignoreMouse(mode) ? "clicks pass through" : "catching clicks"}`);
+      win.setIgnoreMouseEvents(ignoreMouse(mode), { forward: true });
+    },
+    // Typing is the one time the overlay takes focus. Leaving it gives focus
+    // straight back, so the call's own shortcuts work again.
+    setTyping(on: boolean) {
+      if (mode.typing === on) return;
+      mode.typing = on;
+      if (on) {
+        if (collapsed) self.toggleCollapsed();
+        win.setFocusable(true);
+        win.showInactive();
+        win.focus();
+      } else {
+        win.blur();
+        win.setFocusable(false);
+      }
+      apply();
+    },
+    toggleGhost() {
+      mode.ghost = !mode.ghost;
+      apply();
+    },
+    // Collapsed, the overlay is just its title bar: status stays in view, the call is uncovered.
+    toggleCollapsed() {
+      const b = win.getBounds();
+      collapsed = !collapsed;
+      if (collapsed) {
+        expandedHeight = b.height;
+        win.setMinimumSize(MIN.width, 1);
+        win.setBounds({ ...b, height: barHeight() });
+        win.setResizable(false);
+      } else {
+        win.setResizable(true);
+        win.setBounds({ ...b, height: expandedHeight });
+        win.setMinimumSize(MIN.width, MIN.height);
+      }
+      publish();
+    },
+    toggleVisible() {
+      if (win.isVisible()) {
+        if (mode.typing) self.setTyping(false);
+        win.hide();
+      } else {
+        win.showInactive();
+      }
+      publish();
+    },
+    zoomBy(steps: number) {
+      zoom = Math.round(Math.min(ZOOM.max, Math.max(ZOOM.min, zoom + steps * ZOOM.step)) * 10) / 10;
+      wc.setZoomFactor(zoom);
+      if (collapsed) win.setBounds({ ...win.getBounds(), height: barHeight() });
+      persist();
+    },
+    resetPosition() {
+      collapsed = false;
+      win.setResizable(true);
+      win.setMinimumSize(MIN.width, MIN.height);
+      win.setBounds(defaultBounds());
+      persist();
+      publish();
+    },
+    setProtected(on: boolean) {
+      win.setContentProtection(on);
+      publish();
+    },
+    setListening(on: boolean) {
+      listening = on;
+      publish();
+    },
+    // Hotkeys reach the meeting page as the keys it already handles.
+    sendKey(key: string) {
+      wc.send("sc:key", key);
+    },
+  };
+  return self;
+}
