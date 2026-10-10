@@ -2,8 +2,8 @@
 // End screen: what the meeting caught, what is still open, and where the
 // record went. Shown over the live view once End meeting is pressed.
 import Link from "next/link";
-import { useState } from "react";
-import { base44Url, buildRecord, recordFileName } from "@/lib/record";
+import { useEffect, useRef, useState } from "react";
+import { base44Url, buildRecord, recordFileName, recordLink } from "@/lib/record";
 import type { Card, Concern, Prep } from "@/lib/types";
 import { endSummary } from "./endSummary";
 
@@ -16,8 +16,27 @@ const panel = "sc-glass rounded-2xl border border-white/10 bg-slate-900/70 p-5 b
 export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
   const summary = endSummary(cards, concerns);
-  const fileName = recordFileName(buildRecord(prep, { concerns, cards }));
-  const records = base44Url();
+  // Once, at the moment the record was exported, not on every re-render.
+  const [record] = useState(() => buildRecord(prep, { concerns, cards }));
+  const fileName = recordFileName(record);
+  // Reopening the records app brings this record with it, as End meeting does.
+  const base = base44Url();
+  const records = base ? recordLink(base, record) : null;
+  const heading = useRef<HTMLHeadingElement>(null);
+  const back = useRef(onBack);
+  useEffect(() => {
+    back.current = onBack;
+  }, [onBack]);
+
+  // Focus moves into the dialog once, on open; Escape is Back to meeting.
+  useEffect(() => {
+    heading.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") back.current();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const copyTasks = async () => {
     try {
@@ -41,12 +60,15 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
         aria-hidden
         className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_25%_15%,rgb(56_120_168/0.28)_0%,transparent_55%),radial-gradient(ellipse_at_85%_95%,rgb(30_64_90/0.35)_0%,transparent_50%)]"
       />
+      <p role="note" className="relative border-b border-white/5 bg-sky-400/10 px-4 py-1.5 text-center text-xs text-sky-100">
+        This meeting uses Second Chair. All participants have been told and agreed.
+      </p>
       <main className="sc-arrive relative mx-auto flex w-full max-w-4xl flex-col gap-5 p-4 md:p-6">
         <header className="flex flex-col gap-1 pt-2">
           <p className="text-sm text-slate-400">
             Meeting ended · <span className="tabular-nums">{clock}</span> with {prep.clientFile.name}
           </p>
-          <h1 id="end-h" className="text-2xl font-semibold tracking-tight text-slate-50">
+          <h1 id="end-h" ref={heading} tabIndex={-1} className="text-2xl font-semibold tracking-tight text-slate-50 outline-none">
             Here&apos;s what Second Chair caught
           </h1>
         </header>

@@ -51,4 +51,12 @@ describe("endSummary", () => {
 
 it("labels moment types for people", () => {
   expect(momentLabel("buying_signal")).toBe("Buying signal");
+  expect(momentLabel("")).toBe("");
+});
+
+it("marks a moment resolved only when every concern raised at its turn is resolved", () => {
+  const cards = [{ id: "c2", turnId: "t2", moment: "objection", concern: "Access" }] as Card[];
+  const s = endSummary(cards, [concern("liquidity", "t2", "resolved"), concern("request: fee schedule", "t2", "open")]);
+  expect(s.moments[0].resolved).toBe(false);
+  expect([s.resolved, s.open]).toEqual([1, 1]);
 });

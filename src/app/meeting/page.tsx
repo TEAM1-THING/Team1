@@ -53,7 +53,7 @@ export default function MeetingPage() {
         setConvo(res.state);
         if (res.card) {
           live.current.lastPhrasing = res.card.phrasing;
-          setCards((cs) => [...cs, res.card!]);
+          setCards((cs) => [...cs.filter((c) => c.id !== res.card!.id), res.card!]);
         }
         setError(null);
       } catch (e) {
@@ -100,7 +100,7 @@ export default function MeetingPage() {
         setConvo(res.state);
         if (res.card) {
           live.current.lastPhrasing = res.card.phrasing;
-          setCards((cs) => [...cs, res.card!]);
+          setCards((cs) => [...cs.filter((c) => c.id !== res.card!.id), res.card!]);
         }
         setError(null);
       } catch (e) {
@@ -161,8 +161,9 @@ export default function MeetingPage() {
   }, [auto, done, nextTurn]);
 
   const [hidden, setHidden] = useState(false);
-  const [ended, setEnded] = useState(false);
-  const tasks = prep ? followUpTasks(convo.concerns, prep.clientFile.name) : [];
+  // What End meeting exported. The end screen shows exactly this, so a result
+  // that lands after the click cannot make the summary disagree with the record.
+  const [ended, setEnded] = useState<{ state: ConversationState; clock: string } | null>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (ended) return; // the end screen is on top; shortcuts would drive the hidden meeting
@@ -214,7 +215,7 @@ export default function MeetingPage() {
         This meeting uses Second Chair. All participants have been told and agreed.
       </p>
 
-      <header className="sc-glass relative z-10 mx-4 mt-4 flex flex-wrap items-center gap-1 rounded-2xl border border-white/10 bg-slate-900/70 p-1.5 pl-4 backdrop-blur-xl sm:mx-auto sm:rounded-full">
+      <header inert={!!ended} className="sc-glass relative z-10 mx-4 mt-4 flex flex-wrap items-center gap-1 rounded-2xl border border-white/10 bg-slate-900/70 p-1.5 pl-4 backdrop-blur-xl sm:mx-auto sm:rounded-full">
         <span className="mr-2 flex items-center gap-2 text-sm">
           {/* Live state, not decoration: red while the meeting is running. */}
           <span aria-hidden className={`size-2 rounded-full ${turns.length ? "bg-rose-400 motion-safe:animate-pulse" : "bg-slate-600"}`} />
@@ -234,8 +235,9 @@ export default function MeetingPage() {
           {auto ? "Pause" : "Auto-play"}
         </button>
         {/* Fit the ship track's mic button to this bar without editing its file. */}
+        {/* Unmounted once the meeting ends: its cleanup stops the recognizer. */}
         <span className="[&_button]:rounded-full [&_button]:border-white/15 [&_button]:px-3 [&_button]:py-1.5 [&_button]:text-slate-400">
-          <MicInput onTurn={onMicTurn} />
+          {!ended && <MicInput onTurn={onMicTurn} />}
         </span>
         <button type="button" onClick={() => setHidden((h) => !h)} className={`${btn} text-slate-300 hover:bg-white/10`} aria-pressed={hidden}>
           {hidden ? "Show" : "Hide"} <kbd className="ml-1 font-sans text-xs text-slate-500">H</kbd>
@@ -244,9 +246,15 @@ export default function MeetingPage() {
           type="button"
           onClick={() => {
             if (!prep) return;
-            setEnded(true);
+            // Nothing heard or analyzed after this belongs to the record.
+            if (pending.current.timer) clearTimeout(pending.current.timer);
+            pending.current.timer = null;
+            pending.current.ctrl?.abort();
             setAuto(false);
-            void exportRecord(prep, { ...convo, cards });
+            const state = { ...convo, cards };
+            setEnded({ state, clock: mmss });
+            // Synchronous inside the click, so window.open keeps the user gesture.
+            void exportRecord(prep, state);
           }}
           disabled={!prep}
           className={`${btn} bg-rose-500/90 font-medium text-rose-50 hover:bg-rose-500`}
@@ -256,12 +264,12 @@ export default function MeetingPage() {
       </header>
 
       {error && (
-        <p role="alert" className="relative z-10 mx-4 mt-3 rounded-2xl bg-rose-500/15 px-4 py-2 text-sm text-rose-100 sm:mx-auto">
+        <p role="alert" inert={!!ended} className="relative z-10 mx-4 mt-3 rounded-2xl bg-rose-500/15 px-4 py-2 text-sm text-rose-100 sm:mx-auto">
           The engine did not answer ({error}). Press Next turn to try again.
         </p>
       )}
 
-      <main className="relative z-10 mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 gap-6 p-4 md:p-6 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,580px)_minmax(0,280px)] lg:grid-rows-[minmax(0,1fr)]">
+      <main inert={!!ended} className="relative z-10 mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 gap-6 p-4 md:p-6 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,580px)_minmax(0,280px)] lg:grid-rows-[minmax(0,1fr)]">
         <div className="order-3 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
           <Transcript turns={turns} onToggle={toggleSpeaker} />
         </div>
@@ -290,7 +298,14 @@ export default function MeetingPage() {
       </main>
 
       {ended && prep && (
-        <EndScreen prep={prep} cards={cards} concerns={convo.concerns} tasks={tasks} clock={mmss} onBack={() => setEnded(false)} />
+        <EndScreen
+          prep={prep}
+          cards={ended.state.cards}
+          concerns={ended.state.concerns}
+          tasks={followUpTasks(ended.state.concerns, prep.clientFile.name)}
+          clock={ended.clock}
+          onBack={() => setEnded(null)}
+        />
       )}
     </div>
   );

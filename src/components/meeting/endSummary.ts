@@ -7,12 +7,18 @@ export type EndSummary = { moments: MomentLine[]; resolved: number; open: number
 
 export const momentLabel = (m: string) => {
   const s = m.replace(/_/g, " ");
-  return s[0].toUpperCase() + s.slice(1);
+  return s ? s[0].toUpperCase() + s.slice(1) : s;
 };
 
-// A moment counts as resolved when a concern raised at its turn was resolved.
+// A moment counts as resolved when concerns were raised at its turn and every
+// one of them is resolved. One turn can open several ("open the others as
+// concerns"), so a single resolved one is not enough.
 export function endSummary(cards: Card[], concerns: Concern[]): EndSummary {
-  const resolvedAt = new Set(concerns.filter((c) => c.status === "resolved").map((c) => c.raisedAtTurn));
+  const byTurn = new Map<string, Concern[]>();
+  for (const c of concerns) byTurn.set(c.raisedAtTurn, [...(byTurn.get(c.raisedAtTurn) ?? []), c]);
+  const resolvedAt = new Set(
+    [...byTurn].filter(([, cs]) => cs.every((c) => c.status === "resolved")).map(([turn]) => turn),
+  );
   return {
     moments: cards.map((c) => ({
       id: c.id,
