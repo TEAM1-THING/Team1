@@ -103,7 +103,8 @@ Rules:
 - concern is what sits underneath the client's words, in one line.
 - recommendedMove is the advisor's next move in one sentence of at most 20 words. phrasing is at most 30 words the advisor could say aloud, in plain spoken language. why is one sentence of at most 20 words on why this move fits what the client said.
 - Give at most 3 facts and at most 2 doNotClaim items. concern is at most 15 words.
-- concernUpdates.open lists short topics (one to three words, for example "liquidity") for new concerns the client raised in this turn. concernUpdates.resolve lists topics, copied from the open concerns in the ledger, that this turn shows are now addressed. Leave both empty when nothing changed.
+- concernUpdates.open lists short topics (one to three words, for example "liquidity") for new concerns the client raised in this turn. Do not reopen a topic that is already open.
+- concernUpdates.resolve lists topics, copied exactly from the open concerns in the ledger, that the latest client turn shows are settled for now. Resolve a concern when the client accepts the answer or moves on from it, for example "okay, that helps", "that makes sense", "fair enough", or turning to a different worry. A new worry in the same turn does not keep the old one open. Leave both lists empty when nothing changed.
 
 Keep every field short; the advisor reads it mid-conversation.`;
 
@@ -393,6 +394,9 @@ async function callClaude(
 ): Promise<LlmMoment | string> {
   const client = getClient();
   const model = opts.model ?? LIVE_MODEL;
+  // Benchmark: Haiku without the reasoning step was the fastest variant (max
+  // 3.2 s over 12 calls, all live). LIVE_THINKING=on restores it.
+  const thinkingOff = opts.thinkingOff ?? (model.startsWith("claude-haiku") && process.env.LIVE_THINKING !== "on");
   const parts = buildMomentParts(req.prep, req.turns, req.state, latest);
   if (!client) return "no client";
   if (signal?.aborted) return "request aborted";
@@ -417,7 +421,7 @@ async function callClaude(
             ],
           },
         ],
-        ...(opts.thinkingOff ? { thinking: { type: "disabled" as const } } : {}),
+        ...(thinkingOff ? { thinking: { type: "disabled" as const } } : {}),
         output_config: { effort: "low", format: getOutputFormat() },
       },
       { signal: controller.signal, timeout: timeoutMs },
