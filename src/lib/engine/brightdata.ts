@@ -64,6 +64,8 @@ function organicOf(payload: unknown): unknown[] | null {
       return null;
     }
   }
+  // format "json" (the dashboard's sample) wraps an already-parsed body.
+  if (obj.body && typeof obj.body === "object") return organicOf(obj.body);
   return null;
 }
 
