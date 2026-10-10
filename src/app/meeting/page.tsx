@@ -220,20 +220,10 @@ export default function MeetingPage() {
         }
       `}</style>
 
-      <div role="note" className="relative z-10 border-b border-white/5 bg-sky-400/10 px-4 py-1.5 text-center text-xs text-sky-100">
-        <p>This meeting uses Second Chair. All participants have been told and agreed.</p>
-        {/* #34: words the advisor can say to ask. Each clause matches what runs:
-            MicInput.tsx sends audio to Chrome's (Google's) speech service;
-            engine/moment.ts sends the recent lines and the client file to
-            Anthropic; record.ts saves cards and concerns to the records app; no
-            audio is stored by this app. */}
-        <p className="mt-0.5 text-sky-200/70">
-          Ask first: &ldquo;I&apos;d like to use an AI assistant called Second Chair today. It transcribes our conversation
-          using Google&apos;s speech service, and sends what we say, with the details of your plan, to an AI service
-          (Anthropic) that suggests what I should check or say. We don&apos;t save audio, but I keep a written record of
-          its notes and the concerns you raise. Is that all right with you?&rdquo;
-        </p>
-      </div>
+      {/* The read-aloud consent script belongs in the live mic's start popup (track D, #34). */}
+      <p role="note" className="relative z-10 border-b border-white/5 bg-sky-400/10 px-4 py-1.5 text-center text-xs text-sky-100">
+        This meeting uses Second Chair. All participants have been told and agreed.
+      </p>
 
       <header inert={!!ended} className="sc-glass relative z-10 mx-4 mt-4 flex flex-wrap items-center gap-1 rounded-2xl border border-white/10 bg-slate-900/70 p-1.5 pl-4 backdrop-blur-xl sm:mx-auto sm:rounded-full">
         <span className="mr-2 flex items-center gap-2 text-sm">
