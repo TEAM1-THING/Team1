@@ -4,6 +4,7 @@
 import * as z from "zod/v4";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { FALLBACK_BETA, LIVE_MODEL, LIVE_TIMEOUT_MS, getClient, supportsFallback } from "./client";
+import { CONSISTENCY_RULE, earlierCards, holdSteady } from "./consistency";
 import { classifyUtterance, echoesCard } from "./gate";
 import { demoPrep, demoTranscript } from "../../data/demo";
 import { mockMoment } from "../mock";
@@ -74,6 +75,9 @@ const LlmMoment = z.object({
     open: z.array(z.string()),
     resolve: z.array(z.string()),
   }),
+  // #41: the earlier card this turn rewords, and whether it adds anything new.
+  sameAs: z.string().optional().describe("id from <earlier_cards> this turn is about, or empty"),
+  addsNew: z.boolean().optional(),
 });
 export type LlmMoment = z.infer<typeof LlmMoment>;
 
@@ -93,6 +97,7 @@ Rules:
 - Live speech-to-text labels every line "client", so first judge who said the latest turn. The advisor explains the plan, asks the client about their situation, reassures, or reads out a suggested line. The client talks about their own money, worries, family and goals. If it was the advisor, set speaker "advisor" and relevant false.
 - The meeting may not be with a client: <meeting> says who the advisor is meeting (a prospect, a supervisor, compliance, a committee). "Client" in these rules means that person, and <client_file> holds what is known about them; its figures may be 0 when unknown.
 - Several client lines may have arrived since the last card. Answer the most pressing one in the card and open the others as concerns.
+${CONSISTENCY_RULE}
 - Respond to what the client actually said in the latest client turn, consistent with the advisor's prepared plan and the Mandate.
 - The aim is that the client makes an informed decision that serves their own stated goals. It is not to win the client over or close a sale.
 - Do not use urgency, scarcity or fear framing anywhere, including the phrasing.
@@ -145,6 +150,7 @@ export function buildMomentParts(
       .slice(-MAX_LIST_ITEMS)
       .map((c) => clip(c.topic, MAX_ITEM_CHARS));
   const ledger = { open: topics("open"), resolved: topics("resolved") };
+  const earlier = earlierCards(state, latest, turns);
   const sources = prep.sources.slice(0, MAX_SOURCES).map((s) => ({
     id: clip(s.id, 100),
     title: clip(s.title, MAX_ITEM_CHARS),
@@ -189,6 +195,7 @@ export function buildMomentParts(
     ].join("\n"),
     live: [
       `<concern_ledger>${data(ledger)}</concern_ledger>`,
+      ...(earlier.length ? [`<earlier_cards>${data(earlier)}</earlier_cards>`] : []),
       `<recent_turns>${data(recent)}</recent_turns>`,
       `<latest_client_turn>${data(turn(latest))}</latest_client_turn>`,
       "</meeting_data>",
@@ -481,12 +488,13 @@ export async function runMoment(
     if (typeof out === "string") return fallback(prep, state, latest, out);
     if (out.speaker === "advisor") return { card: null, state, speaker: "advisor" };
     if (!out.relevant) return { card: null, state, speaker: "client" };
-    const card = toCard(out, prep, latest, turns);
+    const steady = holdSteady(out, state, latest, turns);
+    const card = toCard(steady, prep, latest, turns);
     if (!card) return fallback(prep, state, latest, "card failed schema or number trace");
     const result = MomentResponse.safeParse({
       card,
       state: {
-        concerns: applyConcernUpdates(state.concerns, out.concernUpdates, latest.id),
+        concerns: applyConcernUpdates(state.concerns, steady.concernUpdates, latest.id),
         cards: [...state.cards.filter((c) => c.id !== card.id), card],
       },
     });
