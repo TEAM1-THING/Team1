@@ -90,14 +90,16 @@ export function normalizeOrganic(organic: unknown[]): SerpResult[] {
   return out;
 }
 
-// Google results for `query`, or null when Bright Data is not configured or
-// the call fails for any reason. An empty array means the search ran and
-// found nothing.
-export async function serpSearch(query: string, signal?: AbortSignal): Promise<SerpResult[] | null> {
+type Attempt = { results: SerpResult[] | null; retry: boolean };
+
+// One request. `retry` says whether another request could do better: yes
+// after a timeout, a network error, a 5xx or an empty reply; no after a 4xx (a
+// bad key, a bad zone, rate limited), where more requests only add load.
+async function searchOnce(query: string, signal?: AbortSignal): Promise<Attempt> {
   const key = apiKey();
   const zone = zoneName();
   const q = query.replace(/\s+/g, " ").trim().slice(0, MAX_QUERY);
-  if (!key || !zone || !q) return null;
+  if (!key || !zone || !q) return { results: null, retry: false };
 
   const target = `${SEARCH_BASE}?q=${encodeURIComponent(q)}&hl=en&gl=us&brd_json=1`;
   try {
@@ -110,7 +112,7 @@ export async function serpSearch(query: string, signal?: AbortSignal): Promise<S
     // Status and error names only: never the key or a response body.
     if (!res.ok) {
       console.warn(`[brightdata] search failed (HTTP ${res.status})`);
-      return null;
+      return { results: null, retry: res.status >= 500 || res.status === 408 };
     }
     const body = await res.text();
     let parsed: unknown;
@@ -121,22 +123,30 @@ export async function serpSearch(query: string, signal?: AbortSignal): Promise<S
       // names the cause; it carries no key or client data.
       const why = res.headers.get("x-brd-error")?.slice(0, 120) ?? "no x-brd-error";
       console.warn(`[brightdata] reply was not JSON (${body.length} chars, ${why})`);
-      return null;
+      return { results: null, retry: true };
     }
     const organic = organicOf(parsed);
     if (!organic) console.warn("[brightdata] search answered without results");
-    return organic ? normalizeOrganic(organic) : null;
+    return { results: organic ? normalizeOrganic(organic) : null, retry: true };
   } catch (err) {
     if (!signal?.aborted) console.warn(`[brightdata] search failed (${err instanceof Error ? err.name : "unknown"})`);
-    return null;
+    return { results: null, retry: true };
   }
+}
+
+// Google results for `query`, or null when Bright Data is not configured or
+// the call fails for any reason. An empty array means the search ran and
+// found nothing.
+export async function serpSearch(query: string, signal?: AbortSignal): Promise<SerpResult[] | null> {
+  return (await searchOnce(query, signal)).results;
 }
 
 // Bright Data's SERP answers in 3 s to over 30 s and now and then sends back
 // an empty body, so one slow or failed request used to leave a check
-// unverified. Another request starts as soon as one fails, or every `hedgeMs`
-// while none has answered; the first usable answer wins and the rest are
-// cancelled. Never more than `maxAttempts` requests per query.
+// unverified. Another request starts as soon as one fails in a way another
+// could fix, or every `hedgeMs` while none has answered; the first usable
+// answer wins and the rest are cancelled. A 4xx stops the hedging. Never more
+// than `maxAttempts` requests per query.
 export const HEDGE_MS = 4_000;
 export const MAX_ATTEMPTS = 3;
 
@@ -152,6 +162,7 @@ export function hedgedSearch(
     let running = 0;
     let last: SerpResult[] | null = null;
     let settled = false;
+    let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const finish = (results: SerpResult[] | null) => {
       if (settled) return;
@@ -164,16 +175,20 @@ export function hedgedSearch(
     const onAbort = () => finish(null);
     const launch = () => {
       clearTimeout(timer);
-      if (settled || attempts.length >= maxAttempts) return;
+      if (settled || stopped || attempts.length >= maxAttempts) return;
       const attempt = new AbortController();
       attempts.push(attempt);
       running++;
       if (attempts.length < maxAttempts) timer = setTimeout(launch, hedgeMs);
-      void serpSearch(query, AbortSignal.any([signal, attempt.signal])).then((results) => {
+      void searchOnce(query, AbortSignal.any([signal, attempt.signal])).then(({ results, retry }) => {
         running--;
         if (results && results.length > 0) return finish(results);
         last = results ?? last;
-        if (attempts.length < maxAttempts) launch();
+        if (!retry) {
+          stopped = true;
+          clearTimeout(timer);
+        }
+        if (!stopped && attempts.length < maxAttempts) launch();
         else if (running === 0) finish(last);
       });
     };

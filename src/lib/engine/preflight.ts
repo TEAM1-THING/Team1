@@ -127,21 +127,26 @@ export function clearSearchCacheForTests(): void {
   searchCache.clear();
 }
 
-async function cachedSearch(query: string, signal: AbortSignal): Promise<SerpResult[] | null> {
+// `at` is when the live web was searched, which for a cached result is
+// earlier than this request: the check's "checked" date says so.
+type Searched = { results: SerpResult[] | null; at: number };
+
+async function cachedSearch(query: string, signal: AbortSignal): Promise<Searched> {
   const hit = searchCache.get(query);
-  if (hit && Date.now() - hit.at < SEARCH_CACHE_TTL_MS) return hit.results;
+  if (hit && Date.now() - hit.at < SEARCH_CACHE_TTL_MS) return hit;
   const results = signal.aborted ? null : await hedgedSearch(query, signal);
-  if (results && results.length > 0) searchCache.set(query, { at: Date.now(), results });
-  return results;
+  const at = Date.now();
+  if (results && results.length > 0) searchCache.set(query, { at, results });
+  return { results, at };
 }
 
 // Search each distinct query once, in parallel, under one overall deadline.
-async function searchAll(picked: Picked[], outer?: AbortSignal): Promise<Map<string, SerpResult[] | null>> {
+async function searchAll(picked: Picked[], outer?: AbortSignal): Promise<Map<string, Searched>> {
   const { signal, done } = deadline(SEARCH_TIMEOUT_MS, outer);
   try {
     const queries = [...new Set(picked.map((p) => p.query))];
-    const results = await Promise.all(queries.map((q) => cachedSearch(q, signal)));
-    return new Map(queries.map((q, i) => [q, results[i]]));
+    const searched = await Promise.all(queries.map((q) => cachedSearch(q, signal)));
+    return new Map(queries.map((q, i) => [q, searched[i]]));
   } finally {
     done();
   }
@@ -228,15 +233,16 @@ function traced(note: string, claim: string, cited?: SerpResult): boolean {
   return extractNumbers(note).every((n) => allowed.has(n));
 }
 
-// The cited source with its publish date (when Google shows one) and today's date.
-function cite(r: SerpResult): Pick<PreflightCheck, "sourceUrl" | "sourceDate" | "checkedAt"> {
-  return { sourceUrl: r.url, ...(r.date ? { sourceDate: r.date } : {}), checkedAt: new Date().toISOString() };
+// The cited source with its publish date (when Google shows one) and when the
+// live web was searched for it.
+function cite(r: SerpResult, at: number): Pick<PreflightCheck, "sourceUrl" | "sourceDate" | "checkedAt"> {
+  return { sourceUrl: r.url, ...(r.date ? { sourceDate: r.date } : {}), checkedAt: new Date(at).toISOString() };
 }
 
-function toCheck(p: Picked, own: SerpResult[], v: JudgeOutput["checks"][number] | undefined): PreflightCheck {
+function toCheck(p: Picked, own: SerpResult[], v: JudgeOutput["checks"][number] | undefined, at: number): PreflightCheck {
   const top = own[0];
   if (!top) return { claim: p.claim, status: "unverified", note: NOTE_UNAVAILABLE };
-  if (!v) return { claim: p.claim, status: "unverified", note: NOTE_NOT_COMPARED, ...cite(top) };
+  if (!v) return { claim: p.claim, status: "unverified", note: NOTE_NOT_COMPARED, ...cite(top, at) };
   const cited = v.sourceUrl.trim();
   const note = oneLine(v.note);
   // Only a result fetched for this same assumption may be cited.
@@ -247,9 +253,9 @@ function toCheck(p: Picked, own: SerpResult[], v: JudgeOutput["checks"][number] 
     return { claim: p.claim, status: "unverified", note: keep ? note : cited ? NOTE_UNMATCHED : NOTE_UNCLEAR };
   }
   if (note === "" || !traced(note, p.claim, source)) {
-    return { claim: p.claim, status: "unverified", note: NOTE_NOT_COMPARED, ...cite(source) };
+    return { claim: p.claim, status: "unverified", note: NOTE_NOT_COMPARED, ...cite(source, at) };
   }
-  return { claim: p.claim, status: v.status, note, ...cite(source) };
+  return { claim: p.claim, status: v.status, note, ...cite(source, at) };
 }
 
 // `signal` is the caller's (the HTTP request's): when it aborts, in-flight
@@ -260,13 +266,14 @@ export async function runPreflight(prep: Prep, signal?: AbortSignal): Promise<Pr
     picked = pickCheckable(prep);
     if (picked.length === 0) return { checks: [], source: "fallback" };
 
-    const results = await searchAll(picked, signal);
+    const searched = await searchAll(picked, signal);
+    const results = new Map([...searched].map(([q, s]) => [q, s.results]));
     const found = (p: Picked) => results.get(p.query) ?? [];
     if (!picked.some((p) => found(p).length > 0)) return fallback(picked);
 
     const verdicts = await judge(picked, results, signal);
     const byId = new Map((verdicts?.checks ?? []).map((v) => [v.id, v]));
-    const checks = picked.map((p) => toCheck(p, found(p), byId.get(p.id)));
+    const checks = picked.map((p) => toCheck(p, found(p), byId.get(p.id), searched.get(p.query)?.at ?? Date.now()));
     return { checks, source: "brightdata" };
   } catch {
     return fallback(picked);
