@@ -20,7 +20,7 @@ export default function Find({ sources }: { sources: PrepSource[] }) {
       <label htmlFor={FIND_INPUT_ID} className="sr-only">
         Find in your materials
       </label>
-      <div className="flex h-10 items-center gap-2 rounded-lg border border-white/[0.09] bg-[#16181b] px-3 transition-colors focus-within:border-white/25">
+      <div className="flex h-10 items-center gap-2 rounded-lg border border-white/[0.09] bg-[#16181b] px-3 transition-colors focus-within:border-[#a6a39c]">
         <input
           id={FIND_INPUT_ID}
           type="search"

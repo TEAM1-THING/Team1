@@ -15,7 +15,10 @@ export const ui = {
   primary: "bg-[#ecebe8] font-medium text-[#141518] hover:bg-white",
   ghost: "text-[#cfccc5] hover:bg-white/[0.06]",
   outline: "border border-white/[0.12] text-[#ecebe8] hover:bg-white/[0.05]",
-  danger: "bg-rose-600 font-medium text-white hover:bg-rose-500",
+  danger: "bg-rose-600 font-medium text-white hover:bg-rose-700",
   kbd: "rounded border border-white/[0.12] px-1 font-sans text-[11px] leading-4 text-[#8f8c85]",
+  // On the light primary button; its own token because Tailwind ranks utilities by
+  // stylesheet order, so appending colours to kbd above would not override it.
+  kbdOnLight: "rounded border border-black/15 px-1 font-sans text-[11px] leading-4 text-[#5d5b56]",
   chip: "inline-block w-fit shrink-0 justify-self-start rounded-md px-1.5 py-0.5 text-[11px] font-medium leading-4",
 } as const;
