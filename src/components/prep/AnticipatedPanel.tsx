@@ -8,7 +8,11 @@ import { useState } from "react";
 import { LABELS } from "@/components/meeting/replay";
 import { extractNumbers } from "@/lib/provenance";
 import type { AnticipatedWorry, Prep } from "@/lib/types";
-import { btnGhost, inputClass } from "./ui";
+import { btnGhost, CHIPS, inputClass, tone } from "./ui";
+
+// Label colours for the cream page. LABELS (meeting track) still carries the
+// names; its colours follow the meeting screen's theme, not this one.
+const CHIP = { PREPARED_FACT: CHIPS.green, CALCULATED: CHIPS.amber, SUGGESTION: CHIPS.rose, DO_NOT_CLAIM: CHIPS.grey } as const;
 
 // The same rule the meeting applies: a figure in the answer must be in the
 // files or in a calculation shown on this worry, or the meeting leaves it out.
@@ -59,29 +63,29 @@ export function AnticipatedPanel({ prep, value, onChange }: Props) {
         <button type="button" className={btnGhost} disabled={busy} onClick={prepare}>
           {busy ? "Preparing…" : value.length ? "Prepare again from my materials" : "Prepare likely worries"}
         </button>
-        <span className="text-sm text-slate-400">Edit each answer in your own words. Figures must come from your files.</span>
+        <span className="text-sm text-[#5b5248]">Edit each answer in your own words. Figures must come from your files.</span>
       </div>
 
       {value.length === 0 && !busy && !note && (
-        <p className="text-sm text-slate-400">None yet. Upload your files or press the button to prepare them.</p>
+        <p className="text-sm text-[#5b5248]">None yet. Upload your files or press the button to prepare them.</p>
       )}
 
       <ol className="flex flex-col gap-4">
         {value.map((w, i) => (
-          <li key={i} className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/5 p-4">
+          <li key={i} className="flex flex-col gap-2 rounded-xl border border-[#161412]/15 bg-[#faf6ef] p-4">
             <div className="flex items-start justify-between gap-3">
-              <p className="font-medium text-slate-100">“{w.worry}”</p>
-              <button type="button" className="shrink-0 text-xs text-slate-400 underline hover:text-slate-200" onClick={() => remove(i)}>
+              <p className="font-medium text-[#161412]">“{w.worry}”</p>
+              <button type="button" className="shrink-0 text-xs text-[#5b5248] underline hover:text-[#161412]" onClick={() => remove(i)}>
                 Remove
               </button>
             </div>
-            {w.why && <p className="text-sm text-slate-400">Likely because {w.why.charAt(0).toLowerCase() + w.why.slice(1)}</p>}
+            {w.why && <p className="text-sm text-[#5b5248]">Likely because {w.why.charAt(0).toLowerCase() + w.why.slice(1)}</p>}
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-slate-300">Prepared answer</span>
+              <span className="font-medium text-[#5b5248]">Prepared answer</span>
               <textarea rows={3} className={inputClass} value={w.answer} onChange={(e) => edit(i, e.target.value)} />
             </label>
             {!traces(w, known) && (
-              <p role="note" className="text-sm text-amber-200">
+              <p role="note" className="text-sm text-[#6e4600]">
                 This answer has a figure that is not in your files, so the meeting will leave it out.
               </p>
             )}
@@ -89,13 +93,13 @@ export function AnticipatedPanel({ prep, value, onChange }: Props) {
               <ul className="flex flex-col gap-1.5">
                 {w.facts.map((f, k) => (
                   <li key={k} className="flex items-start gap-2 text-sm">
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${LABELS[f.label].chip}`}>
+                    <span className={`${tone.chip} ${CHIP[f.label]}`}>
                       {LABELS[f.label].text}
                     </span>
-                    <span className="text-slate-200">
+                    <span className="text-[#161412]">
                       {f.text}
-                      {titleOf(f.sourceId) && <span className="text-slate-500"> · from {titleOf(f.sourceId)}</span>}
-                      {f.math && <span className="text-slate-500"> · {f.math}</span>}
+                      {titleOf(f.sourceId) && <span className="text-[#74695d]"> · from {titleOf(f.sourceId)}</span>}
+                      {f.math && <span className="text-[#74695d]"> · {f.math}</span>}
                     </span>
                   </li>
                 ))}
@@ -106,7 +110,7 @@ export function AnticipatedPanel({ prep, value, onChange }: Props) {
       </ol>
 
       {note && (
-        <p role="status" className="text-sm text-amber-200">
+        <p role="status" className="text-sm text-[#6e4600]">
           {note}
         </p>
       )}

@@ -13,7 +13,7 @@ import { MeetingSummary } from "@/components/prep/MeetingSummary";
 import { MandatePanel } from "@/components/prep/MandatePanel";
 import { confirmPrep } from "@/components/prep/prepModel";
 import { SourcesEditor } from "@/components/prep/SourcesEditor";
-import { Backdrop, btnPrimary, Step } from "@/components/prep/ui";
+import { Backdrop, btnPrimary, Step, tone } from "@/components/prep/ui";
 import { demoPrep } from "@/data/demo";
 import { traceConflicts } from "@/lib/provenance";
 import { savePrep } from "@/lib/store";
@@ -70,17 +70,17 @@ export default function PrepPage() {
 
   return (
     <Backdrop>
-      <div role="note" className="relative z-20 bg-indigo-500/20 px-4 py-1.5 text-center text-xs text-indigo-100">
+      <div role="note" className="relative z-20 border-b border-[#161412]/15 px-4 py-1.5 text-center text-xs text-[#5b5248]">
         Second Chair listens to the meeting. Tell your client and get their consent before you start; California
         requires every party to agree. <DataNote compact />
       </div>
 
       <main className="mx-auto flex max-w-3xl flex-col gap-5 px-4 pb-32 sm:px-6">
-        <header className="flex items-center justify-between pt-6 pb-1">
-          <Link href="/" className="font-semibold text-slate-100 hover:text-indigo-200">
+        <header className="flex flex-col gap-4 pt-6 pb-1">
+          <Link href="/" className={`${tone.display} w-fit text-[22px] leading-none italic hover:text-[#b8410c]`}>
             ← Second Chair
           </Link>
-          <span className="text-sm text-slate-400">Prepare a meeting</span>
+          <h1 className={`${tone.display} text-[40px] leading-[0.95] text-[#e8571a] uppercase md:text-[52px]`}>Prepare a meeting</h1>
         </header>
 
         <Step n={1} title="Your materials" hint="Second Chair reads your files and fills in the prep. You check it below.">
@@ -88,7 +88,7 @@ export default function PrepPage() {
           {!reviewing && (
             <button
               type="button"
-              className="self-start text-xs text-slate-400 underline hover:text-slate-200"
+              className="self-start text-xs text-[#5b5248] underline hover:text-[#161412]"
               onClick={() => setReviewing(true)}
             >
               Enter the prep by hand instead
@@ -101,14 +101,14 @@ export default function PrepPage() {
         )}
 
         {reviewing && missing.length > 0 && (
-          <p role="note" className="rounded-xl bg-amber-500/15 px-4 py-2 text-sm text-amber-100">
+          <p role="note" className="rounded-xl bg-[#f5e2b3] px-4 py-2 text-sm text-[#6e4600]">
             Not found in your files. Fill in if it matters for this meeting:{" "}
             {missing.map((m) => FIELD_NAMES[m] ?? m).join(", ")}.
           </p>
         )}
 
         {reviewing && conflicts.length > 0 && (
-          <div role="note" className="rounded-xl bg-amber-500/15 px-4 py-2 text-sm text-amber-100">
+          <div role="note" className="rounded-xl bg-[#f5e2b3] px-4 py-2 text-sm text-[#6e4600]">
             <p>
               Your files disagree on {conflicts.length === 1 ? "a figure" : `${conflicts.length} figures`}. Check which
               is current before the meeting:
@@ -158,14 +158,14 @@ export default function PrepPage() {
 
       {reviewing && (
       <footer className="fixed inset-x-0 bottom-0 z-20 px-4 pb-4">
-        <div className="mx-auto flex max-w-3xl flex-col gap-2 rounded-2xl border border-white/15 bg-slate-900/80 p-3 shadow-xl shadow-black/30 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-end sm:gap-4 sm:pl-5">
+        <div className="mx-auto flex max-w-3xl flex-col gap-2 rounded-2xl border border-[#161412] bg-[#faf6ef] p-3 sm:flex-row sm:items-center sm:justify-end sm:gap-4 sm:pl-5">
           {error && (
-            <p role="alert" className="text-sm text-rose-300 sm:mr-auto">
+            <p role="alert" className="text-sm text-[#8a1f35] sm:mr-auto">
               {error}
             </p>
           )}
-          <label className="flex items-center gap-2 text-sm text-slate-200">
-            <input className="accent-indigo-400" type="checkbox" checked={mandateOk} onChange={(e) => setMandateOk(e.target.checked)} />
+          <label className="flex items-center gap-2 text-sm text-[#161412]">
+            <input className="accent-[#161412]" type="checkbox" checked={mandateOk} onChange={(e) => setMandateOk(e.target.checked)} />
             I&apos;ve reviewed and confirm the Mandate
           </label>
           <button type="button" disabled={!mandateOk} onClick={start} className={btnPrimary}>
