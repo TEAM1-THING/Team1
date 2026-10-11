@@ -4,6 +4,20 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (18:35) - Track D: consent popup (#34), new deployment checked
+
+**Built (#72, for A to merge):** Live mic now opens a consent dialog with the
+line the advisor reads aloud (Google's speech service, Anthropic, no audio
+saved, written record kept). Start stays disabled until "Done: the client
+agreed" is ticked; Cancel or Escape leave the mic off; asked once per meeting.
+Replaces the inline checkbox. Uses B's `ui` tokens.
+
+**Checked:** https://second-chair-live.vercel.app (new Vercel account; the old
+project hit the Hobby deploy limit). Live cards, hand-off by id and records
+app all work with a real meeting; pre-flight falls back until
+`BRIGHTDATA_API_KEY` is added there. Fixed earlier: record file named with
+the local date (#67), card grades stored and shown (#58).
+
 ## 2026-10-10 (18:14) - Live robustness: 8 s limit, quoted demo cards, advisor relabel, life events
 
 The four correcting mechanisms (#30 misremembered figure, #41 reworded
