@@ -4,6 +4,33 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (18:14) - Live robustness: 8 s limit, quoted demo cards, advisor relabel, life events
+
+The four correcting mechanisms (#30 misremembered figure, #41 reworded
+question, the question/statement gate, speaker correction) were probed live on
+main and each held when Claude answered in time. The failure was the 5 s limit:
+replies take about 2.5 to 4.7 s, and a slow one became a canned card on the
+demo script or nothing at all on a live line. Fixed, after an independent
+review and a live re-measure:
+
+- **Live limit 5 s to 8 s.** 28 of 28 sequential live calls returned a real
+  card (median 3.6 s, max 5.6 s); the old limit would have lost 1 of 28.
+- **Canned demo cards quote the plan word for word.** All 5 prepared facts are
+  verbatim; two lines that were not quotes are now suggestions.
+- **Plain advisor lines are relabelled** without a Claude call ("Let me walk you
+  through...", "I'll send you...", "your portfolio..."). On a 132-line sample:
+  2 of 94 client lines mislabelled (the first version mislabelled 22; the
+  reviewer caught it), 11 of 28 skipped advisor lines caught. A speaker the
+  advisor flips by hand now sticks (meeting page, 3 lines, track B's file).
+- **Life events reach the engine** as specific phrases (moved, married, a baby,
+  a parent passed, sold the business, company acquired...): 30 of 30 on the
+  sample it was tuned on; small talk that triggers a call stays at 10 of 30.
+
+Pushed straight to main after `npm run check` (228) and `npm run build`, to
+spend one Vercel deployment instead of a preview plus production.
+
+---
+
 ## 2026-10-10 (18:20) - Production moved to second-chair-live.vercel.app; the old URL is frozen
 
 **Why.** D's Vercel project hit the Hobby limit of 100 deployments a day
