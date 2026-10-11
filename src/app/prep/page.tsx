@@ -4,17 +4,16 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnticipatedPanel } from "@/components/prep/AnticipatedPanel";
 import { ClientFileForm } from "@/components/prep/ClientFileForm";
 import { DataNote } from "@/components/prep/DataNote";
 import { FileDrop, type IngestResponse } from "@/components/prep/FileDrop";
 import { MeetingSummary } from "@/components/prep/MeetingSummary";
 import { MandatePanel } from "@/components/prep/MandatePanel";
-import { confirmPrep } from "@/components/prep/prepModel";
+import { clearDraft, confirmPrep, emptyPrep, loadDraft, saveDraft, whyNotReady } from "@/components/prep/prepModel";
 import { SourcesEditor } from "@/components/prep/SourcesEditor";
 import { Backdrop, btnPrimary, Step, tone } from "@/components/prep/ui";
-import { demoPrep } from "@/data/demo";
 import { traceConflicts } from "@/lib/provenance";
 import { savePrep } from "@/lib/store";
 import type { Prep } from "@/lib/types";
@@ -33,16 +32,39 @@ const FIELD_NAMES: Record<string, string> = {
 
 export default function PrepPage() {
   const router = useRouter();
-  const [prep, setPrep] = useState<Prep>({ ...demoPrep, confirmed: false });
+  const [prep, setPrep] = useState<Prep>(emptyPrep);
   const [mandateOk, setMandateOk] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Files first; the forms below are where the advisor checks what was read.
   const [reviewing, setReviewing] = useState(false);
   const [missing, setMissing] = useState<string[]>([]);
+  // Bumped on Start over so the file drop forgets its last upload.
+  const [round, setRound] = useState(0);
+  const [restored, setRestored] = useState(false);
   const set = (patch: Partial<Prep>) => setPrep((p) => ({ ...p, ...patch }));
   // Re-traced on every edit, so fixing a figure in a source clears its warning.
   const conflicts = traceConflicts(prep.conflicts ?? [], prep.sources);
   const titleOf = (id: string) => prep.sources.find((s) => s.id === id)?.title.trim() || "an untitled file";
+  const notReady = whyNotReady(prep);
+
+  // A reload picks up where the advisor left off. Read after mount, because
+  // the server render has no session storage and the first client render
+  // must match it.
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft) {
+      setPrep(draft.prep);
+      setReviewing(draft.reviewing);
+      setMissing(draft.missing);
+    }
+    setRestored(true);
+  }, []);
+
+  // Kept only once there is something to lose, and never before the restore
+  // above has run, or the empty first render would overwrite the draft.
+  useEffect(() => {
+    if (restored && reviewing) saveDraft({ prep, reviewing, missing });
+  }, [restored, prep, reviewing, missing]);
 
   function read(r: IngestResponse) {
     setPrep({
@@ -59,9 +81,28 @@ export default function PrepPage() {
     setReviewing(true);
   }
 
+  function enterByHand() {
+    setPrep(emptyPrep());
+    setMissing([]);
+    setMandateOk(false);
+    setReviewing(true);
+  }
+
+  function startOver() {
+    clearDraft();
+    setPrep(emptyPrep());
+    setMissing([]);
+    setMandateOk(false);
+    setError(null);
+    setReviewing(false);
+    setRound((n) => n + 1);
+  }
+
   function start() {
+    if (notReady) return;
     try {
       savePrep(confirmPrep(prep));
+      clearDraft();
       router.push("/meeting");
     } catch {
       setError("Something in the prep is incomplete. Check every field has a value.");
@@ -84,16 +125,14 @@ export default function PrepPage() {
         </header>
 
         <Step n={1} title="Your materials" hint="Second Chair reads your files and fills in the prep. You check it below.">
-          <FileDrop onRead={read} />
-          {!reviewing && (
-            <button
-              type="button"
-              className="self-start text-xs text-[#5b5248] underline hover:text-[#161412]"
-              onClick={() => setReviewing(true)}
-            >
-              Enter the prep by hand instead
-            </button>
-          )}
+          <FileDrop key={round} onRead={read} />
+          <button
+            type="button"
+            className="self-start text-xs text-[#5b5248] underline hover:text-[#161412]"
+            onClick={reviewing ? startOver : enterByHand}
+          >
+            {reviewing ? "Start over with an empty prep" : "Enter the prep by hand instead"}
+          </button>
         </Step>
 
         {reviewing && prep.meeting && (
@@ -159,16 +198,31 @@ export default function PrepPage() {
       {reviewing && (
       <footer className="fixed inset-x-0 bottom-0 z-20 px-4 pb-4">
         <div className="mx-auto flex max-w-3xl flex-col gap-2 rounded-2xl border border-[#161412] bg-[#faf6ef] p-3 sm:flex-row sm:items-center sm:justify-end sm:gap-4 sm:pl-5">
-          {error && (
-            <p role="alert" className="text-sm text-[#8a1f35] sm:mr-auto">
-              {error}
-            </p>
+          {(error || notReady) && (
+            <div className="flex flex-col gap-1 text-sm sm:mr-auto">
+              {error && (
+                <p role="alert" className="text-[#8a1f35]">
+                  {error}
+                </p>
+              )}
+              {notReady && (
+                <p id="confirm-why" className="text-[#5b5248]">
+                  {notReady}
+                </p>
+              )}
+            </div>
           )}
           <label className="flex items-center gap-2 text-sm text-[#161412]">
             <input className="accent-[#161412]" type="checkbox" checked={mandateOk} onChange={(e) => setMandateOk(e.target.checked)} />
             I&apos;ve reviewed and confirm the Mandate
           </label>
-          <button type="button" disabled={!mandateOk} onClick={start} className={btnPrimary}>
+          <button
+            type="button"
+            disabled={!mandateOk || !!notReady}
+            aria-describedby={notReady ? "confirm-why" : undefined}
+            onClick={start}
+            className={btnPrimary}
+          >
             Confirm and start meeting →
           </button>
         </div>

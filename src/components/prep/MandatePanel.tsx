@@ -5,7 +5,7 @@
 import { useState } from "react";
 import type { PreflightCheck } from "@/app/api/preflight/route";
 import type { Mandate, Prep } from "@/lib/types";
-import { fromLines, preflightBody, readMandate, sourcesBody, toLines } from "./prepModel";
+import { checkedOn, fromLines, preflightBody, readMandate, sourcesBody, toLines } from "./prepModel";
 import { btnGhost, Field, inputClass } from "./ui";
 
 // Same pill colours as the meeting screen's provenance chips.
@@ -113,7 +113,7 @@ export function MandatePanel({ prep, value, onChange }: Props) {
                   <p className="break-words text-[#5b5248]">{c.note}</p>
                   {(c.checkedAt || c.sourceDate) && (
                     <p className="text-xs text-[#74695d]">
-                      {[c.checkedAt && `checked ${c.checkedAt}`, c.sourceDate && `published ${c.sourceDate}`]
+                      {[c.checkedAt && `checked ${checkedOn(c.checkedAt)}`, c.sourceDate && `published ${c.sourceDate}`]
                         .filter(Boolean)
                         .join(" · ")}
                     </p>

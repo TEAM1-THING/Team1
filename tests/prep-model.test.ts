@@ -1,15 +1,22 @@
 import { describe, expect, it } from "vitest";
 import {
   addSource,
+  checkedOn,
+  clearDraft,
   confirmPrep,
+  DRAFT_KEY,
+  emptyPrep,
   fromLines,
+  loadDraft,
   preflightBody,
   readMandate,
   removeSource,
+  saveDraft,
   sourcesBody,
   toLines,
   toNumber,
   updateSource,
+  whyNotReady,
 } from "@/components/prep/prepModel";
 import { demoPrep } from "@/data/demo";
 import { Prep } from "@/lib/types";
@@ -84,5 +91,86 @@ describe("field helpers", () => {
     expect(readMandate({ mandate: demoPrep.mandate })).toEqual(demoPrep.mandate);
     expect(readMandate({ mandate: { thesis: 1 } })).toBeNull();
     expect(readMandate(null)).toBeNull();
+  });
+});
+
+describe("enter by hand", () => {
+  it("starts with no client and no sources, not the demo client", () => {
+    const p = emptyPrep();
+    expect(Prep.safeParse(p).success).toBe(true);
+    expect(p.clientFile.name).toBe("");
+    expect(p.sources).toEqual([]);
+    expect(p.anticipated).toEqual([]);
+    expect(JSON.stringify(p)).not.toContain(demoPrep.clientFile.name);
+  });
+
+  it("blocks Confirm until the client file has a name, then confirms", () => {
+    const p = emptyPrep();
+    expect(whyNotReady(p)).toMatch(/name/);
+    expect(whyNotReady({ ...p, clientFile: { ...p.clientFile, name: "   " } })).toMatch(/name/);
+    const named = { ...p, clientFile: { ...p.clientFile, name: " Sam Lee " } };
+    expect(whyNotReady(named)).toBeNull();
+    expect(confirmPrep(named).clientFile.name).toBe("Sam Lee");
+  });
+
+  it("sends the Mandate draft and pre-flight an empty prep they accept", () => {
+    expect(sourcesBody(emptyPrep().sources)).toEqual({ sources: [] });
+    expect(Prep.safeParse(preflightBody(emptyPrep()).prep).success).toBe(true);
+  });
+});
+
+describe("pre-flight date", () => {
+  // 7:12 PM on Oct 10 in California is already Oct 11 in UTC.
+  const evening = "2026-10-11T02:12:03.000Z";
+
+  it("shows a full timestamp as the viewer's own date", () => {
+    expect(checkedOn(evening, "America/Los_Angeles")).not.toContain("11");
+    expect(checkedOn(evening, "America/Los_Angeles")).toContain("2026");
+    expect(checkedOn(evening, "UTC")).toContain("11");
+  });
+
+  it("shows a date-only or unreadable value as sent", () => {
+    expect(checkedOn("2026-10-10")).toBe("2026-10-10");
+    expect(checkedOn("not a Time")).toBe("not a Time");
+  });
+});
+
+describe("prep draft", () => {
+  const memory = () => {
+    const m = new Map<string, string>();
+    return {
+      getItem: (k: string) => m.get(k) ?? null,
+      setItem: (k: string, v: string) => void m.set(k, v),
+      removeItem: (k: string) => void m.delete(k),
+    };
+  };
+  const blocked = (): Storage => {
+    throw new Error("SecurityError");
+  };
+
+  it("survives a reload, then is gone once cleared", () => {
+    const store = memory();
+    const p = draft();
+    const saved = { prep: { ...p, clientFile: { ...p.clientFile, cashOnHand: 250000 } }, reviewing: true, missing: ["age"] };
+    saveDraft(saved, () => store);
+    expect(loadDraft(() => store)).toEqual(saved);
+    clearDraft(() => store);
+    expect(loadDraft(() => store)).toBeNull();
+  });
+
+  it("ignores a corrupt or foreign value", () => {
+    const store = memory();
+    store.setItem(DRAFT_KEY, "{not json");
+    expect(loadDraft(() => store)).toBeNull();
+    store.setItem(DRAFT_KEY, JSON.stringify({ prep: { clientFile: {} }, reviewing: "yes" }));
+    expect(loadDraft(() => store)).toBeNull();
+  });
+
+  it("keeps working when storage is blocked", () => {
+    expect(loadDraft(blocked)).toBeNull();
+    expect(() => saveDraft({ prep: draft(), reviewing: true, missing: [] }, blocked)).not.toThrow();
+    expect(() => clearDraft(blocked)).not.toThrow();
+    // No window at all, as in a server render: the default storage throws.
+    expect(loadDraft()).toBeNull();
   });
 });
