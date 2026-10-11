@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { FATAL_ERRORS, finalTexts, getRecognitionCtor } from "@/components/speech/MicInput";
+import { CONSENT_LINE, FATAL_ERRORS, finalTexts, getRecognitionCtor } from "@/components/speech/MicInput";
 import { demoPrep } from "@/data/demo";
 import { mockMoment } from "@/lib/mock";
 import { base44Url, buildRecord, completeGrades, createHandoff, handoffLink, localDate, recordFileName, recordLink, supabaseConfig } from "@/lib/record";
@@ -160,5 +160,14 @@ describe("MicInput helpers", () => {
     expect(FATAL_ERRORS.network).toBeTruthy();
     expect(FATAL_ERRORS["no-speech"]).toBeUndefined();
     expect(FATAL_ERRORS.aborted).toBeUndefined();
+  });
+});
+
+describe("consent line (#34)", () => {
+  it("names every place the conversation goes, and asks", () => {
+    expect(CONSENT_LINE).toContain("Google's speech service");
+    expect(CONSENT_LINE).toContain("Anthropic");
+    expect(CONSENT_LINE).toContain("We don't save audio");
+    expect(CONSENT_LINE.trim().endsWith("?")).toBe(true);
   });
 });

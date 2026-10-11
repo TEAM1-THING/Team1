@@ -4,8 +4,11 @@
 // Contract: call onTurn once per finished client utterance.
 // Uses the browser Web Speech API (Chrome: webkitSpeechRecognition), which
 // sends the audio to the browser's speech service. Recording needs everyone's
-// consent (California is all-party), so the mic stays off until it is confirmed.
-import { useEffect, useRef, useState } from "react";
+// consent (California is all-party), so the mic starts only after the advisor
+// has read the consent line to the client and ticked Done (#34).
+import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { ui } from "@/components/meeting/ui";
 
 export type MicInputProps = { onTurn: (text: string) => void };
 
@@ -50,12 +53,16 @@ export const FATAL_ERRORS: Record<string, string> = {
   "language-not-supported": "Language not supported.",
 };
 
-const CONSENT_NOTE =
-  "Live transcription records the client. Everyone in the meeting must agree first (California requires all-party consent). Chrome sends the audio to its speech service.";
+// Read aloud to the client before the mic starts (#34). Each clause matches
+// the code: Chrome's speech service here, recent lines and the client file to
+// Anthropic in engine/moment.ts, cards and concerns kept by record.ts, no audio stored.
+export const CONSENT_LINE =
+  "I'd like to use an AI assistant called Second Chair today. It transcribes our conversation using Google's speech service, and sends what we say, with the details of your plan, to an AI service (Anthropic) that suggests what I should check or say. We don't save audio, but I keep a written record of its notes and the concerns you raise. Is that all right with you?";
 
 export default function MicInput({ onTurn }: MicInputProps) {
   const [supported, setSupported] = useState<boolean | null>(null); // null until checked in the browser
-  const [consent, setConsent] = useState(false);
+  const [consented, setConsented] = useState(false); // asked once per meeting
+  const [asking, setAsking] = useState(false);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState("");
   const [error, setError] = useState("");
@@ -63,6 +70,7 @@ export default function MicInput({ onTurn }: MicInputProps) {
   // recognizer are ignored, so one that ends late can never restart or emit.
   const recRef = useRef<Recognition | null>(null);
   const onTurnRef = useRef(onTurn);
+  const micButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     onTurnRef.current = onTurn;
@@ -125,12 +133,27 @@ export default function MicInput({ onTurn }: MicInputProps) {
     }
   }
 
+  function closeConsent(agreed: boolean) {
+    setAsking(false);
+    if (agreed) {
+      setConsented(true);
+      start();
+    }
+    micButton.current?.focus();
+  }
+
+  function onMicClick() {
+    if (listening) off();
+    else if (consented) start();
+    else setAsking(true);
+  }
+
   if (!supported) {
     return (
       <button
         type="button"
         disabled
-        className="rounded border px-3 py-1 text-sm opacity-50"
+        className={`${ui.btn} ${ui.outline}`}
         title={supported === false ? "Live mic needs Chrome" : undefined}
       >
         {supported === false ? "Live mic (use Chrome)" : "Live mic"}
@@ -140,25 +163,93 @@ export default function MicInput({ onTurn }: MicInputProps) {
 
   return (
     <span className="inline-flex flex-wrap items-center gap-2 text-sm">
-      {!listening && (
-        <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs opacity-80" title={CONSENT_NOTE}>
-          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-          All parties consent
-        </label>
-      )}
       <button
+        ref={micButton}
         type="button"
-        onClick={listening ? () => off() : start}
-        disabled={!listening && !consent}
-        title={listening ? "Stop live transcription" : consent ? "Start live transcription" : CONSENT_NOTE}
-        className="inline-flex items-center gap-2 rounded border px-3 py-1 disabled:opacity-50"
+        onClick={onMicClick}
+        title={listening ? "Stop live transcription" : "Start live transcription"}
+        className={`${ui.btn} ${ui.outline}`}
         aria-pressed={listening}
+        aria-haspopup={consented ? undefined : "dialog"}
       >
         {listening && <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-600" aria-hidden />}
         {listening ? "Stop mic" : "Live mic"}
       </button>
       {interim && <span className="max-w-[16rem] truncate italic opacity-60">{interim}</span>}
       {error && <span className="text-red-500">{error}</span>}
+      {asking && <ConsentDialog onClose={closeConsent} />}
     </span>
+  );
+}
+
+// Modal: the advisor reads the line aloud, ticks Done once the client agrees,
+// then Start. Cancel or Escape leaves the mic off. Rendered on <body> so the
+// header's button styles do not reach it.
+function ConsentDialog({ onClose }: { onClose: (agreed: boolean) => void }) {
+  const [done, setDone] = useState(false);
+  const titleId = useId();
+  const box = useRef<HTMLDivElement>(null);
+  const close = useRef(onClose);
+  useEffect(() => {
+    close.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    box.current?.querySelector<HTMLElement>("input, button")?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        close.current(false);
+      }
+      // Keep Tab inside the dialog.
+      if (e.key === "Tab" && box.current) {
+        const items = [...box.current.querySelectorAll<HTMLElement>("input, button:not([disabled])")];
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, []);
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sans" onClick={() => onClose(false)}>
+      <div
+        ref={box}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onClick={(e) => e.stopPropagation()}
+        // ui.page brings the theme's text colour (the portal sits outside the
+        // meeting screen); ui.raised the panel. Both themes define both tokens.
+        className={`${ui.page} ${ui.raised} w-full max-w-lg space-y-4 p-5`}
+      >
+        <h2 id={titleId} className="text-base font-semibold">
+          Ask your client before the mic starts
+        </h2>
+        <p className={`text-sm ${ui.muted}`}>Read this aloud:</p>
+        <blockquote className="border-l-2 border-current/25 pl-3 text-[15px] leading-relaxed">“{CONSENT_LINE}”</blockquote>
+        <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <input type="checkbox" checked={done} onChange={(e) => setDone(e.target.checked)} className="h-4 w-4" />
+          Done: the client agreed
+        </label>
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={() => onClose(false)} className={`${ui.btn} ${ui.ghost}`}>
+            Cancel
+          </button>
+          <button type="button" disabled={!done} onClick={() => onClose(true)} className={`${ui.btn} ${ui.primary}`}>
+            Start
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
