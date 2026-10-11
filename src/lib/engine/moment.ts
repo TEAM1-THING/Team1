@@ -4,6 +4,7 @@
 import * as z from "zod/v4";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { FALLBACK_BETA, LIVE_MODEL, LIVE_TIMEOUT_MS, getClient, supportsFallback } from "./client";
+import { checkPrepared } from "./anticipate";
 import { earlierCards, holdSteady } from "./consistency";
 import { MOMENT_SYSTEM } from "./moment-prompt";
 import { classifyUtterance, echoesCard } from "./gate";
@@ -137,6 +138,8 @@ export function buildMomentParts(
   const conflicts = traceConflicts(prep.conflicts ?? [], sources)
     .slice(0, MAX_LIST_ITEMS)
     .map((c) => ({ quantity: clip(c.quantity, MAX_ITEM_CHARS), values: c.values.slice(0, MAX_LIST_ITEMS) }));
+  // Re-traced too: the advisor may have edited a prepared answer at prep.
+  const anticipated = checkPrepared(prep.anticipated ?? [], sources);
   const m = prep.mandate;
   const mandate = {
     thesis: clip(m.thesis, MAX_FIELD_CHARS),
@@ -163,6 +166,7 @@ export function buildMomentParts(
       `<sources>${data(sources)}</sources>`,
       `<mandate>${data(mandate)}</mandate>`,
       ...(conflicts.length ? [`<file_conflicts>${data(conflicts)}</file_conflicts>`] : []),
+      ...(anticipated.length ? [`<anticipated>${data(anticipated)}</anticipated>`] : []),
     ].join("\n"),
     live: [
       `<concern_ledger>${data(ledger)}</concern_ledger>`,
