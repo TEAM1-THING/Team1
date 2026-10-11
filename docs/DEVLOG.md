@@ -4,6 +4,44 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (17:20) - Merged: Block 2 fixes on main; macOS build fixed; advisory answer (#37) in the engine
+
+**On main (not yet live while Vercel is rate limited):** #49 macOS build fix,
+#50 (#31 file conflicts), #52 (#41 reworded worry, lands #48), #56 (#30
+misremembered figure), #51 and #53 (B: card order, client picture), #54 (#38
+anticipated worries), #57 (#40 data note, #43 landing), #55 (B: records
+button), #58 (D: grades in the record shape), #59 (#37 advisory answer, #39
+kind tags), #62 (B's design pass, from #61), #63 (do-not-claim shown once).
+`npm run check` on main: 195 passed, on macOS too.
+
+**macOS build.** `meeting/find.ts` and `meeting/Find.tsx` differ only in case,
+so on a Mac tsc resolved the component import to the helper and failed. Linux
+CI never saw it. The helper is now `findMatches.ts` (#49). The demo laptop
+must build from a main at or after #49.
+
+**#37, the core thesis unchanged.** The card still gives the advisor the answer
+to say; the answer is now an advisory response (acknowledge the feeling,
+connect to the client's goal, answer with the plan's figures, end with a
+question; a discovery question when the worry is unclear), at most 40 words.
+Live on demo t2/t4/t6: 9 of 9 live after warm-up at 3.7 to 5.2 s route time,
+34 to 38 words each. Concern topics carry B's kind tags (`learn: `, `decide: `,
+`life event: `, `request: `; a worry is untagged); any other prefix the model
+invents is stripped. The system prompt moved verbatim to
+`src/lib/engine/moment-prompt.ts` so `moment.ts` stays under 500 lines.
+
+**Review catches.** #30's first build matched client figures without units, so
+"6%" matched "6 tranches" and produced a green made-up explanation; fixed
+before merge, with regression tests. #31 now drops a conflict whose label has
+an untraced number, or whose files share the figure. The landing of #61 kept
+the data note in the consent line as a `div`, since `<details>` inside `<p>`
+breaks hydration.
+
+**Open.** #60 (#42 grade buttons) is to be reworked onto D's #58 shape and B's
+design pass. #64 lands B's review fixes for #61. Vercel: the team's call (see
+17:11).
+
+---
+
 ## 2026-10-10 (17:11) - Blocker: Vercel rate limit, production stuck at #52; built #40, #43, #42
 
 **Blocker.** Since 17:03 every Vercel deployment, main included, fails with

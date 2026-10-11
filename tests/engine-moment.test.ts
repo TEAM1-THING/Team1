@@ -313,6 +313,20 @@ describe("runMoment", () => {
   });
 });
 
+describe("do-not-claim list", () => {
+  it("shows a claim once when the model gives it as a fact and in doNotClaim", async () => {
+    returning({
+      ...liveT2,
+      doNotClaim: ["cash is never needed beyond the reserve", "That the reserve covers every emergency.", "that the reserve covers every emergency"],
+    });
+    const res = await runMoment({ prep: demoPrep, turns: upTo("t2"), state: emptyState() });
+    expect(res.card?.doNotClaim).toEqual(["That the reserve covers every emergency."]);
+    expect(res.card?.facts.filter((f) => f.label === "DO_NOT_CLAIM").map((f) => f.text)).toEqual([
+      "Cash is never needed beyond the reserve.",
+    ]);
+  });
+});
+
 describe("concern kind tags (#39)", () => {
   it("keeps the screen's tags in lower case and reads any other prefix as a worry", () => {
     expect(tagged("Life Event: son's down payment")).toBe("life event: son's down payment");
