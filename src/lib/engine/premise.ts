@@ -24,7 +24,7 @@ import * as z from "zod/v4";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { extractNumbers } from "@/lib/provenance";
 import type { Card, CardFact, Prep } from "@/lib/types";
-import { brightDataConfigured, serpSearch, type SerpResult } from "./brightdata";
+import { brightDataConfigured, hedgedSearch, type SerpResult } from "./brightdata";
 import { FALLBACK_BETA, LIVE_TIMEOUT_MS, getSideClient, supportsFallback } from "./client";
 
 // Two short, structured calls: the fast model, no extended reasoning.
@@ -104,7 +104,7 @@ export function clearPremiseCacheForTests(): void {
 async function search(query: string, signal: AbortSignal): Promise<SerpResult[]> {
   const hit = searchCache.get(query);
   if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.results;
-  const results = signal.aborted ? null : await serpSearch(query, signal).catch(() => null);
+  const results = signal.aborted ? null : await hedgedSearch(query, signal);
   if (results?.length) searchCache.set(query, { at: Date.now(), results });
   return results ?? [];
 }

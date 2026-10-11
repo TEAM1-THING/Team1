@@ -17,7 +17,8 @@ import {
 } from "@/lib/engine/preflight";
 import type { Prep } from "@/lib/types";
 
-const TODAY = new Date().toISOString().slice(0, 10);
+// checkedAt is a full ISO timestamp from today.
+const TODAY = expect.stringMatching(new RegExp(`^${new Date().toISOString().slice(0, 10)}T\\d{2}:\\d{2}`));
 
 const RETURN_URL = "https://example.org/60-40-returns";
 const CPI_URL = "https://www.bls.gov/cpi/";
@@ -352,12 +353,24 @@ describe("runPreflight", () => {
   it("reuses search results across calls but never caches a failure", async () => {
     vi.stubEnv("BRIGHTDATA_API_KEY", "test-key");
     setClientForTests(null);
-    fakeBrightData(500);
+    const failing = fakeBrightData(500);
     expect((await runPreflight(demoPrep)).source).toBe("fallback");
+    expect(failing).toHaveBeenCalledTimes(6); // a 5xx is retried: two queries, three tries each
     const fetchSpy = fakeBrightData();
-    await runPreflight(demoPrep);
-    await runPreflight(demoPrep);
+    const first = await runPreflight(demoPrep);
+    await new Promise((r) => setTimeout(r, 5));
+    const again = await runPreflight(demoPrep);
     expect(fetchSpy).toHaveBeenCalledTimes(2); // two distinct queries, fetched once each
+    // A cached result keeps the time it was searched.
+    expect(again.checks.map((c) => c.checkedAt)).toEqual(first.checks.map((c) => c.checkedAt));
+  });
+
+  it("does not retry a search Bright Data refused", async () => {
+    vi.stubEnv("BRIGHTDATA_API_KEY", "bad-key");
+    setClientForTests(null);
+    const refused = fakeBrightData(401);
+    expect((await runPreflight(demoPrep)).source).toBe("fallback");
+    expect(refused).toHaveBeenCalledTimes(2);
   });
 });
 
