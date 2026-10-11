@@ -10,7 +10,8 @@ import { classifyUtterance, echoesCard } from "./gate";
 import { outOfScopeHit } from "./scope";
 import { demoPrep, demoTranscript } from "../../data/demo";
 import { mockMoment } from "../mock";
-import { enforceNumberTrace, parseNumber, traceConflicts } from "../provenance";
+import { enforceNumberTrace, traceConflicts } from "../provenance";
+import { checkClientFigures, figures, misattributed } from "./recall";
 import {
   Card,
   MOMENT_TYPES,
@@ -144,6 +145,7 @@ export function buildMomentParts(
     disclaimers: clipList(m.disclaimers),
     outOfScope: clipList(m.outOfScope),
   };
+  const said = checkClientFigures(latest.text, prep, MAX_SOURCES);
   return {
     // Identical on every turn of a meeting, so it is cached after the first card.
     prep: [
@@ -167,6 +169,7 @@ export function buildMomentParts(
       ...(earlier.length ? [`<earlier_cards>${data(earlier)}</earlier_cards>`] : []),
       `<recent_turns>${data(recent)}</recent_turns>`,
       `<latest_client_turn>${data(turn(latest))}</latest_client_turn>`,
+      ...(said ? [`<client_figures>${data(said)}</client_figures>`] : []),
       "</meeting_data>",
       "",
       "Draft the card for the latest client turn, or set relevant to false if nothing decision-relevant happened.",
@@ -230,34 +233,28 @@ export function applyConcernUpdates(
 }
 
 // Number trace, stricter than provenance.ts (which stays the shared floor and
-// still runs after this). Figures keep their unit: "$180000", "%5", "24".
-const FIGURE = /\$?\d[\d,]*(?:\.\d+)?\s*(?:[kKmM](?![a-zA-Z])|%)?/g;
+// still runs after this). figures() keeps the unit: "$180000", "%5", "24".
 const NUMBER_WORD =
   /\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|billion|trillion|dozen|percent)\b/i;
 
-export function figures(text: string): string[] {
-  const out: string[] = [];
-  for (const raw of text.match(FIGURE) ?? []) {
-    const value = parseNumber(raw);
-    if (value === null) continue;
-    out.push(`${raw.includes("$") ? "$" : raw.trim().endsWith("%") ? "%" : ""}${value}`);
-  }
-  return out;
-}
-
 // PREPARED_FACT stays green only if every figure, unit included, appears in the
-// source it cites, and it writes no number in words. Otherwise it is
-// downgraded the same way provenance.ts downgrades.
-function traceToSource(fact: CardFact, prep: Prep): CardFact {
+// source it cites, it writes no number in words, and it does not pin a figure
+// the client just said on the wrong thing. Otherwise it is downgraded the same
+// way provenance.ts downgrades.
+function traceToSource(fact: CardFact, prep: Prep, clientText: string): CardFact {
   if (fact.label !== "PREPARED_FACT") return fact;
   const source = prep.sources.find((s) => s.id === fact.sourceId);
   const known = new Set(source ? figures(source.text) : []);
-  const traced = !!source && !NUMBER_WORD.test(fact.text) && figures(fact.text).every((f) => known.has(f));
+  const traced =
+    !!source &&
+    !NUMBER_WORD.test(fact.text) &&
+    figures(fact.text).every((f) => known.has(f)) &&
+    !misattributed(fact, prep, clientText);
   return traced ? fact : { ...fact, label: fact.math ? "CALCULATED" : "SUGGESTION" };
 }
 
-function traceFacts(card: Card, prep: Prep): Card {
-  return enforceNumberTrace({ ...card, facts: card.facts.map((f) => traceToSource(f, prep)) }, prep);
+function traceFacts(card: Card, prep: Prep, latest: TranscriptTurn): Card {
+  return enforceNumberTrace({ ...card, facts: card.facts.map((f) => traceToSource(f, prep, latest.text)) }, prep);
 }
 
 // The advisor reads these aloud or acts on them, so (guardrail 4) any figure
@@ -323,7 +320,7 @@ export function toCard(out: LlmMoment, prep: Prep, latest: TranscriptTurn, turns
   };
   const parsed = Card.safeParse(candidate);
   if (!parsed.success) return null;
-  const card = traceFacts(parsed.data, prep);
+  const card = traceFacts(parsed.data, prep, latest);
   // When the floor fired, only concern is still the model's own text.
   return textTraced(topic ? [card.concern] : spoken(card), card.facts, prep, turns) ? card : null;
 }
@@ -342,7 +339,7 @@ function fallback(prep: Prep, state: ConversationState, latest: TranscriptTurn, 
   if (!demo) return none;
   const res = mockMoment(latest.id, state);
   if (!res.card) return none;
-  const card = traceFacts(res.card, prep);
+  const card = traceFacts(res.card, prep, latest);
   if (!textTraced(spoken(card), card.facts, prep, [latest])) return none;
   return { card, state: { concerns: res.state.concerns, cards: [...state.cards.filter((c) => c.id !== card.id), card] } };
 }

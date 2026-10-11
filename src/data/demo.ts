@@ -1,5 +1,6 @@
 // Fictional client and plan for the demo. No real client data, ever.
-// Owned by the prep track; the three scenes follow handoff section 02.
+// Owned by the prep track; the first three scenes follow handoff section 02,
+// the fourth (a misremembered figure, t8) a Block 2 tester's story (#30).
 import type { Prep, TranscriptTurn } from "@/lib/types";
 
 export const demoPrep: Prep = {
@@ -52,4 +53,6 @@ export const demoTranscript: TranscriptTurn[] = [
   { id: "t4", speaker: "client", t: 31, text: "Okay, that helps. But honestly, the market seems too uncertain right now. Maybe I should just wait six months." },
   { id: "t5", speaker: "advisor", t: 44, text: "I hear you. Tell me more about what's behind that." },
   { id: "t6", speaker: "client", t: 52, text: "My sister lost a lot in 2008. And my son might need help with a house down payment next year." },
+  { id: "t7", speaker: "advisor", t: 66, text: "That's important, and we'll plan for it. Let's go back to the reserve in the report." },
+  { id: "t8", speaker: "client", t: 75, text: "Wait, I thought the report said the reserve was $200,000?" },
 ];
