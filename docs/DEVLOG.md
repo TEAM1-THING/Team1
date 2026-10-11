@@ -4,6 +4,153 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (18:14) - Live robustness: 8 s limit, quoted demo cards, advisor relabel, life events
+
+The four correcting mechanisms (#30 misremembered figure, #41 reworded
+question, the question/statement gate, speaker correction) were probed live on
+main and each held when Claude answered in time. The failure was the 5 s limit:
+replies take about 2.5 to 4.7 s, and a slow one became a canned card on the
+demo script or nothing at all on a live line. Fixed, after an independent
+review and a live re-measure:
+
+- **Live limit 5 s to 8 s.** 28 of 28 sequential live calls returned a real
+  card (median 3.6 s, max 5.6 s); the old limit would have lost 1 of 28.
+- **Canned demo cards quote the plan word for word.** All 5 prepared facts are
+  verbatim; two lines that were not quotes are now suggestions.
+- **Plain advisor lines are relabelled** without a Claude call ("Let me walk you
+  through...", "I'll send you...", "your portfolio..."). On a 132-line sample:
+  2 of 94 client lines mislabelled (the first version mislabelled 22; the
+  reviewer caught it), 11 of 28 skipped advisor lines caught. A speaker the
+  advisor flips by hand now sticks (meeting page, 3 lines, track B's file).
+- **Life events reach the engine** as specific phrases (moved, married, a baby,
+  a parent passed, sold the business, company acquired...): 30 of 30 on the
+  sample it was tuned on; small talk that triggers a call stays at 10 of 30.
+
+Pushed straight to main after `npm run check` (228) and `npm run build`, to
+spend one Vercel deployment instead of a preview plus production.
+
+---
+
+## 2026-10-10 (18:10) - Production moved to second-chair-live.vercel.app; the old URL is frozen
+
+**Why.** D's Vercel project hit the Hobby limit of 100 deployments a day
+(per owner). Every deploy after 17:03 failed with "retry in 24 hours", so
+`second-chair-seven.vercel.app` stayed frozen at `fcee04a` (#52), without
+#51 and #53 through #69.
+
+**What.** A new Vercel project, `second-chair-live` (team `elenchus-hacks`,
+owner leavesj), deployed with the CLI from a clean clone of `main`, not
+connected to GitHub. Branch pushes therefore make no preview builds, and
+merges don't deploy by themselves: run `git pull && vercel --prod` in
+`~/Documents/team1-deploy` (README). The project was created with framework
+preset "Other" and served 404 until the preset was set to Next.js.
+Env: `ANTHROPIC_API_KEY`, `BRIGHTDATA_API_KEY` and the three `NEXT_PUBLIC_*`
+values from D. `ANTHROPIC_MODEL` and `BRIGHTDATA_ZONE` are left unset because
+they equal the code defaults.
+
+**Checked on the live URL** (deploy of `d03b5ae`, main at the time): `/`,
+`/prep` and `/meeting` return 200; a demo turn returned a live card from
+`claude-sonnet-5-5`; End meeting downloaded the record and posted the hand-off
+to D's Supabase with 1 card, 1 concern and 1 grade (the call was stubbed in
+the browser, so nothing was written); the records app opened at
+`#handoff=<id>`. Pre-flight answered `fallback` on the demo prep, and so does
+the old URL, so whether the new Bright Data key works is still to be
+confirmed (D is checking pre-flight with real sources).
+
+**Fixes that were never on main, now handled:** D's #67 (record file named
+with the local date) merged. B's `0e8ddce` (card fits the screen; numbered
+sources) had been pushed to `fix/b-polish` after its PR #61 closed, so it
+never reached main; it is now #70. Superseded and left alone:
+`fix/next-15.5.27` (main fixed the vulnerable Next.js in `7122cad`),
+`feat/end-screen` (#27), `feat/fb-grades` (#60), `fix/mvp-no-signin` (#66,
+closed on the user's call).
+
+**Still owed:** the old project's owner disconnects its Git link (Settings →
+Git), so PRs stop getting a failing "Vercel" check and pushes stop trying to
+deploy there. The repo's website field still points to the old URL and needs
+an org admin to change it. Redeploy after #70 and after every merge.
+
+**Update 18:17.** #70 (B's card fit) and #71 merged. #71 adds the full
+README with the logo and merges the two-chairs icon (`src/app/icon.svg`,
+`favicon.ico`). Production redeployed at `351407e`; every page and
+`/icon.svg` return 200. The desktop branch defaulted the Mac app to the old
+URL; `34aa64e` on `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f` points it
+(plus its README and a test) at second-chair-live (root `npm run check`
+passes, 155 tests; `npm --prefix desktop run check` not run). A Mac app
+installed before that still opens the old site until it is reinstalled.
+
+## 2026-10-10 (17:45) - Premise check: the client's stated fact is checked live with Bright Data (on by default)
+
+**What it does.** A client question often rides on a stated fact ("Since the
+Fed cut rates by a full point last week, shouldn't we..."). When a client turn
+mentions markets, rates, tax rules, retirement accounts or news, the engine
+extracts up to two public claims (Haiku), searches each through Bright Data
+SERP, and judges it against the results only (Haiku). A contradicted claim
+leads the live card as a red SUGGESTION fact, "Check the premise: the client
+said ... (federalreserve.gov, date)", and adds "Do not repeat as fact: ..." to
+do-not-claim. Supported or unclear claims change nothing. `src/lib/engine/premise.ts`.
+
+**Guardrails.** A query carrying the client's name, an email or a long digit
+run is never sent. The cited URL must be among that claim's own results, and
+every number in the note must trace to the claim or the cited result; else the
+finding is "unclear" and stays off the card. Search results are fenced as
+untrusted data. The check never throws and never holds the card more than
+1.5 s past the card's own answer; a late check is dropped.
+
+**On by default** wherever Bright Data and Claude are configured;
+`PREMISE_CHECK=0` turns it off. Tested with real Claude and a local stand-in
+for Bright Data (two hand-written Fed results, 1.5 s delay; the key is blank
+locally): on the demo Fed question the card led with "Check the premise: ...
+(federalreserve.gov)". The figures in that line came from the stand-in, not a
+real search. A real Bright Data search runs only on Vercel and is unverified.
+
+**The slowdown and its fix.** Run in the same process as the card, the
+premise calls slowed the Sonnet card from 3.0-5.1 s to 5.2-6.4 s and the judge
+call stalled; in separate processes neither slowed. A second SDK client did
+not help. Giving the premise calls their own connections (`getSideClient()`
+in `client.ts`, `node:https` with no keep-alive agent) did: alternating A/B,
+card 2.7-4.6 s with the check on vs 4.0-4.3 s off, premise on 4 of 5 cards.
+
+---
+
+## 2026-10-10 (17:20) - Merged: Block 2 fixes on main; macOS build fixed; advisory answer (#37) in the engine
+
+**On main (not yet live while Vercel is rate limited):** #49 macOS build fix,
+#50 (#31 file conflicts), #52 (#41 reworded worry, lands #48), #56 (#30
+misremembered figure), #51 and #53 (B: card order, client picture), #54 (#38
+anticipated worries), #57 (#40 data note, #43 landing), #55 (B: records
+button), #58 (D: grades in the record shape), #59 (#37 advisory answer, #39
+kind tags), #62 (B's design pass, from #61), #63 (do-not-claim shown once).
+`npm run check` on main: 195 passed, on macOS too.
+
+**macOS build.** `meeting/find.ts` and `meeting/Find.tsx` differ only in case,
+so on a Mac tsc resolved the component import to the helper and failed. Linux
+CI never saw it. The helper is now `findMatches.ts` (#49). The demo laptop
+must build from a main at or after #49.
+
+**#37, the core thesis unchanged.** The card still gives the advisor the answer
+to say; the answer is now an advisory response (acknowledge the feeling,
+connect to the client's goal, answer with the plan's figures, end with a
+question; a discovery question when the worry is unclear), at most 40 words.
+Live on demo t2/t4/t6: 9 of 9 live after warm-up at 3.7 to 5.2 s route time,
+34 to 38 words each. Concern topics carry B's kind tags (`learn: `, `decide: `,
+`life event: `, `request: `; a worry is untagged); any other prefix the model
+invents is stripped. The system prompt moved verbatim to
+`src/lib/engine/moment-prompt.ts` so `moment.ts` stays under 500 lines.
+
+**Review catches.** #30's first build matched client figures without units, so
+"6%" matched "6 tranches" and produced a green made-up explanation; fixed
+before merge, with regression tests. #31 now drops a conflict whose label has
+an untraced number, or whose files share the figure. The landing of #61 kept
+the data note in the consent line as a `div`, since `<details>` inside `<p>`
+breaks hydration.
+
+**Open.** #60 (#42 grade buttons) is to be reworked onto D's #58 shape and B's
+design pass. #64 lands B's review fixes for #61. Vercel: the team's call (see
+17:11).
+
+---
+
 ## 2026-10-10 (17:11) - Blocker: Vercel rate limit, production stuck at #52; built #40, #43, #42
 
 **Blocker.** Since 17:03 every Vercel deployment, main included, fails with

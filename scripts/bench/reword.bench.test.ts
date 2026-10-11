@@ -1,5 +1,5 @@
 // #41 on the live model: the t2 worry, then two rewordings of it. Do the
-// rewordings keep the same prepared facts and move, and within the 5 s budget?
+// rewordings keep the same prepared facts and move, and within the live time limit?
 import { it } from "vitest";
 import { demoPrep, demoTranscript } from "@/data/demo";
 import { runMoment } from "@/lib/engine/moment";

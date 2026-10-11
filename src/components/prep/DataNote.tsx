@@ -12,7 +12,7 @@ export const DATA_DETAILS = [
   "Cards: what is said in the meeting, with your prep, is sent to Claude through Anthropic's API to write each card. Anthropic does not train on API data by default.",
   "Live mic: your browser's speech service turns speech into text (Google in Chrome, Apple in Safari), under that company's own privacy terms. Second Chair keeps no audio.",
   "Prep: files you upload are sent to Claude to be read, and the prep stays in this browser. Pre-flight searches the web for public figures only, never client details.",
-  "End meeting: the record (client name, cards and concerns; no transcript or audio) downloads to your computer, and waits in the records database for up to an hour so the records app can open it once.",
+  "End meeting: the record (client name, cards, concerns and your grades of the cards; no transcript or audio) downloads to your computer, and waits in the records database for up to an hour so the records app can open it once.",
   "Saved records: only when you sign in to the records app and save. You see your own; compliance can read and mark them reviewed. No one can edit or delete a saved record from the apps.",
 ] as const;
 

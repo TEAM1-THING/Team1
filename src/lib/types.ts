@@ -126,6 +126,11 @@ export const Card = z.object({
   doNotClaim: z.array(z.string()),
   defer: z.boolean(),
   deferReason: z.string().optional(),
+  // For the audit over time (#42): when in the meeting the card's turn came,
+  // in seconds from the start, and which model wrote it ("canned" for a demo
+  // fallback card). Optional, so earlier records still parse.
+  at: z.number().optional(),
+  model: z.string().optional(),
 });
 export type Card = z.infer<typeof Card>;
 

@@ -7,7 +7,8 @@ import { FALLBACK_BETA, LIVE_MODEL, LIVE_TIMEOUT_MS, getClient, supportsFallback
 import { checkPrepared } from "./anticipate";
 import { earlierCards, holdSteady } from "./consistency";
 import { MOMENT_SYSTEM } from "./moment-prompt";
-import { classifyUtterance, echoesCard } from "./gate";
+import { classifyUtterance, echoesCard, soundsLikeAdvisor } from "./gate";
+import { checkPremise, premiseCheckEnabled, premiseWithin, withPremise } from "./premise";
 import { outOfScopeHit } from "./scope";
 import { demoPrep, demoTranscript } from "../../data/demo";
 import { mockMoment } from "../mock";
@@ -30,7 +31,7 @@ import {
 
 const RECENT_TURNS = 6;
 // A card is a few short fields; a tight cap keeps a runaway answer from
-// blowing the 5 s budget.
+// blowing the live time limit.
 const MAX_TOKENS = 900;
 const DEFAULT_DEFER_REASON = "Outside the prepared Mandate; defer it to a follow-up rather than answer now.";
 
@@ -331,7 +332,7 @@ export function toCard(out: LlmMoment, prep: Prep, latest: TranscriptTurn, turns
     recommendedMove: topic ? FORCED_MOVE : out.recommendedMove,
     phrasing: topic ? FORCED_PHRASING : out.phrasing,
     why: topic ? `The Mandate confirmed before the meeting lists this as out of scope: ${topic}.` : out.why,
-    doNotClaim: out.doNotClaim,
+    doNotClaim: distinctClaims(out.doNotClaim, facts),
     defer,
     ...(defer ? { deferReason: topic ? `Out of scope: ${topic}.` : out.deferReason?.trim() || DEFAULT_DEFER_REASON } : {}),
   };
@@ -340,6 +341,19 @@ export function toCard(out: LlmMoment, prep: Prep, latest: TranscriptTurn, turns
   const card = traceFacts(parsed.data, prep, latest);
   // When the floor fired, only concern is still the model's own text.
   return textTraced(topic ? [card.concern] : spoken(card), card.facts, prep, turns) ? card : null;
+}
+
+// The card shows DO_NOT_CLAIM facts and doNotClaim as one list, so a claim
+// the model gave both ways, or twice, shows once.
+const claimKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9$%]+/g, " ").trim();
+function distinctClaims(claims: string[], facts: CardFact[]): string[] {
+  const seen = new Set(facts.filter((f) => f.label === "DO_NOT_CLAIM").map((f) => claimKey(f.text)));
+  return claims.filter((c) => {
+    const k = claimKey(c);
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
 // The canned cards belong to the demo client and script. Any other meeting
@@ -356,7 +370,7 @@ function fallback(prep: Prep, state: ConversationState, latest: TranscriptTurn, 
   if (!demo) return none;
   const res = mockMoment(latest.id, state);
   if (!res.card) return none;
-  const card = traceFacts(res.card, prep, latest);
+  const card: Card = { ...traceFacts(res.card, prep, latest), at: latest.t, model: "canned" };
   if (!textTraced(spoken(card), card.facts, prep, [latest])) return none;
   return { card, state: { concerns: res.state.concerns, cards: [...state.cards.filter((c) => c.id !== card.id), card] } };
 }
@@ -384,7 +398,7 @@ async function callClaude(
   latest: TranscriptTurn,
   signal?: AbortSignal,
   opts: MomentOptions = {},
-): Promise<LlmMoment | string> {
+): Promise<(LlmMoment & { model?: string }) | string> {
   const client = getClient();
   const model = opts.model ?? LIVE_MODEL;
   // Reasoning stays on by default: Haiku without it was fastest but scored
@@ -421,7 +435,8 @@ async function callClaude(
     );
     if (res.stop_reason === "refusal") return "refusal";
     if (!res.parsed_output) return "no parsed output";
-    return res.parsed_output;
+    // The model that actually answered (a server-side fallback may differ), for the record (#42).
+    return { ...res.parsed_output, model: res.model };
   } catch (err) {
     if (signal?.aborted) return "request aborted";
     return controller.signal.aborted ? "timeout" : describe(err);
@@ -443,15 +458,26 @@ export async function runMoment(
   // The advisor reading the last card aloud: label it, no call.
   if (echoesCard(latest.text, state.cards.at(-1)?.phrasing)) return { card: null, state, speaker: "advisor" };
   // Plain statements and filler do not run; questions and worries do.
-  if (!classifyUtterance(latest.text).run) return { card: null, state };
+  // Skipped without a Claude call; an advisor's plain line is still relabelled.
+  if (!classifyUtterance(latest.text).run) {
+    return soundsLikeAdvisor(latest.text) ? { card: null, state, speaker: "advisor" } : { card: null, state };
+  }
+  // The premise check runs beside the card call; a finished card waits for it
+  // at most PREMISE_GRACE_MS, and it stops once the card is settled.
+  const premiseStop = new AbortController();
+  const onAbort = () => premiseStop.abort();
+  signal?.addEventListener("abort", onAbort, { once: true });
+  const premise = premiseCheckEnabled() ? checkPremise(latest.text, prep, premiseStop.signal) : null;
   try {
     const out = await callClaude(req, latest, signal, opts);
     if (typeof out === "string") return fallback(prep, state, latest, out);
     if (out.speaker === "advisor") return { card: null, state, speaker: "advisor" };
     if (!out.relevant) return { card: null, state, speaker: "client" };
     const steady = holdSteady(out, state, latest, turns);
-    const card = toCard(steady, prep, latest, turns);
-    if (!card) return fallback(prep, state, latest, "card failed schema or number trace");
+    const traced = toCard(steady, prep, latest, turns);
+    if (!traced) return fallback(prep, state, latest, "card failed schema or number trace");
+    const checked = premise ? withPremise(traced, await premiseWithin(premise)) : traced;
+    const card: Card = { ...checked, at: latest.t, model: out.model || opts.model || LIVE_MODEL };
     const result = MomentResponse.safeParse({
       card,
       state: {
@@ -463,5 +489,8 @@ export async function runMoment(
     return result.data;
   } catch (err) {
     return fallback(prep, state, latest, describe(err));
+  } finally {
+    premiseStop.abort();
+    signal?.removeEventListener("abort", onAbort);
   }
 }

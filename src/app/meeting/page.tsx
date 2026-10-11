@@ -35,6 +35,8 @@ export default function MeetingPage() {
 
   // Mirrors of the state above, read by the auto-play timer and mic callback.
   const live = useRef({ turns, convo, nextIdx, busy: false, startedAt: Date.now(), micCount: 0, lastPhrasing: "" });
+  // Live lines the advisor relabelled by hand; the engine never overrides them.
+  const manual = useRef(new Set<string>());
   // The one live analysis in flight, and the pause timer before the next.
   const pending = useRef<{ ctrl: AbortController | null; timer: ReturnType<typeof setTimeout> | null }>({
     ctrl: null,
@@ -99,7 +101,7 @@ export default function MeetingPage() {
         const res = await postMoment(req, ctrl.signal);
         if (ctrl.signal.aborted) return;
         // The engine heard the advisor: relabel the line, no card.
-        if (res.speaker === "advisor") setLiveTurns(relabel(live.current.turns, turnId, "advisor"));
+        if (res.speaker === "advisor" && !manual.current.has(turnId)) setLiveTurns(relabel(live.current.turns, turnId, "advisor"));
         live.current.convo = res.state;
         setConvo(res.state);
         if (res.card) {
@@ -147,6 +149,7 @@ export default function MeetingPage() {
       const turn = live.current.turns.find((x) => x.id === id);
       if (!turn || !isLiveTurn(id)) return;
       const speaker = turn.speaker === "client" ? "advisor" : "client";
+      manual.current.add(id);
       setLiveTurns(relabel(live.current.turns, id, speaker));
       if (speaker === "client") schedule(id);
     },
@@ -261,8 +264,7 @@ export default function MeetingPage() {
           </div>
         </div>
         {/* The read-aloud consent script belongs in the live mic's start popup (track D, #34). */}
-        {/* #40: the data note's detail floats above the columns, so the page still does not scroll. */}
-        <div role="note" className={`relative z-20 border-t border-[#161412]/10 px-4 py-1.5 text-center text-xs ${ui.muted}`}>
+        <div role="note" className={`border-t border-[#161412]/10 px-4 py-1.5 text-center text-xs ${ui.muted}`}>
           This meeting uses Second Chair. All participants have been told and agreed. <DataNote compact />
         </div>
       </header>
