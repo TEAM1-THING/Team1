@@ -5,19 +5,44 @@
 // to review, save and sign off.
 import type { ConversationState, Prep } from "./types";
 
+// The advisor's grade for each card, so the records database can audit how
+// well Second Chair did over many meetings (#42). Every card gets an entry;
+// one the advisor did not grade is "ungraded", so unreviewed cards can be
+// counted. at and model are copied from the card for the audit.
+export const GRADES = ["helpful", "not_needed", "wrong", "ungraded"] as const;
+export type Grade = (typeof GRADES)[number];
+export type CardGrade = { cardId: string; grade: Grade; gradedAt?: string; at?: number; model?: string };
+export type Graded = Record<string, { grade: Exclude<Grade, "ungraded">; gradedAt: string }>;
+
 export type MeetingRecord = {
   client: string;
   endedAt: string;
   concerns: ConversationState["concerns"];
   cards: ConversationState["cards"];
+  // Optional: records saved before #42 have none.
+  grades?: CardGrade[];
 };
 
-export function buildRecord(prep: Prep, state: ConversationState): MeetingRecord {
+export function cardGrades(cards: ConversationState["cards"], graded: Graded = {}): CardGrade[] {
+  return cards.map((c) => {
+    const g = graded[c.id];
+    return {
+      cardId: c.id,
+      grade: g?.grade ?? "ungraded",
+      ...(g ? { gradedAt: g.gradedAt } : {}),
+      ...(c.at !== undefined ? { at: c.at } : {}),
+      ...(c.model ? { model: c.model } : {}),
+    };
+  });
+}
+
+export function buildRecord(prep: Prep, state: ConversationState, graded: Graded = {}): MeetingRecord {
   return {
     client: prep.clientFile.name,
     endedAt: new Date().toISOString(),
     concerns: state.concerns,
     cards: state.cards,
+    grades: cardGrades(state.cards, graded),
   };
 }
 
@@ -100,10 +125,11 @@ export async function openRecordsApp(record: MeetingRecord | null): Promise<void
 }
 
 // Must not throw: every step is guarded so the meeting screen never breaks.
-export async function exportRecord(prep: Prep, state: ConversationState): Promise<void> {
+// graded: the end screen's grades; End meeting itself exports every card ungraded.
+export async function exportRecord(prep: Prep, state: ConversationState, graded: Graded = {}): Promise<void> {
   let record: MeetingRecord | null = null;
   try {
-    record = buildRecord(prep, state);
+    record = buildRecord(prep, state, graded);
     const blob = new Blob([JSON.stringify(record, null, 2)], { type: "application/json" });
     const href = URL.createObjectURL(blob);
     const a = document.createElement("a");

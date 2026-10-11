@@ -3,7 +3,7 @@
 // record went. Shown over the live view once End meeting is pressed.
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { base44Url, buildRecord, recordFileName, recordLink } from "@/lib/record";
+import { base44Url, buildRecord, exportRecord, recordFileName, recordLink, type Graded } from "@/lib/record";
 import type { Card, Concern, Prep } from "@/lib/types";
 import Concerns from "./Concerns";
 import { endSummary } from "./endSummary";
@@ -14,8 +14,28 @@ const btn =
   "rounded-full px-4 py-2 text-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 active:scale-[0.98]";
 const panel = "sc-glass rounded-2xl border border-white/10 bg-slate-900/70 p-5 backdrop-blur-xl";
 
+// #42: the advisor grades each card so the record can be audited over time.
+const GRADE_BUTTONS = [
+  ["helpful", "Helpful", "bg-emerald-400/20 text-emerald-200"],
+  ["not_needed", "Not needed", "bg-slate-400/20 text-slate-100"],
+  ["wrong", "Wrong", "bg-rose-400/20 text-rose-200"],
+] as const;
+
 export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
+  const [graded, setGraded] = useState<Graded>({});
+  const [handed, setHanded] = useState(false);
+  const gradedCount = cards.filter((c) => graded[c.id]).length;
+  // Pressing the chosen grade again clears it back to ungraded.
+  const grade = (id: string, g: Graded[string]["grade"]) => {
+    setHanded(false);
+    setGraded((prev) => {
+      const next = { ...prev };
+      if (next[id]?.grade === g) delete next[id];
+      else next[id] = { grade: g, gradedAt: new Date().toISOString() };
+      return next;
+    });
+  };
   const summary = endSummary(cards, concerns);
   // Once, at the moment the record was exported, not on every re-render.
   const [record] = useState(() => buildRecord(prep, { concerns, cards }));
@@ -104,6 +124,21 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
                       )}
                     </p>
                     <p className="text-slate-300">{m.concern}</p>
+                    <div role="group" aria-label={`Grade the card at ${m.turnId}`} className="mt-1.5 flex flex-wrap gap-1.5">
+                      {GRADE_BUTTONS.map(([g, label, on]) => (
+                        <button
+                          key={g}
+                          type="button"
+                          aria-pressed={graded[m.id]?.grade === g}
+                          onClick={() => grade(m.id, g)}
+                          className={`rounded-full border border-white/10 px-2.5 py-0.5 text-xs transition focus-visible:outline-2 focus-visible:outline-sky-300 ${
+                            graded[m.id]?.grade === g ? on : "text-slate-400 hover:bg-white/10"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                   </li>
                 ))}
               </ol>
@@ -152,6 +187,27 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
               <p className="mb-3 break-all text-sm text-slate-400">
                 <span className="text-emerald-300">✓</span> Downloaded {fileName}
               </p>
+              {cards.length > 0 && (
+                <div className="mb-3 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    disabled={gradedCount === 0}
+                    // From the click, so the records app tab opens with the graded record.
+                    onClick={() => {
+                      setHanded(true);
+                      void exportRecord(prep, { concerns, cards }, graded);
+                    }}
+                    className={`${btn} bg-slate-100 font-medium text-slate-900 hover:bg-sky-100 disabled:opacity-40`}
+                  >
+                    Hand over with grades
+                  </button>
+                  <span role="status" className="text-sm text-slate-400">
+                    {handed
+                      ? `Downloaded again with ${gradedCount} of ${cards.length} graded; save this version in the records app.`
+                      : `Graded ${gradedCount} of ${cards.length}. Ungraded cards are marked ungraded.`}
+                  </span>
+                </div>
+              )}
               {records && (
                 <a
                   href={records}
