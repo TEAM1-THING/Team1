@@ -369,7 +369,7 @@ function fallback(prep: Prep, state: ConversationState, latest: TranscriptTurn, 
   if (!demo) return none;
   const res = mockMoment(latest.id, state);
   if (!res.card) return none;
-  const card = traceFacts(res.card, prep, latest);
+  const card: Card = { ...traceFacts(res.card, prep, latest), at: latest.t, model: "canned" };
   if (!textTraced(spoken(card), card.facts, prep, [latest])) return none;
   return { card, state: { concerns: res.state.concerns, cards: [...state.cards.filter((c) => c.id !== card.id), card] } };
 }
@@ -397,7 +397,7 @@ async function callClaude(
   latest: TranscriptTurn,
   signal?: AbortSignal,
   opts: MomentOptions = {},
-): Promise<LlmMoment | string> {
+): Promise<(LlmMoment & { model?: string }) | string> {
   const client = getClient();
   const model = opts.model ?? LIVE_MODEL;
   // Reasoning stays on by default: Haiku without it was fastest but scored
@@ -434,7 +434,8 @@ async function callClaude(
     );
     if (res.stop_reason === "refusal") return "refusal";
     if (!res.parsed_output) return "no parsed output";
-    return res.parsed_output;
+    // The model that actually answered (a server-side fallback may differ), for the record (#42).
+    return { ...res.parsed_output, model: res.model };
   } catch (err) {
     if (signal?.aborted) return "request aborted";
     return controller.signal.aborted ? "timeout" : describe(err);
@@ -463,8 +464,9 @@ export async function runMoment(
     if (out.speaker === "advisor") return { card: null, state, speaker: "advisor" };
     if (!out.relevant) return { card: null, state, speaker: "client" };
     const steady = holdSteady(out, state, latest, turns);
-    const card = toCard(steady, prep, latest, turns);
-    if (!card) return fallback(prep, state, latest, "card failed schema or number trace");
+    const traced = toCard(steady, prep, latest, turns);
+    if (!traced) return fallback(prep, state, latest, "card failed schema or number trace");
+    const card: Card = { ...traced, at: latest.t, model: out.model || opts.model || LIVE_MODEL };
     const result = MomentResponse.safeParse({
       card,
       state: {
