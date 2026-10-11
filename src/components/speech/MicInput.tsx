@@ -227,13 +227,15 @@ function ConsentDialog({ onClose }: { onClose: (agreed: boolean) => void }) {
         aria-modal="true"
         aria-labelledby={titleId}
         onClick={(e) => e.stopPropagation()}
-        className={`${ui.raised} w-full max-w-lg space-y-4 p-5 text-[#ecebe8]`}
+        // ui.page brings the theme's text colour (the portal sits outside the
+        // meeting screen); ui.raised the panel. Both themes define both tokens.
+        className={`${ui.page} ${ui.raised} w-full max-w-lg space-y-4 p-5`}
       >
         <h2 id={titleId} className="text-base font-semibold">
           Ask your client before the mic starts
         </h2>
         <p className={`text-sm ${ui.muted}`}>Read this aloud:</p>
-        <blockquote className="border-l-2 border-white/20 pl-3 text-[15px] leading-relaxed">“{CONSENT_LINE}”</blockquote>
+        <blockquote className="border-l-2 border-current/25 pl-3 text-[15px] leading-relaxed">“{CONSENT_LINE}”</blockquote>
         <label className="flex cursor-pointer items-center gap-2 text-sm">
           <input type="checkbox" checked={done} onChange={(e) => setDone(e.target.checked)} className="h-4 w-4" />
           Done: the client agreed
