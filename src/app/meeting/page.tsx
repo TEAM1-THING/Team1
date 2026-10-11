@@ -191,6 +191,13 @@ export default function MeetingPage() {
 
   const current = cards.at(-1);
   const previous = cards.at(-2);
+  // A new card is the thing to read: bring the card column back to its top.
+  const cardColumn = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!current) return;
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    cardColumn.current?.scrollTo({ top: 0, behavior: smooth ? "smooth" : "auto" });
+  }, [current?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const clock = turns.at(-1)?.t ?? 0;
   const mmss = `${String(Math.floor(clock / 60)).padStart(2, "0")}:${String(clock % 60).padStart(2, "0")}`;
   const waiting = busy && turns.at(-1)?.speaker === "client";
@@ -269,7 +276,7 @@ export default function MeetingPage() {
           <Find sources={prep?.sources ?? []} />
           <Transcript turns={turns} onToggle={toggleSpeaker} />
         </div>
-        <div className={`order-1 space-y-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto lg:pr-1 ${hidden ? "invisible" : ""}`} aria-live="polite" aria-busy={waiting}>
+        <div ref={cardColumn} className={`order-1 space-y-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto lg:pr-1 ${hidden ? "invisible" : ""}`} aria-live="polite" aria-busy={waiting}>
           {waiting && (
             <div aria-label="Reading the client's last turn" className={`${ui.surface} space-y-3 p-5`}>
               <div className="h-3 w-28 rounded bg-white/[0.06] motion-safe:animate-pulse" />
