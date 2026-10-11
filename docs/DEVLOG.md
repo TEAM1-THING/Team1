@@ -4,6 +4,36 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (18:50) - Engine fixes from the feature sweep
+
+A sweep of every feature on the live build found these engine defects. Fixed
+on main in a5e6a9a (gate 234/234, build green, live-checked on a local
+production server):
+
+- **Spoken percentages.** Speech-to-text writes "4 percent", which the number
+  trace missed, so a card that repeated the client's 4% was dropped and the
+  screen stayed empty. "N percent" now reads as N%. Live: 6 of 6 off-script
+  figure questions ("returns are 4 percent", "3 percent", "retire at 65") got
+  a real card that kept the plan's figure and flagged the new one as not yet
+  modelled.
+- **Safe card.** When a live card still fails its checks and there is no
+  canned card, the advisor gets a fixed card with no figures: acknowledge, and
+  offer to run it after the meeting. Before, the screen showed nothing.
+- **Neutral Mandate fallback.** If the Mandate draft fails for a meeting that
+  is not the demo, the fallback is now empty assumptions plus the standard
+  disclaimers. Before, it was the demo client's Mandate, whose figures the
+  trace would then accept for someone else.
+- **Ingest.** If no uploaded file can be read, the answer is 422 with each
+  file's reason, not an empty review. When there are no Claude reads, every
+  client field is listed as missing.
+- **Do-not-claim.** Each claim is shown once, even if the model repeats it in
+  other words (`claims.ts`).
+
+Not deployed yet. The desktop session's merge will carry it to
+second-chair-live in one deploy. Still open: pre-flight falls back on
+production until `BRIGHTDATA_API_KEY` is set there (devlog 18:35).
+HANDOFF now names the frozen seven build correctly (961310a, not fcee04a).
+
 ## 2026-10-10 (18:35) - Track D: consent popup (#34), new deployment checked
 
 **Built (#72, for A to merge):** Live mic now opens a consent dialog with the
