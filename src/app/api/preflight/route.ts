@@ -13,7 +13,8 @@ import { Prep } from "@/lib/types";
 
 export type { PreflightCheck, PreflightResult } from "@/lib/engine/preflight";
 
-export const maxDuration = 30;
+// Search (up to 25 s, hedged) plus the judge (up to 12 s).
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 const MAX_BODY = 256_000; // bytes

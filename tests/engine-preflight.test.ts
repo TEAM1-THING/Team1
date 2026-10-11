@@ -17,7 +17,8 @@ import {
 } from "@/lib/engine/preflight";
 import type { Prep } from "@/lib/types";
 
-const TODAY = new Date().toISOString().slice(0, 10);
+// checkedAt is a full ISO timestamp from today.
+const TODAY = expect.stringMatching(new RegExp(`^${new Date().toISOString().slice(0, 10)}T\\d{2}:\\d{2}`));
 
 const RETURN_URL = "https://example.org/60-40-returns";
 const CPI_URL = "https://www.bls.gov/cpi/";

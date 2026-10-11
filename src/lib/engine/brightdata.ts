@@ -112,11 +112,72 @@ export async function serpSearch(query: string, signal?: AbortSignal): Promise<S
       console.warn(`[brightdata] search failed (HTTP ${res.status})`);
       return null;
     }
-    const organic = organicOf(JSON.parse(await res.text()));
+    const body = await res.text();
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(body);
+    } catch {
+      // Seen live: a 200 with an empty body. Bright Data's own error header
+      // names the cause; it carries no key or client data.
+      const why = res.headers.get("x-brd-error")?.slice(0, 120) ?? "no x-brd-error";
+      console.warn(`[brightdata] reply was not JSON (${body.length} chars, ${why})`);
+      return null;
+    }
+    const organic = organicOf(parsed);
     if (!organic) console.warn("[brightdata] search answered without results");
     return organic ? normalizeOrganic(organic) : null;
   } catch (err) {
     if (!signal?.aborted) console.warn(`[brightdata] search failed (${err instanceof Error ? err.name : "unknown"})`);
     return null;
   }
+}
+
+// Bright Data's SERP answers in 3 s to over 30 s and now and then sends back
+// an empty body, so one slow or failed request used to leave a check
+// unverified. Another request starts as soon as one fails, or every `hedgeMs`
+// while none has answered; the first usable answer wins and the rest are
+// cancelled. Never more than `maxAttempts` requests per query.
+export const HEDGE_MS = 4_000;
+export const MAX_ATTEMPTS = 3;
+
+export function hedgedSearch(
+  query: string,
+  signal: AbortSignal,
+  hedgeMs = HEDGE_MS,
+  maxAttempts = MAX_ATTEMPTS,
+): Promise<SerpResult[] | null> {
+  if (signal.aborted) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const attempts: AbortController[] = [];
+    let running = 0;
+    let last: SerpResult[] | null = null;
+    let settled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const finish = (results: SerpResult[] | null) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      signal.removeEventListener("abort", onAbort);
+      for (const a of attempts) a.abort();
+      resolve(results);
+    };
+    const onAbort = () => finish(null);
+    const launch = () => {
+      clearTimeout(timer);
+      if (settled || attempts.length >= maxAttempts) return;
+      const attempt = new AbortController();
+      attempts.push(attempt);
+      running++;
+      if (attempts.length < maxAttempts) timer = setTimeout(launch, hedgeMs);
+      void serpSearch(query, AbortSignal.any([signal, attempt.signal])).then((results) => {
+        running--;
+        if (results && results.length > 0) return finish(results);
+        last = results ?? last;
+        if (attempts.length < maxAttempts) launch();
+        else if (running === 0) finish(last);
+      });
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+    launch();
+  });
 }

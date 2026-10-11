@@ -9,7 +9,7 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { extractNumbers } from "@/lib/provenance";
 import type { Prep } from "@/lib/types";
 import { FALLBACK_BETA, MODEL, getClient } from "./client";
-import { serpSearch, type SerpResult } from "./brightdata";
+import { hedgedSearch, type SerpResult } from "./brightdata";
 
 // Block 1 tester: "I like it when they are able to cite their sources and when
 // the sources were made." Every cited source carries its date and when we checked.
@@ -19,11 +19,16 @@ export type PreflightCheck = {
   note: string;
   sourceUrl?: string;
   sourceDate?: string; // publish date shown by Google, when present
-  checkedAt?: string; // YYYY-MM-DD this check ran
+  // When this check ran, as a full ISO timestamp: a UTC date alone reads as
+  // tomorrow during an evening meeting in California, so the screen shows it
+  // in the viewer's own time zone.
+  checkedAt?: string;
 };
 export type PreflightResult = { checks: PreflightCheck[]; source: "brightdata" | "fallback" };
 
-export const SEARCH_TIMEOUT_MS = 12_000;
+// Room for the hedged searches (brightdata.ts) to finish: Bright Data has
+// taken over 30 s for one request. The route allows search plus judge.
+export const SEARCH_TIMEOUT_MS = 25_000;
 export const JUDGE_TIMEOUT_MS = 12_000;
 const MAX_CHECKS = 3;
 const MAX_SCANNED = 20;
@@ -35,7 +40,10 @@ export const NOTE_NOT_COMPARED = "Source found; not yet compared";
 export const NOTE_UNMATCHED = "The cited source was not among the live results.";
 export const NOTE_UNCLEAR = "The live results did not address this clearly.";
 
-const SEARCH_CACHE_TTL_MS = 10 * 60_000;
+// The queries are fixed market questions (CPI, long-run returns, yields) whose
+// answers do not move within a day, so a found result is kept for hours: a
+// second check, or the meeting after, does not wait on Bright Data again.
+const SEARCH_CACHE_TTL_MS = 6 * 60 * 60_000;
 
 type Picked = { id: string; claim: string; query: string; hint: string };
 
@@ -122,7 +130,7 @@ export function clearSearchCacheForTests(): void {
 async function cachedSearch(query: string, signal: AbortSignal): Promise<SerpResult[] | null> {
   const hit = searchCache.get(query);
   if (hit && Date.now() - hit.at < SEARCH_CACHE_TTL_MS) return hit.results;
-  const results = signal.aborted ? null : await serpSearch(query, signal).catch(() => null);
+  const results = signal.aborted ? null : await hedgedSearch(query, signal);
   if (results && results.length > 0) searchCache.set(query, { at: Date.now(), results });
   return results;
 }
@@ -222,7 +230,7 @@ function traced(note: string, claim: string, cited?: SerpResult): boolean {
 
 // The cited source with its publish date (when Google shows one) and today's date.
 function cite(r: SerpResult): Pick<PreflightCheck, "sourceUrl" | "sourceDate" | "checkedAt"> {
-  return { sourceUrl: r.url, ...(r.date ? { sourceDate: r.date } : {}), checkedAt: new Date().toISOString().slice(0, 10) };
+  return { sourceUrl: r.url, ...(r.date ? { sourceDate: r.date } : {}), checkedAt: new Date().toISOString() };
 }
 
 function toCheck(p: Picked, own: SerpResult[], v: JudgeOutput["checks"][number] | undefined): PreflightCheck {
