@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import type { PrepSource } from "@/lib/types";
 import { figureParts, findInMaterials } from "./findMatches";
 import { LABELS } from "./replay";
+import { ui } from "./ui";
 
 export const FIND_INPUT_ID = "find-in-materials";
 
@@ -15,8 +16,11 @@ export default function Find({ sources }: { sources: PrepSource[] }) {
   const q = query.trim();
 
   return (
-    <section aria-label="Find in your materials" className="mb-5">
-      <div className="flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/70 px-4 py-2 focus-within:border-sky-300/60">
+    <section aria-label="Find in your materials" className="mb-6">
+      <label htmlFor={FIND_INPUT_ID} className="sr-only">
+        Find in your materials
+      </label>
+      <div className="flex h-10 items-center gap-2 rounded-lg border border-white/[0.09] bg-[#16181b] px-3 transition-colors focus-within:border-white/25">
         <input
           id={FIND_INPUT_ID}
           type="search"
@@ -30,13 +34,13 @@ export default function Find({ sources }: { sources: PrepSource[] }) {
           }}
           placeholder="Find in your materials"
           aria-describedby={query.trim() ? undefined : "find-hint"}
-          className="min-w-0 flex-1 bg-transparent text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent text-sm text-[#ecebe8] placeholder:text-[#8a8781] focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
         />
-        <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-xs text-slate-400">/</kbd>
+        <kbd className={ui.kbd}>/</kbd>
       </div>
 
       {!q && (
-        <p id="find-hint" className="mt-2 px-1 text-xs text-slate-500">
+        <p id="find-hint" className={`mt-2 text-xs text-pretty ${ui.faint}`}>
           {sources.length
             ? "Type a word like reserve or tranches. Searches only your own materials, instantly."
             : "No materials loaded yet. Add them on the prep screen."}
@@ -44,19 +48,19 @@ export default function Find({ sources }: { sources: PrepSource[] }) {
       )}
 
       {q && hits.length === 0 && (
-        <p role="status" className="mt-2 px-1 text-sm text-slate-400">
+        <p role="status" className={`mt-2 text-sm ${ui.muted}`}>
           Nothing in your materials mentions &ldquo;{q}&rdquo;.
         </p>
       )}
 
       {hits.length > 0 && (
-        <ul role="list" aria-label={`${hits.length} matches`} className="mt-3 space-y-2">
+        <ul role="list" aria-label={`${hits.length} matches`} className="mt-3 space-y-3">
           {hits.map((h, i) => (
-            <li key={`${h.sourceId}-${i}`} className={`border-l-2 pl-3 text-sm ${LABELS.PREPARED_FACT.rule}`}>
-              <p className="text-slate-200">
+            <li key={`${h.sourceId}-${i}`} className="text-sm">
+              <p className="text-pretty text-[#dedcd6]">
                 {figureParts(h.line).map((p, j) =>
                   p.figure ? (
-                    <mark key={j} className="rounded bg-emerald-400/15 px-0.5 font-semibold text-emerald-200">
+                    <mark key={j} className="rounded-sm bg-emerald-400/15 px-0.5 font-medium text-emerald-200">
                       {p.text}
                     </mark>
                   ) : (
@@ -64,12 +68,10 @@ export default function Find({ sources }: { sources: PrepSource[] }) {
                   ),
                 )}
               </p>
-              <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-emerald-200/70">
-                <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${LABELS.PREPARED_FACT.chip}`}>
-                  {LABELS.PREPARED_FACT.text}
-                </span>
-                from {h.title}
-                {h.date ? ` · ${h.date}` : ""}
+              <p className={`mt-1 flex flex-wrap items-center gap-2 text-xs ${ui.faint}`}>
+                <span className={`${ui.chip} ${LABELS.PREPARED_FACT.chip}`}>{LABELS.PREPARED_FACT.text}</span>
+                From {h.title}
+                {h.date ? `, ${h.date}` : ""}
               </p>
             </li>
           ))}
