@@ -145,13 +145,16 @@ npm run install-app
 When it prints `installed .../Applications/Second Chair.app`, you're set. Open it:
 
 ```bash
-open -a "$HOME/Applications/Second Chair.app" --env SC_URL=https://second-chair-live.vercel.app/meeting
+open "$HOME/Applications/Second Chair.app"
 ```
 
+From then on, open it like any app: Spotlight (⌘ Space, type "Second Chair")
+or the Dock.
+
 > [!TIP]
-> That `SC_URL` part points the app at the live site. The branch still defaults
-> to the old frozen link until it's updated, so keep it for now. After that,
-> open it like any app: Spotlight (⌘ Space, type "Second Chair") or the Dock.
+> Installed it before 6:17 PM on build day? That copy still opens the old
+> frozen site. Quit it, then from the `Team1` folder run `git pull` and
+> `npm run install-app` again.
 
 **Using it:** start a meeting and the panel tucks itself into the top-right
 corner, over your call. Drag its top bar to move it, or drag an edge to resize.
@@ -300,7 +303,7 @@ when it's built, so it's visible to the browser. Only public values go there.
 | "Deployment rate limited — retry in 24 hours" | The free plan's 100-a-day limit. Wait it out, or deploy only with `vercel --prod` |
 | A red **Vercel** check on a pull request | That's the old frozen project. Ignore it: the **gate** check is the one that counts |
 | Features seem missing | You're probably on `second-chair-seven`. Use **second-chair-live.vercel.app** |
-| The Mac app shows an old version | Open it with `--env SC_URL=https://second-chair-live.vercel.app/meeting` (see the Mac app section) |
+| The Mac app shows an old version | Reinstall it: quit, `git pull`, `npm run install-app` (see the Mac app section) |
 
 ## 👥 The team
 

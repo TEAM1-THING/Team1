@@ -9,12 +9,12 @@ index below.
 
 ## Current state (2026-10-10, 12:35 PDT, end of session 1)
 
-**Update 18:20: production is https://second-chair-live.vercel.app.** The old
+**Update 18:10: production is https://second-chair-live.vercel.app.** The old
 `second-chair-seven.vercel.app` is frozen at `fcee04a` (17:02) and lacks every
 fix since then; do not demo, test or share it. Merges no longer deploy
 themselves: redeploy with `git pull && vercel --prod` in
 `~/Documents/team1-deploy` (see README). Ignore the failing "Vercel" PR check;
-the "gate" check is the one that counts. Details: devlog 18:20.
+the "gate" check is the one that counts. Details: devlog 18:10.
 
 **Update 13:15: the four-track MVP build is under way. Start at the pinned
 issue [#13](https://github.com/joshcodes42/Team1/issues/13).** Stage 0 is on

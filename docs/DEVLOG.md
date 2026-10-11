@@ -31,7 +31,7 @@ spend one Vercel deployment instead of a preview plus production.
 
 ---
 
-## 2026-10-10 (18:20) - Production moved to second-chair-live.vercel.app; the old URL is frozen
+## 2026-10-10 (18:10) - Production moved to second-chair-live.vercel.app; the old URL is frozen
 
 **Why.** D's Vercel project hit the Hobby limit of 100 deployments a day
 (per owner). Every deploy after 17:03 failed with "retry in 24 hours", so
@@ -69,6 +69,15 @@ closed on the user's call).
 Git), so PRs stop getting a failing "Vercel" check and pushes stop trying to
 deploy there. The repo's website field still points to the old URL and needs
 an org admin to change it. Redeploy after #70 and after every merge.
+
+**Update 18:20.** #70 (B's card fit) and #71 merged. #71 adds the full
+README with the logo and merges the two-chairs icon (`src/app/icon.svg`,
+`favicon.ico`). Production redeployed at `351407e`; every page and
+`/icon.svg` return 200. The desktop branch defaulted the Mac app to the old
+URL; `34aa64e` on `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f` points it
+(plus its README and a test) at second-chair-live (root `npm run check`
+passes, 155 tests; `npm --prefix desktop run check` not run). A Mac app
+installed before that still opens the old site until it is reinstalled.
 
 ## 2026-10-10 (17:45) - Premise check: the client's stated fact is checked live with Bright Data (on by default)
 
