@@ -4,6 +4,28 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (19:10) - Desktop panel: practice-run bugs fixed
+
+A real practice run (a full-screen stand-in call, the dashboard open on another
+desktop) reproduced the advisor's reports:
+
+- **A click on the panel took the keyboard from the call, and could jump to the
+  dashboard's desktop.** Electron's panel is not a true non-activating NSPanel,
+  so a click makes Second Chair the front app; macOS then brings its last
+  window forward. Now the dashboard steps aside during a meeting as soon as the
+  advisor leaves it, and after each click on the panel the keyboard goes back
+  to the app that had it (`desktop/src/main/focus.ts`; a drag hands it back when
+  it ends; not while typing in the panel). Checked: eye, click-through, shrink,
+  expand and Next turn all work with no desktop jump, and typing lands in the
+  call after each.
+- **Live mic said "Speech service blocked in this browser."** The Mac app
+  transcribes with its own speech-to-text service, unset here. The panel now
+  says the Mac app needs a speech-to-text key and that the sample meeting works
+  without one.
+- **Not glassy, and now the editorial theme.** The panel is the meeting page's
+  cream paper, frosted: a .74 tint over the blurred call, cards at .86, the end
+  screen opaque. Checked against main's new theme on a local production build.
+
 ## 2026-10-10 (19:00) - Track B: meeting screen from feedback, editorial theme, pitch deck
 
 **Built and merged (track B paths):** meeting screen and replay (#14); sources on
