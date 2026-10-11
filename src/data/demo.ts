@@ -43,6 +43,54 @@ export const demoPrep: Prep = {
     disclaimers: ["Projections are not guarantees.", "Past performance does not predict future results."],
     outOfScope: ["Individual stock picks", "Tax filing advice", "Crypto"],
   },
+  // Likely worries with prepared answers (#38), as the engine wrote them from
+  // this prep on the live model; the prep screen can prepare them again.
+  anticipated: [
+    {
+      worry: "If an emergency hits, will I have enough cash on hand?",
+      why: "Running short of cash in an emergency is one of Dana's stated concerns, and the plan sets aside a liquid reserve.",
+      answer:
+        "That worry makes sense, since your security comes first. The plan keeps a $180,000 liquid reserve, 24 months of expenses at $7,500 a month, outside the market. Does that cushion feel like enough, or would you want to change it?",
+      facts: [
+        { text: "Keep a $180,000 liquid reserve, equal to 24 months of expenses at $7,500 a month.", label: "PREPARED_FACT", sourceId: "plan-1" },
+      ],
+    },
+    {
+      worry: "What if I invest right before a downturn?",
+      why: "Buying in right before a downturn is a stated concern, and the plan uses staged entry to address it.",
+      answer:
+        "Nobody can time the market, so that fear is understandable. The plan enters in 6 equal monthly tranches of $200,000, which reduces timing risk but can't remove it. How would you feel about that pace, or would you prefer another?",
+      facts: [
+        { text: "Enter the market in 6 equal monthly tranches of $200,000 to reduce timing risk.", label: "PREPARED_FACT", sourceId: "plan-1" },
+        { text: "That staging guarantees against losses.", label: "DO_NOT_CLAIM" },
+      ],
+    },
+    {
+      worry: "Will I really have $9,000 a month when I retire at 70?",
+      why: "Retiring at 70 with $9,000 a month is Dana's main goal, and the projection rests on an assumed return.",
+      answer:
+        "It's wise to test that number. The plan projects $9,000 a month at 70, but that assumes a 5% average return, which is not guaranteed. Would it help to look at how the income changes if returns come in lower?",
+      facts: [
+        { text: "Projected income at 70: $9,000 a month under a 5% average return assumption.", label: "PREPARED_FACT", sourceId: "plan-1" },
+      ],
+    },
+    {
+      worry: "Why is so much cash being held when I could be investing it?",
+      why: "Dana holds $300,000 in cash today, while the plan keeps a $180,000 reserve.",
+      answer:
+        "Fair question. You hold $300,000 in cash, and the reserve target is $180,000, so $120,000 sits above target. You can invest or hold that amount, and it's your call. What would you like that extra money to do for you?",
+      facts: [
+        { text: "Cash on hand today $300,000, so $120,000 above target can be invested or held.", label: "PREPARED_FACT", sourceId: "plan-2" },
+      ],
+    },
+    {
+      worry: "Can I still help with my grandchildren's college?",
+      why: "Helping fund two grandchildren's college is a stated goal, though the plan sets no college amount.",
+      answer:
+        "That goal matters, and I want it planned, not squeezed in. The plan as written focuses on your retirement income and reserve, and has no college figure yet. What amount or timing would you like us to model?",
+      facts: [{ text: "That the plan already sets aside an amount for college.", label: "DO_NOT_CLAIM" }],
+    },
+  ],
   confirmed: true,
 };
 

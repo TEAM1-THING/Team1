@@ -75,6 +75,18 @@ export const FileConflict = z.object({
 });
 export type FileConflict = z.infer<typeof FileConflict>;
 
+// A worry or question the client is likely to raise, read from the files at
+// prep (#38), with a prepared advisory answer: acknowledge the feeling, tie it
+// to the client's goal, answer with the plan's figures, end with a question.
+// Facts follow the same provenance labels as a card's.
+export const AnticipatedWorry = z.object({
+  worry: z.string(), // in the client's likely words
+  why: z.string(), // why it is likely, from the files
+  answer: z.string(), // always a SUGGESTION, like a card's phrasing
+  facts: z.array(z.lazy(() => CardFact)),
+});
+export type AnticipatedWorry = z.infer<typeof AnticipatedWorry>;
+
 export const Prep = z.object({
   meeting: Meeting.optional(),
   clientFile: ClientFile,
@@ -82,6 +94,7 @@ export const Prep = z.object({
   mandate: Mandate,
   confirmed: z.boolean(),
   conflicts: z.array(FileConflict).optional(), // figures the files disagree on
+  anticipated: z.array(AnticipatedWorry).optional(), // likely worries, prepared answers
 });
 export type Prep = z.infer<typeof Prep>;
 

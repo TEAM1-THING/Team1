@@ -5,7 +5,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AnticipatedPanel } from "@/components/prep/AnticipatedPanel";
 import { ClientFileForm } from "@/components/prep/ClientFileForm";
+import { DataNote } from "@/components/prep/DataNote";
 import { FileDrop, type IngestResponse } from "@/components/prep/FileDrop";
 import { MeetingSummary } from "@/components/prep/MeetingSummary";
 import { MandatePanel } from "@/components/prep/MandatePanel";
@@ -49,6 +51,7 @@ export default function PrepPage() {
       sources: r.sources,
       mandate: r.mandate,
       conflicts: r.conflicts ?? [],
+      anticipated: r.anticipated ?? [],
       confirmed: false,
     });
     setMissing(r.missing);
@@ -67,10 +70,10 @@ export default function PrepPage() {
 
   return (
     <Backdrop>
-      <p role="note" className="bg-indigo-500/20 px-4 py-1.5 text-center text-xs text-indigo-100">
+      <div role="note" className="relative z-20 bg-indigo-500/20 px-4 py-1.5 text-center text-xs text-indigo-100">
         Second Chair listens to the meeting. Tell your client and get their consent before you start; California
-        requires every party to agree.
-      </p>
+        requires every party to agree. <DataNote compact />
+      </div>
 
       <main className="mx-auto flex max-w-3xl flex-col gap-5 px-4 pb-32 sm:px-6">
         <header className="flex items-center justify-between pt-6 pb-1">
@@ -143,6 +146,12 @@ export default function PrepPage() {
               setMandateOk(false);
             }}
           />
+        </Step>
+        )}
+
+        {reviewing && (
+        <Step n={5} title="Likely worries" hint="What this client is likely to raise, each with a prepared answer. A live card starts from it when the worry comes up.">
+          <AnticipatedPanel prep={prep} value={prep.anticipated ?? []} onChange={(anticipated) => set({ anticipated })} />
         </Step>
         )}
       </main>

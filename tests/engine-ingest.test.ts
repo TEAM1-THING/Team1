@@ -185,11 +185,11 @@ describe("ingestFiles conflicts", () => {
     values: values.map(([document, value]) => ({ document, value })),
   });
 
-  // The ingest call returns READ plus these conflicts; the Mandate call is
-  // refused, so it falls back without a second fake.
+  // The ingest call returns READ plus these conflicts; the Mandate and the
+  // anticipated-worries calls are refused, so they fall back without fakes.
   function fakeRead(conflicts: unknown[]) {
     const parse = vi.fn(async (params: { system: string }) =>
-      params.system.startsWith("You draft a Mandate")
+      params.system.startsWith("You draft a Mandate") || params.system.startsWith("You help a financial advisor prepare")
         ? { stop_reason: "refusal", parsed_output: null }
         : { stop_reason: "end_turn", parsed_output: { ...READ, conflicts } },
     );
@@ -210,8 +210,9 @@ describe("ingestFiles conflicts", () => {
         ],
       },
     ]);
-    // One Claude read for the files (no extra round trip), one for the Mandate.
-    expect(parse).toHaveBeenCalledTimes(2);
+    // One Claude read for the files (conflicts add no round trip), then the
+    // Mandate and the anticipated worries side by side.
+    expect(parse).toHaveBeenCalledTimes(3);
   });
 
   it("drops a conflict whose value is not in the file it names", async () => {

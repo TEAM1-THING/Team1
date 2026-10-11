@@ -4,6 +4,28 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (17:11) - Blocker: Vercel rate limit, production stuck at #52; built #40, #43, #42
+
+**Blocker.** Since 17:03 every Vercel deployment, main included, fails with
+"Deployment rate limited — retry in 24 hours" (Hobby plan; each PR push makes
+a preview deployment). Production is still `fcee04a` (#52). #51, #53 and #56
+(#30) are merged but not live. The team decides: the Vercel owner upgrades
+(a purchase), main goes to another Vercel project with the same env vars (a
+new URL for the next sense check), or, once deploys work again, only main
+deploys.
+
+**Built, in review.** PR #57 covers #40 and #43. A data note in one sentence
+on the landing, prep and meeting screens ("Second Chair does not train AI on
+your meeting, and saves it to your records only when you sign in and save
+it"), with the detail as built. End meeting holds the record as a one-time
+hand-off for up to an hour, so the note says so. The landing leads with "It
+reads your client, so you can focus on the answer". PR #60 covers #42. The
+end screen grades each card Helpful, Not needed or Wrong. The record gains
+optional grades, one per card, "ungraded" by default, with each card's time
+and model. D reviews the record shape.
+
+---
+
 ## 2026-10-10 (16:56) - Built: same answer for a reworded worry (#41), anticipated worries at prep (#38)
 
 Both are from Block 2 tester 2. Both are in review: PR #48 and PR #54.
