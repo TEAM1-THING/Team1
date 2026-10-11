@@ -331,7 +331,7 @@ export function toCard(out: LlmMoment, prep: Prep, latest: TranscriptTurn, turns
     recommendedMove: topic ? FORCED_MOVE : out.recommendedMove,
     phrasing: topic ? FORCED_PHRASING : out.phrasing,
     why: topic ? `The Mandate confirmed before the meeting lists this as out of scope: ${topic}.` : out.why,
-    doNotClaim: out.doNotClaim,
+    doNotClaim: distinctClaims(out.doNotClaim, facts),
     defer,
     ...(defer ? { deferReason: topic ? `Out of scope: ${topic}.` : out.deferReason?.trim() || DEFAULT_DEFER_REASON } : {}),
   };
@@ -340,6 +340,19 @@ export function toCard(out: LlmMoment, prep: Prep, latest: TranscriptTurn, turns
   const card = traceFacts(parsed.data, prep, latest);
   // When the floor fired, only concern is still the model's own text.
   return textTraced(topic ? [card.concern] : spoken(card), card.facts, prep, turns) ? card : null;
+}
+
+// The card shows DO_NOT_CLAIM facts and doNotClaim as one list, so a claim
+// the model gave both ways, or twice, shows once.
+const claimKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9$%]+/g, " ").trim();
+function distinctClaims(claims: string[], facts: CardFact[]): string[] {
+  const seen = new Set(facts.filter((f) => f.label === "DO_NOT_CLAIM").map((f) => claimKey(f.text)));
+  return claims.filter((c) => {
+    const k = claimKey(c);
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
 // The canned cards belong to the demo client and script. Any other meeting
