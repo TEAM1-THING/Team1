@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { demoPrep, demoTranscript } from "@/data/demo";
 import { POST } from "@/app/api/moment/route";
 import { LIVE_TIMEOUT_MS, setClientForTests } from "@/lib/engine/client";
-import { buildMomentPrompt, outOfScopeHit, runMoment, type LlmMoment } from "@/lib/engine/moment";
+import { applyConcernUpdates, buildMomentPrompt, outOfScopeHit, runMoment, tagged, type LlmMoment } from "@/lib/engine/moment";
 import { mockMoment } from "@/lib/mock";
 import { MomentResponse, emptyState, type ConversationState, type Prep, type TranscriptTurn } from "@/lib/types";
 
@@ -313,6 +313,91 @@ describe("runMoment", () => {
   });
 });
 
+describe("gate-skipped advisor lines", () => {
+  it("relabels a plain advisor line without a Claude call", async () => {
+    const parse = returning(liveT2);
+    const turns: TranscriptTurn[] = [
+      ...upTo("t2"),
+      { id: "m1", speaker: "client", t: 20, text: "Let me walk you through the reserve figure in the report." },
+    ];
+    const res = await runMoment({ prep: demoPrep, turns, state: emptyState() });
+    expect(res).toMatchObject({ card: null, speaker: "advisor" });
+    expect(parse).not.toHaveBeenCalled();
+  });
+
+  it("keeps the client's plain line unlabelled", async () => {
+    const parse = returning(liveT2);
+    const turns: TranscriptTurn[] = [...upTo("t2"), { id: "m1", speaker: "client", t: 20, text: "The weather's been nice." }];
+    const res = await runMoment({ prep: demoPrep, turns, state: emptyState() });
+    expect(res.card).toBeNull();
+    expect(res.speaker).toBeUndefined();
+    expect(parse).not.toHaveBeenCalled();
+  });
+});
+
+describe("canned demo cards", () => {
+  it("quote every prepared fact word for word from the source it cites", () => {
+    let state = emptyState();
+    for (const turn of demoTranscript) {
+      const res = mockMoment(turn.id, state);
+      state = res.state;
+      for (const f of res.card?.facts ?? []) {
+        if (f.label !== "PREPARED_FACT") continue;
+        const source = demoPrep.sources.find((s) => s.id === f.sourceId);
+        expect(source?.text, `${turn.id}: ${f.text}`).toContain(f.text);
+      }
+    }
+  });
+});
+
+describe("do-not-claim list", () => {
+  it("shows a claim once when the model gives it as a fact and in doNotClaim", async () => {
+    returning({
+      ...liveT2,
+      doNotClaim: ["cash is never needed beyond the reserve", "That the reserve covers every emergency.", "that the reserve covers every emergency"],
+    });
+    const res = await runMoment({ prep: demoPrep, turns: upTo("t2"), state: emptyState() });
+    expect(res.card?.doNotClaim).toEqual(["That the reserve covers every emergency."]);
+    expect(res.card?.facts.filter((f) => f.label === "DO_NOT_CLAIM").map((f) => f.text)).toEqual([
+      "Cash is never needed beyond the reserve.",
+    ]);
+  });
+});
+
+describe("safe card", () => {
+  it("replaces an off-script card that fails the number trace, with no figures on it", async () => {
+    returning({
+      ...liveT2,
+      phrasing: "At 4% you would get about $7,000 a month instead.",
+      doNotClaim: ["That income stays at $9,000.", "That lower returns change nothing."],
+    });
+    const turns: TranscriptTurn[] = [...upTo("t1"), { id: "x2", speaker: "client", t: 8, text: "What if returns are only 4 percent?" }];
+    const res = await runMoment({ prep: demoPrep, turns, state: emptyState() });
+    expect(res.card).toMatchObject({ turnId: "x2", moment: "question", facts: [], defer: true });
+    expect(res.card?.phrasing).not.toMatch(/\d/);
+    expect(res.card?.doNotClaim).toEqual(["That lower returns change nothing."]);
+    expect(res.state.cards.map((c) => c.id)).toEqual(["c-x2"]);
+  });
+});
+
+describe("concern kind tags (#39)", () => {
+  it("keeps the screen's tags in lower case and reads any other prefix as a worry", () => {
+    expect(tagged("Life Event: son's down payment")).toBe("life event: son's down payment");
+    expect(tagged("decide:wait six months")).toBe("decide: wait six months");
+    expect(tagged("request: send fee schedule")).toBe("request: send fee schedule");
+    expect(tagged("fear: sister's 2008 loss")).toBe("sister's 2008 loss");
+    expect(tagged("worry: liquidity")).toBe("liquidity");
+    expect(tagged("liquidity")).toBe("liquidity");
+  });
+
+  it("opens and resolves by the cleaned topic", () => {
+    const opened = applyConcernUpdates([], { open: ["fear: market drop", "Learn: how tranches work"], resolve: [] }, "t2");
+    expect(opened.map((c) => c.topic)).toEqual(["market drop", "learn: how tranches work"]);
+    const resolved = applyConcernUpdates(opened, { open: [], resolve: ["fear: market drop"] }, "t4");
+    expect(resolved[0].status).toBe("resolved");
+  });
+});
+
 describe("buildMomentPrompt", () => {
   it("keeps user text inside its delimiters", () => {
     const turns: TranscriptTurn[] = [
@@ -322,6 +407,32 @@ describe("buildMomentPrompt", () => {
     expect(prompt.match(/<\/meeting_data>/g)).toHaveLength(1);
     expect(prompt).toContain("plan-1");
     expect(prompt).toContain("Crypto");
+  });
+
+  it("passes traced file conflicts as data and drops one a source no longer backs", () => {
+    const turns: TranscriptTurn[] = [{ id: "t1", speaker: "client", t: 0, text: "Is the reserve enough?" }];
+    const prep: Prep = {
+      ...demoPrep,
+      sources: [
+        { id: "a", title: "Plan", kind: "plan", text: "Reserve $180,000." },
+        { id: "b", title: "Summary", kind: "note", text: "Reserve $200,000." },
+      ],
+      conflicts: [
+        {
+          quantity: "cash reserve",
+          values: [
+            { value: "$180,000", sourceId: "a" },
+            { value: "$200,000", sourceId: "b" },
+          ],
+        },
+      ],
+    };
+    expect(buildMomentPrompt(prep, turns, emptyState(), turns[0])).toContain(
+      '<file_conflicts>[{"quantity":"cash reserve","values":[{"value":"$180,000","sourceId":"a"}',
+    );
+    // The advisor corrected the summary after prep: nothing left to flag.
+    const fixed: Prep = { ...prep, sources: [prep.sources[0], { ...prep.sources[1], text: "Reserve $180,000." }] };
+    expect(buildMomentPrompt(fixed, turns, emptyState(), turns[0])).not.toContain("file_conflicts");
   });
 
   it("caps what goes to Claude", () => {

@@ -1,6 +1,7 @@
 // Replay logic for the meeting screen, kept free of React so a test can drive
 // it through the real /api/moment handler.
 import type { Card, Concern, ConversationState, MomentRequest, MomentResponse, Prep, TranscriptTurn } from "@/lib/types";
+import { kindOf } from "./picture";
 
 export type PostMoment = (req: MomentRequest, signal?: AbortSignal) => Promise<MomentResponse>;
 
@@ -27,15 +28,15 @@ export const postMoment: PostMoment = async (req, signal) => {
   return (await res.json()) as MomentResponse;
 };
 
-// chip: the label pill; rule: the left edge of the fact it labels.
+// chip: the colours of the label.
 export const LABELS = {
-  PREPARED_FACT: { text: "Prepared fact", chip: "bg-emerald-400/15 text-emerald-300", rule: "border-emerald-400" },
-  CALCULATED: { text: "Calculation", chip: "bg-amber-400/15 text-amber-300", rule: "border-amber-400" },
-  SUGGESTION: { text: "Suggestion", chip: "bg-rose-400/15 text-rose-300", rule: "border-rose-400" },
-  DO_NOT_CLAIM: { text: "Do not claim", chip: "bg-slate-400/15 text-slate-300", rule: "border-slate-500" },
+  PREPARED_FACT: { text: "Prepared fact", chip: "bg-emerald-400/15 text-emerald-300" },
+  CALCULATED: { text: "Calculation", chip: "bg-amber-400/15 text-amber-300" },
+  SUGGESTION: { text: "Suggestion", chip: "bg-rose-400/15 text-rose-300" },
+  DO_NOT_CLAIM: { text: "Do not claim", chip: "bg-stone-400/15 text-stone-300" },
 } as const;
 
 // End-of-meeting follow-ups: one task line per concern still open.
 export function followUpTasks(concerns: Concern[], client: string): string[] {
-  return concerns.filter((c) => c.status === "open").map((c) => `Follow up with ${client}: ${c.topic} (raised at ${c.raisedAtTurn})`);
+  return concerns.filter((c) => c.status === "open").map((c) => `Follow up with ${client}: ${kindOf(c.topic).text} (raised at ${c.raisedAtTurn})`);
 }

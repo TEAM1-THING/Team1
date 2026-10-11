@@ -1,5 +1,6 @@
 import { deflateRawSync } from "node:zlib";
-import { afterEach, describe, expect, it } from "vitest";
+import type Anthropic from "@anthropic-ai/sdk";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { POST } from "@/app/api/ingest/route";
 import { setClientForTests } from "@/lib/engine/client";
 import { ingestFiles, prepareFiles, traceClientFile } from "@/lib/engine/ingest";
@@ -143,6 +144,120 @@ describe("ingestFiles without Claude", () => {
     expect(r.sources[0].text).toContain("$180,000");
     expect(r.files.find((f) => f.name === "plan.pdf")?.read).toBe(false);
     expect(r.clientFile.investable).toBe(0);
+    expect(r.missing).toEqual(expect.arrayContaining(["name", "investable", "riskTolerance"]));
+  });
+});
+
+describe("ingestFiles conflicts", () => {
+  afterEach(() => setClientForTests(undefined));
+
+  const PLAN = {
+    name: "plan.txt",
+    data: Buffer.from("Dana Whitfield, age 58. Keep a cash reserve of $180,000. Expenses $7,500 a month."),
+  };
+  const SUMMARY = {
+    name: "summary.txt",
+    data: Buffer.from("Summary for Dana Whitfield: reserve $200,000. Expenses $7,500 a month."),
+  };
+  const AGREEING = {
+    name: "summary.txt",
+    data: Buffer.from("Summary for Dana Whitfield: reserve $180,000. Expenses $7,500 a month."),
+  };
+  const READ = {
+    documents: [
+      { index: 1, title: "Retirement plan", kind: "plan", date: "", transcript: "" },
+      { index: 2, title: "Summary", kind: "note", date: "", transcript: "" },
+    ],
+    meeting: { with: "Dana Whitfield", role: "client", purpose: "Review the plan." },
+    clientFile: {
+      name: "Dana Whitfield",
+      age: 58,
+      horizonYears: 0,
+      cashOnHand: 0,
+      investable: 0,
+      riskTolerance: "moderate",
+      statedGoals: [],
+      statedConcerns: [],
+    },
+    missing: [],
+  };
+  const reserve = (...values: [number, string][]) => ({
+    quantity: "cash reserve",
+    values: values.map(([document, value]) => ({ document, value })),
+  });
+
+  // The ingest call returns READ plus these conflicts; the Mandate and the
+  // anticipated-worries calls are refused, so they fall back without fakes.
+  function fakeRead(conflicts: unknown[]) {
+    const parse = vi.fn(async (params: { system: string }) =>
+      params.system.startsWith("You draft a Mandate") || params.system.startsWith("You help a financial advisor prepare")
+        ? { stop_reason: "refusal", parsed_output: null }
+        : { stop_reason: "end_turn", parsed_output: { ...READ, conflicts } },
+    );
+    setClientForTests({ beta: { messages: { parse } } } as unknown as Anthropic);
+    return parse;
+  }
+
+  it("keeps a conflict whose values are each in their own file", async () => {
+    const parse = fakeRead([reserve([1, "$180,000"], [2, "$200,000"])]);
+    const r = await ingestFiles([PLAN, SUMMARY]);
+    expect(r.source).toBe("claude");
+    expect(r.conflicts).toEqual([
+      {
+        quantity: "cash reserve",
+        values: [
+          { value: "$180,000", sourceId: "file-1" },
+          { value: "$200,000", sourceId: "file-2" },
+        ],
+      },
+    ]);
+    // One Claude read for the files (conflicts add no round trip), then the
+    // Mandate and the anticipated worries side by side.
+    expect(parse).toHaveBeenCalledTimes(3);
+  });
+
+  it("drops a conflict whose value is not in the file it names", async () => {
+    fakeRead([
+      reserve([1, "$180,000"], [2, "$250,000"]), // $250,000 is in no file
+      reserve([1, "$200,000"], [2, "$180,000"]), // each figure is in the other file
+      reserve([1, "$180,000"], [3, "$200,000"]), // there is no document 3
+    ]);
+    const r = await ingestFiles([PLAN, SUMMARY]);
+    expect(r.conflicts).toEqual([]);
+  });
+
+  it("drops a conflict left with one figure or one file", async () => {
+    fakeRead([
+      reserve([1, "$180,000"]),
+      reserve([1, "$180,000"], [2, "$180K"]), // the same figure written two ways
+      { quantity: "expenses", values: [{ document: 1, value: "$7,500" }, { document: 2, value: "$7,500" }] },
+      reserve([1, "$180,000"], [1, "$7,500"]), // two figures, one file
+    ]);
+    const r = await ingestFiles([PLAN, { ...SUMMARY, data: Buffer.from(`${SUMMARY.data} Also $180K.`) }]);
+    expect(r.conflicts).toEqual([]);
+  });
+
+  it("drops a conflict whose files share the figure, or whose label has an untraced number", async () => {
+    fakeRead([
+      reserve([1, "$180,000"], [1, "$7,500"], [2, "$180,000"]), // both files say $180,000
+      { ...reserve([1, "$180,000"], [2, "$200,000"]), quantity: "reserve for 36 months" }, // 36 is in no file
+    ]);
+    const r = await ingestFiles([PLAN, { ...SUMMARY, data: Buffer.from(`${SUMMARY.data} Was $180,000.`) }]);
+    expect(r.conflicts).toEqual([]);
+  });
+
+  it("reports no conflicts when the files agree", async () => {
+    fakeRead([]);
+    const r = await ingestFiles([PLAN, AGREEING]);
+    expect(r.source).toBe("claude");
+    expect(r.conflicts).toEqual([]);
+  });
+
+  it("reports no conflicts without Claude", async () => {
+    setClientForTests(null);
+    const r = await ingestFiles([PLAN, SUMMARY]);
+    expect(r.source).toBe("text-only");
+    expect(r.conflicts).toEqual([]);
   });
 });
 
@@ -166,5 +281,15 @@ describe("POST /api/ingest", () => {
       }),
     );
     expect(res.status).toBe(400);
+  });
+
+  it("answers 422 with the reason when no file could be read", async () => {
+    setClientForTests(null);
+    const form = new FormData();
+    form.append("files", new Blob([Buffer.from("%PDF-1.7")]), "plan.pdf");
+    const res = await POST(new Request("http://x/api/ingest", { method: "POST", body: form }));
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as { error: string }).error).toMatch(/^None of these files could be read\. plan\.pdf: /);
+    setClientForTests(undefined);
   });
 });

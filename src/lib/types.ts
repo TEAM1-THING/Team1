@@ -66,12 +66,35 @@ export const Meeting = z.object({
 });
 export type Meeting = z.infer<typeof Meeting>;
 
+// A quantity the advisor's files give different figures for, found at prep
+// (e.g. the reserve as $180,000 in the plan and $200,000 in a summary). Each
+// value is written as in the source it names; provenance.ts re-checks that.
+export const FileConflict = z.object({
+  quantity: z.string(), // what the figure measures, e.g. "cash reserve"
+  values: z.array(z.object({ value: z.string(), sourceId: z.string() })),
+});
+export type FileConflict = z.infer<typeof FileConflict>;
+
+// A worry or question the client is likely to raise, read from the files at
+// prep (#38), with a prepared advisory answer: acknowledge the feeling, tie it
+// to the client's goal, answer with the plan's figures, end with a question.
+// Facts follow the same provenance labels as a card's.
+export const AnticipatedWorry = z.object({
+  worry: z.string(), // in the client's likely words
+  why: z.string(), // why it is likely, from the files
+  answer: z.string(), // always a SUGGESTION, like a card's phrasing
+  facts: z.array(z.lazy(() => CardFact)),
+});
+export type AnticipatedWorry = z.infer<typeof AnticipatedWorry>;
+
 export const Prep = z.object({
   meeting: Meeting.optional(),
   clientFile: ClientFile,
   sources: z.array(PrepSource),
   mandate: Mandate,
   confirmed: z.boolean(),
+  conflicts: z.array(FileConflict).optional(), // figures the files disagree on
+  anticipated: z.array(AnticipatedWorry).optional(), // likely worries, prepared answers
 });
 export type Prep = z.infer<typeof Prep>;
 
@@ -103,6 +126,11 @@ export const Card = z.object({
   doNotClaim: z.array(z.string()),
   defer: z.boolean(),
   deferReason: z.string().optional(),
+  // For the audit over time (#42): when in the meeting the card's turn came,
+  // in seconds from the start, and which model wrote it ("canned" for a demo
+  // fallback card). Optional, so earlier records still parse.
+  at: z.number().optional(),
+  model: z.string().optional(),
 });
 export type Card = z.infer<typeof Card>;
 

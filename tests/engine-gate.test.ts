@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyUtterance, echoesCard } from "@/lib/engine/gate";
+import { classifyUtterance, echoesCard, soundsLikeAdvisor } from "@/lib/engine/gate";
 import { demoTranscript } from "@/data/demo";
 
 describe("classifyUtterance", () => {
@@ -66,5 +66,71 @@ describe("echoesCard", () => {
     expect(echoesCard("I'm worried I won't have enough cash if something happens", phrasing)).toBe(false);
     expect(echoesCard("a fair worry", phrasing)).toBe(false);
     expect(echoesCard("the plan keeps a reserve", undefined)).toBe(false);
+  });
+});
+
+describe("life events reach the engine", () => {
+  it("runs a plain statement that carries a life event", () => {
+    for (const line of [
+      "We moved to Austin last year.",
+      "I just got married.",
+      "My mother needs a caregiver now.",
+      "I retired in March.",
+      "We're expecting a baby.",
+      "I sold my business.",
+      "We're moving to Denver in the spring.",
+      "We bought a house last month.",
+      "My mother passed in January.",
+      "my company got acquired",
+      "we just had twins",
+      "We're downsizing to a condo.",
+    ]) {
+      expect(classifyUtterance(line).run, line).toBe(true);
+    }
+  });
+
+  it("still skips small talk", () => {
+    for (const line of [
+      "The weather's been nice.",
+      "Okay.",
+      "My dad loves golf.",
+      "I quit smoking.",
+      "We bought a new couch.",
+      "We're moving the couch this weekend.",
+      "Business has been slow at the shop.",
+    ]) {
+      expect(classifyUtterance(line).run, line).toBe(false);
+    }
+  });
+});
+
+describe("soundsLikeAdvisor", () => {
+  it("recognises the advisor steering, following up, or talking plan to the client", () => {
+    for (const line of [
+      "Let me walk you through the reserve figure in the report.",
+      "I'll send you the fee schedule tomorrow.",
+      "Let's take a look at the allocation.",
+      "Your reserve stays outside the market.",
+      "I'd suggest we keep the allocation as it is.",
+      "Your portfolio is up four percent this year.",
+    ]) {
+      expect(soundsLikeAdvisor(line), line).toBe(true);
+    }
+  });
+
+  it("leaves the client's own plain lines alone", () => {
+    for (const line of [
+      "We moved to Austin last year.",
+      "The weather's been nice.",
+      "You know, the plan seemed fine to me.",
+      "Thank you, the plan is clear.",
+      "Okay.",
+      "Let me think about it.",
+      "I'll get back to you on that.",
+      "I trust you on the allocation.",
+      "I like your plan.",
+    ]) {
+      expect(soundsLikeAdvisor(line), line).toBe(false);
+    }
   });
 });

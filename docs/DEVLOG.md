@@ -4,6 +4,205 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (18:55) - Desktop app merged into main; panel review fixes
+
+- The Mac app (`desktop/`) and the website's hand-off to it
+  (`src/components/desktop/`, mounted in `layout.tsx`) are on `main` now, so
+  the live site can open meeting links in the app once it is redeployed. A
+  browser opens links in the app only after it is paired (the app's first run
+  visits `/?sc-desktop=paired`).
+- Panel fixes from the 460/340 px review (482d308): the end screen starts below
+  the title bar; the body scrolls inside the rounded border; the header is
+  compact (19% of the panel at 460 px, was 26%; 27% at 340 px), with no
+  sideways overflow and the data list opening inside the panel; click-through
+  mode is lighter. The consent notice shows by default.
+- README: the main README keeps the short Mac app guide and links the full one,
+  now `desktop/README.md` (it was the desktop branch's README). Anyone who
+  installed from the desktop branch reinstalls from `main`.
+
+## 2026-10-10 (18:35) - Track D: consent popup (#34), new deployment checked
+
+**Built (#72, for A to merge):** Live mic now opens a consent dialog with the
+line the advisor reads aloud (Google's speech service, Anthropic, no audio
+saved, written record kept). Start stays disabled until "Done: the client
+agreed" is ticked; Cancel or Escape leave the mic off; asked once per meeting.
+Replaces the inline checkbox. Uses B's `ui` tokens.
+
+**Checked:** https://second-chair-live.vercel.app (new Vercel account; the old
+project hit the Hobby deploy limit). Live cards, hand-off by id and records
+app all work with a real meeting; pre-flight falls back until
+`BRIGHTDATA_API_KEY` is added there. Fixed earlier: record file named with
+the local date (#67), card grades stored and shown (#58).
+
+## 2026-10-10 (18:14) - Live robustness: 8 s limit, quoted demo cards, advisor relabel, life events
+
+The four correcting mechanisms (#30 misremembered figure, #41 reworded
+question, the question/statement gate, speaker correction) were probed live on
+main and each held when Claude answered in time. The failure was the 5 s limit:
+replies take about 2.5 to 4.7 s, and a slow one became a canned card on the
+demo script or nothing at all on a live line. Fixed, after an independent
+review and a live re-measure:
+
+- **Live limit 5 s to 8 s.** 28 of 28 sequential live calls returned a real
+  card (median 3.6 s, max 5.6 s); the old limit would have lost 1 of 28.
+- **Canned demo cards quote the plan word for word.** All 5 prepared facts are
+  verbatim; two lines that were not quotes are now suggestions.
+- **Plain advisor lines are relabelled** without a Claude call ("Let me walk you
+  through...", "I'll send you...", "your portfolio..."). On a 132-line sample:
+  2 of 94 client lines mislabelled (the first version mislabelled 22; the
+  reviewer caught it), 11 of 28 skipped advisor lines caught. A speaker the
+  advisor flips by hand now sticks (meeting page, 3 lines, track B's file).
+- **Life events reach the engine** as specific phrases (moved, married, a baby,
+  a parent passed, sold the business, company acquired...): 30 of 30 on the
+  sample it was tuned on; small talk that triggers a call stays at 10 of 30.
+
+Pushed straight to main after `npm run check` (228) and `npm run build`, to
+spend one Vercel deployment instead of a preview plus production.
+
+---
+
+## 2026-10-10 (18:10) - Production moved to second-chair-live.vercel.app; the old URL is frozen
+
+**Why.** D's Vercel project hit the Hobby limit of 100 deployments a day
+(per owner). Every deploy after 17:03 failed with "retry in 24 hours", so
+`second-chair-seven.vercel.app` stayed frozen at `fcee04a` (#52), without
+#51 and #53 through #69.
+
+**What.** A new Vercel project, `second-chair-live` (team `elenchus-hacks`,
+owner leavesj), deployed with the CLI from a clean clone of `main`, not
+connected to GitHub. Branch pushes therefore make no preview builds, and
+merges don't deploy by themselves: run `git pull && vercel --prod` in
+`~/Documents/team1-deploy` (README). The project was created with framework
+preset "Other" and served 404 until the preset was set to Next.js.
+Env: `ANTHROPIC_API_KEY`, `BRIGHTDATA_API_KEY` and the three `NEXT_PUBLIC_*`
+values from D. `ANTHROPIC_MODEL` and `BRIGHTDATA_ZONE` are left unset because
+they equal the code defaults.
+
+**Checked on the live URL** (deploy of `d03b5ae`, main at the time): `/`,
+`/prep` and `/meeting` return 200; a demo turn returned a live card from
+`claude-sonnet-5-5`; End meeting downloaded the record and posted the hand-off
+to D's Supabase with 1 card, 1 concern and 1 grade (the call was stubbed in
+the browser, so nothing was written); the records app opened at
+`#handoff=<id>`. Pre-flight answered `fallback` on the demo prep, and so does
+the old URL, so whether the new Bright Data key works is still to be
+confirmed (D is checking pre-flight with real sources).
+
+**Fixes that were never on main, now handled:** D's #67 (record file named
+with the local date) merged. B's `0e8ddce` (card fits the screen; numbered
+sources) had been pushed to `fix/b-polish` after its PR #61 closed, so it
+never reached main; it is now #70. Superseded and left alone:
+`fix/next-15.5.27` (main fixed the vulnerable Next.js in `7122cad`),
+`feat/end-screen` (#27), `feat/fb-grades` (#60), `fix/mvp-no-signin` (#66,
+closed on the user's call).
+
+**Still owed:** the old project's owner disconnects its Git link (Settings →
+Git), so PRs stop getting a failing "Vercel" check and pushes stop trying to
+deploy there. The repo's website field still points to the old URL and needs
+an org admin to change it. Redeploy after #70 and after every merge.
+
+**Update 18:17.** #70 (B's card fit) and #71 merged. #71 adds the full
+README with the logo and merges the two-chairs icon (`src/app/icon.svg`,
+`favicon.ico`). Production redeployed at `351407e`; every page and
+`/icon.svg` return 200. The desktop branch defaulted the Mac app to the old
+URL; `34aa64e` on `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f` points it
+(plus its README and a test) at second-chair-live (root `npm run check`
+passes, 155 tests; `npm --prefix desktop run check` not run). A Mac app
+installed before that still opens the old site until it is reinstalled.
+
+## 2026-10-10 (17:45) - Premise check: the client's stated fact is checked live with Bright Data (on by default)
+
+**What it does.** A client question often rides on a stated fact ("Since the
+Fed cut rates by a full point last week, shouldn't we..."). When a client turn
+mentions markets, rates, tax rules, retirement accounts or news, the engine
+extracts up to two public claims (Haiku), searches each through Bright Data
+SERP, and judges it against the results only (Haiku). A contradicted claim
+leads the live card as a red SUGGESTION fact, "Check the premise: the client
+said ... (federalreserve.gov, date)", and adds "Do not repeat as fact: ..." to
+do-not-claim. Supported or unclear claims change nothing. `src/lib/engine/premise.ts`.
+
+**Guardrails.** A query carrying the client's name, an email or a long digit
+run is never sent. The cited URL must be among that claim's own results, and
+every number in the note must trace to the claim or the cited result; else the
+finding is "unclear" and stays off the card. Search results are fenced as
+untrusted data. The check never throws and never holds the card more than
+1.5 s past the card's own answer; a late check is dropped.
+
+**On by default** wherever Bright Data and Claude are configured;
+`PREMISE_CHECK=0` turns it off. Tested with real Claude and a local stand-in
+for Bright Data (two hand-written Fed results, 1.5 s delay; the key is blank
+locally): on the demo Fed question the card led with "Check the premise: ...
+(federalreserve.gov)". The figures in that line came from the stand-in, not a
+real search. A real Bright Data search runs only on Vercel and is unverified.
+
+**The slowdown and its fix.** Run in the same process as the card, the
+premise calls slowed the Sonnet card from 3.0-5.1 s to 5.2-6.4 s and the judge
+call stalled; in separate processes neither slowed. A second SDK client did
+not help. Giving the premise calls their own connections (`getSideClient()`
+in `client.ts`, `node:https` with no keep-alive agent) did: alternating A/B,
+card 2.7-4.6 s with the check on vs 4.0-4.3 s off, premise on 4 of 5 cards.
+
+---
+
+## 2026-10-10 (17:20) - Merged: Block 2 fixes on main; macOS build fixed; advisory answer (#37) in the engine
+
+**On main (not yet live while Vercel is rate limited):** #49 macOS build fix,
+#50 (#31 file conflicts), #52 (#41 reworded worry, lands #48), #56 (#30
+misremembered figure), #51 and #53 (B: card order, client picture), #54 (#38
+anticipated worries), #57 (#40 data note, #43 landing), #55 (B: records
+button), #58 (D: grades in the record shape), #59 (#37 advisory answer, #39
+kind tags), #62 (B's design pass, from #61), #63 (do-not-claim shown once).
+`npm run check` on main: 195 passed, on macOS too.
+
+**macOS build.** `meeting/find.ts` and `meeting/Find.tsx` differ only in case,
+so on a Mac tsc resolved the component import to the helper and failed. Linux
+CI never saw it. The helper is now `findMatches.ts` (#49). The demo laptop
+must build from a main at or after #49.
+
+**#37, the core thesis unchanged.** The card still gives the advisor the answer
+to say; the answer is now an advisory response (acknowledge the feeling,
+connect to the client's goal, answer with the plan's figures, end with a
+question; a discovery question when the worry is unclear), at most 40 words.
+Live on demo t2/t4/t6: 9 of 9 live after warm-up at 3.7 to 5.2 s route time,
+34 to 38 words each. Concern topics carry B's kind tags (`learn: `, `decide: `,
+`life event: `, `request: `; a worry is untagged); any other prefix the model
+invents is stripped. The system prompt moved verbatim to
+`src/lib/engine/moment-prompt.ts` so `moment.ts` stays under 500 lines.
+
+**Review catches.** #30's first build matched client figures without units, so
+"6%" matched "6 tranches" and produced a green made-up explanation; fixed
+before merge, with regression tests. #31 now drops a conflict whose label has
+an untraced number, or whose files share the figure. The landing of #61 kept
+the data note in the consent line as a `div`, since `<details>` inside `<p>`
+breaks hydration.
+
+**Open.** #60 (#42 grade buttons) is to be reworked onto D's #58 shape and B's
+design pass. #64 lands B's review fixes for #61. Vercel: the team's call (see
+17:11).
+
+---
+
+## 2026-10-10 (17:11) - Blocker: Vercel rate limit, production stuck at #52; built #40, #43, #42
+
+**Blocker.** Since 17:03 every Vercel deployment, main included, fails with
+"Deployment rate limited — retry in 24 hours" (Hobby plan; each PR push makes
+a preview deployment). Production is still `fcee04a` (#52). #51, #53 and #56
+(#30) are merged but not live. The team decides: the Vercel owner upgrades
+(a purchase), main goes to another Vercel project with the same env vars (a
+new URL for the next sense check), or, once deploys work again, only main
+deploys.
+
+**Built, in review.** PR #57 covers #40 and #43. A data note in one sentence
+on the landing, prep and meeting screens ("Second Chair does not train AI on
+your meeting, and saves it to your records only when you sign in and save
+it"), with the detail as built. End meeting holds the record as a one-time
+hand-off for up to an hour, so the note says so. The landing leads with "It
+reads your client, so you can focus on the answer". PR #60 covers #42. The
+end screen grades each card Helpful, Not needed or Wrong. The record gains
+optional grades, one per card, "ungraded" by default, with each card's time
+and model. D reviews the record shape.
+
+---
+
 ## 2026-10-10 (17:05) - Desktop: the panel drags reliably
 
 The title bar used `-webkit-app-region: drag`, and on macOS that stops
@@ -18,6 +217,102 @@ still shrinks it. Not yet tried with a physical mouse. After a security
 review: only a real press drags (a press made up by page script is ignored,
 checked), a move with no button held ends the drag, and a page reload, crash
 or hidden window cancels one.
+
+## 2026-10-10 (16:56) - Built: same answer for a reworded worry (#41), anticipated worries at prep (#38)
+
+Both are from Block 2 tester 2. Both are in review: PR #48 and PR #54.
+
+**#41, "Same question, reworded, gets the same answer."** Claude now sees the
+cards already shown in the meeting and names the one a client turn rewords.
+The engine then keeps that card's facts, move and do-not-claims; only the
+concern line and the suggested line are reworded. A new figure from the client,
+or Claude judging that something new was added, releases the hold. Live, 2
+runs × 2 rewordings of the reserve worry: 3 of 4 gave identical facts and move.
+The 4th added a health angle; it kept the facts and asked about health costs.
+3.3 to 3.7 s each.
+
+**#38, "Anticipate likely worries at prep."** From the advisor's files, 3 to 5
+likely worries, each with why, a prepared answer in the advisory shape
+(acknowledge, the client's goal, the plan's figures, a question) and traced,
+labelled facts. They show as step 5 of prep for the advisor to edit, and they
+travel to the meeting, where a live card starts from the prepared answer.
+**Decided:** a separate call that runs beside the Mandate draft, not a field
+in the file read. The upload waits no longer, and a hand-entered prep can use
+it too. A worry whose answer carries a figure in no file is dropped. Live:
+demo prep 10.6 s; the sample files through the whole upload 19.4 s, with 5
+sensible worries; the t2 card opens from the prepared answer in 2.9 to 3.8 s.
+
+---
+
+## 2026-10-10 (16:50) - Track D: records database on Supabase; hand-off by id (#45)
+
+**Built: records database** (Supabase project "second chair", us-west-1). The
+records app now signs users in (email + password) and saves meeting records.
+Postgres row-level security, tested as advisor, compliance and signed out:
+advisors save as themselves and read only their own; compliance reads all and
+signs off through `sign_off`, which stamps the reviewer's own name, email and
+time; saved records cannot be edited or deleted from the apps; signed-out
+visitors read nothing. Compliance is granted in SQL only. Supabase's security
+check is clean apart from `sign_off` being callable by signed-in users, which
+is intended. Confirmed by hand: a record saved from the live app is listed and
+signed off.
+
+**#45 (A's review of #25):** End meeting now stores the record as a one-time
+hand-off and opens the records app with only its id (`#handoff=<id>`, single
+use, expires in an hour), so client details never sit in a URL or history.
+Database and records app are live; the meeting-screen change is #47. B: the End
+screen's reopen link should switch to `openRecordsApp(record)`.
+
+**For B:** `main` has both `find.ts` and `Find.tsx` in
+`src/components/meeting/`, so `npm run check` and `npm run build` fail on
+macOS (case-insensitive disk). Linux CI and Vercel are unaffected.
+
+## 2026-10-10 (16:50) - Clarified: the answer stays the core
+
+The team's call on the 16:45 decision: the core thesis does not change.
+Second Chair gives the advisor the answer to say. Block 2 changes what kind
+of answer: an advisory response, not a fact readout. Naming the worry is the
+lead-in, not the product. The suggested response stays the headline of the
+card and is built the way good advisors answer: acknowledge the feeling,
+connect it to the client's own goal, answer with the plan's figures, end with
+a question. Figures keep their provenance labels. Issue #37 rewritten to say
+so; tracking issue #44.
+
+---
+
+## 2026-10-10 (16:45) - Block 2 closed; decided: advisory copilot, not a finance data tool
+
+**Tester 2 (session 2, "mixed"):** saw it as reading the client: "you don't
+necessarily have a great way of determining what their worry is in a meeting
+unless they tell you." And the core of it: "doing that and responding to that
+worry is is more difficult than if someone gives you an idea of what the worry
+is." One more input, not a replacement for judgment. They prepare for worries
+in advance by asking the client for information first. Dislikes: "I am
+concerned with how an AI tool would capture my meeting and concerns in that
+meeting and use that or share that and help the tool grow"; answers that
+change when a question is slightly reworded; AI in finance "has to be audited
+over time and has to have some sort of grading for how well it did". Fit: no,
+because their current clients do not need financial worries addressed.
+
+**Block 2 result:** 2 of 2 completed, both "mixed" on Catch what humans miss.
+Tester 1 valued speed (finding a number); tester 2 valued having the worry
+named so they can focus on the answer.
+
+**Decided:** Second Chair is an advisory copilot. It reads the person (the
+worry behind the words, what they want to learn or decide, life events) and
+suggests the advisor's move, so the advisor can focus on responding; the
+advisor's own figures back the move up. Data lookup stays, as the support
+layer, not the headline. The hidden problem, in tester 2's words: spotting the
+worry and answering it at the same time is what slips.
+
+**Changes the build (issues filed, label `feedback`):** advisory-first card
+(the person and the move lead, facts back it up); anticipate likely worries at
+prep; a client picture beyond financial worries; a plain statement that
+meetings are not stored on a server or used to train AI; the same question
+reworded gets the same facts; grade each card at the end so the record can be
+audited over time; landing copy in the advisory voice.
+
+---
 
 ## 2026-10-10 (16:43) - README: start to finish
 
@@ -98,6 +393,60 @@ the meeting with the handed-off prep (the demo client's name gone); a hostile
 build green. Not verified: the Chrome prompt (needs a person to click), Core
 Audio capture of a real call, capture exclusion on macOS (needs Screen
 Recording permission for the test runner).
+
+## 2026-10-10 (16:15) - Track D done: live engine on production, record hand-off live
+
+**Bright Data fixed on production.** Pre-flight was returning `source:
+fallback`: the same key and zone answered correctly from a laptop (9 organic
+results for a CPI query), so the cause was the values stored in Vercel. The
+key was re-entered and `BRIGHTDATA_ZONE` removed (the code defaults to
+`serp_api1`). Pre-flight now returns `source: brightdata` with cited, dated
+sources. For A: `brightdata.ts` reads the key without `.trim()`, so a pasted
+newline would silently break it again.
+
+**Verified on production:** meeting cards come from Claude (not the canned
+text); a spoken sentence on Live mic became client turn m1 and a Disclosure
+card; End meeting (#25 merged) downloads the record and opens the records app
+with it loaded, no sign-in, address bar cleaned. D1 (#4), D2 (#8) and D3 (#12)
+are closed; screenshots and URLs are on #13.
+
+**Known limits:** the mic cannot tell speakers apart (B's note at 15:30);
+records are raw files until the database lands after the second sense check.
+
+## 2026-10-10 (16:25) - Block 2, tester 1: "mixed" on the theme; speed is the value they see
+
+**Read:** they understood it as a live copilot ("this is listening and going
+to be searching through data ... to actually pull up a retort"), not a
+note-taker. Likes: pulls plan facts during the meeting with no manual search;
+cuts the downtime while the client waits; looks professional; "I have never
+seen anything like this." Dislikes: none, on one condition: "as long as the
+client was comfortable with it."
+
+**Doubt (the theme):** "it's possible it could catch something that the team
+would miss. I think it would just do it much, much faster. That would be the
+real benefit of this."
+
+**Their stories, which are catches in disguise:**
+- A client remembered a different number than the report showed; they opened
+  the Excel and checked the formulas by hand to prove which was right.
+- On site at a corporate client they could not find a number in prepared
+  documents; neither could an inside rep. "it was probably, I bet, fifteen or
+  twenty minutes transpired by the time I got the answer", waiting in an empty
+  conference room, "fairly embarrassed".
+
+**Confusion:** on opening the link, "I don't know what I'm looking at." In the
+demo meeting the concerns panel said nothing's raised yet, with no hint of
+what would appear there.
+
+**What changes the build before 8 PM** (issues filed, labelled `feedback`):
+catch a figure the client misremembers and show the plan's figure with its
+source; flag figures that disagree across the uploaded files at prep; an
+instant "find in your materials" lookup on the meeting screen; explain the
+demo and the empty states; a consent line the advisor can say to the client.
+Pitch: lead with the 15-to-20-minute hunt (speed), then show the catch.
+
+---
+
 
 ## 2026-10-10 (16:05) - Block 2 sense check launched
 

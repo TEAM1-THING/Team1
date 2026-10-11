@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { POST } from "@/app/api/moment/route";
 import { followUpTasks, processTurn, type PostMoment } from "@/components/meeting/replay";
+import { kindOf } from "@/components/meeting/picture";
 import { demoPrep, demoTranscript } from "@/data/demo";
 import { emptyState, type Card, type MomentResponse } from "@/lib/types";
 
@@ -33,9 +34,9 @@ describe("meeting replay", () => {
     expect(calls).toBe(demoTranscript.filter((t) => t.speaker === "client").length);
   });
 
-  it("shows three cards: objection, hesitation, disclosure", async () => {
+  it("shows four cards: objection, hesitation, disclosure, contradiction", async () => {
     const { cards } = await replayAll();
-    expect(cards.map((c) => c.moment)).toEqual(["objection", "hesitation", "disclosure"]);
+    expect(cards.map((c) => c.moment)).toEqual(["objection", "hesitation", "disclosure", "contradiction"]);
   });
 
   it("opens liquidity at t2, resolves it at t4, leaves timing and down payment open", async () => {
@@ -43,7 +44,7 @@ describe("meeting replay", () => {
     const byTopic = Object.fromEntries(state.concerns.map((c) => [c.topic, c]));
     expect(byTopic["liquidity"]).toMatchObject({ raisedAtTurn: "t2", status: "resolved", resolvedAtTurn: "t4" });
     expect(byTopic["market timing"]?.status).toBe("open");
-    expect(byTopic["down payment"]?.status).toBe("open");
+    expect(byTopic["life event: son's down payment"]?.status).toBe("open");
   });
 
   it("every CALCULATED fact on a shown card carries its math", async () => {
@@ -59,7 +60,8 @@ describe("meeting replay", () => {
     const open = state.concerns.filter((c) => c.status === "open");
     expect(tasks).toHaveLength(open.length);
     expect(tasks.length).toBeGreaterThan(0);
-    for (const c of open) expect(tasks.some((t) => t.includes(c.topic))).toBe(true);
+    // Tasks read without the kind tag ("life event: ").
+    for (const c of open) expect(tasks.some((t) => t.includes(kindOf(c.topic).text))).toBe(true);
     expect(tasks.some((t) => t.includes("liquidity"))).toBe(false);
   });
 });

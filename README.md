@@ -1,44 +1,129 @@
-# Second Chair
+<p align="center">
+  <img src="src/app/icon.svg" width="112" alt="Second Chair logo: two chairs in profile" />
+</p>
 
-A meeting copilot for wealth and financial advisors. Before the meeting you
-load your own materials; during the meeting, when the client asks something
-that needs a careful answer, Second Chair shows what to say and the facts from
-your materials behind it. Every number carries a label: green (from your
-materials), amber (worked out here, with the math shown) or red (outside your
-materials).
+<h1 align="center">Second Chair</h1>
 
-There are two ways to use it:
+<p align="center">
+  <b>The colleague in the second chair, for every client meeting.</b><br/>
+  It listens, spots the tricky moment, and slides you a calm answer,<br/>
+  backed by numbers from your own plan.
+</p>
 
-| | Website | Mac app |
+<p align="center">
+  <a href="https://second-chair-live.vercel.app"><b>▶ Try it live</b></a> ·
+  <a href="#-use-the-website-zero-install">Website guide</a> ·
+  <a href="#-install-the-mac-app-beta">Mac app</a> ·
+  <a href="#-run-it-on-your-own-computer">Run it locally</a> ·
+  <a href="#-put-your-own-copy-online-vercel">Deploy your own</a>
+</p>
+
+<p align="center">
+  <img alt="Next.js 15" src="https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs" />
+  <img alt="Powered by Claude" src="https://img.shields.io/badge/powered%20by-Claude-d97757" />
+  <img alt="Hosted on Vercel" src="https://img.shields.io/badge/hosted%20on-Vercel-000000?logo=vercel" />
+  <img alt="Built in one day" src="https://img.shields.io/badge/built%20in-1%20day-8ec5f2" />
+</p>
+
+---
+
+> [!WARNING]
+> **Old link alert.** `second-chair-seven.vercel.app` is a frozen snapshot from
+> 5 PM on build day, before more than a dozen fixes landed. Don't demo it, test
+> it or share it. The real one is **https://second-chair-live.vercel.app**.
+
+## 🪑 What is this?
+
+Picture a wealth advisor halfway through a client meeting. The client leans in:
+*"What if the market drops right after we invest?"* The answer exists...
+somewhere on page 31 of the plan.
+
+**Second Chair** is the sharp colleague sitting next to you. It hears the
+question, works out what's really underneath (fear of losing cash? bad
+timing?), and puts a ready-to-say answer on a private screen, along with the
+facts from *your* materials that back it up. You stay in the conversation; it
+does the page-flipping.
+
+It's built for **wealth and financial advisors**, around one idea: **catch
+what humans miss.** We built it in one day at the *Talk to Users* hackathon
+(October 10, 2026), with real finance professionals testing it along the way.
+
+### 🚦 The traffic-light rule
+
+Every number on a card wears a label, so you always know what you can stand
+behind:
+
+| Label | Colour | What it means |
+|---|---|---|
+| **Prepared fact** | 🟢 green | Straight from your materials, with its source |
+| **Calculation** | 🟠 amber | Worked out on the spot, with the math shown |
+| **Suggestion** | 🔴 red | An idea or framing from outside your materials: say it with care |
+| **Do not claim** | ⚪ grey | Tempting, but a promise you can't keep. Don't say it |
+
+A number that can't be traced back to your materials never gets green. If the
+client asks something outside the plan you agreed before the meeting (the
+**Mandate**), the card says *defer*, not *wing it*.
+
+## ✨ How it works
+
+**1. Prep (before the meeting).** Drop in the client file and your plan or
+deck. Second Chair reads them and:
+- drafts the **Mandate**: your thesis, assumptions, risk stance and disclaimers;
+- flags figures your files disagree on (say, a $180,000 reserve in one and $200,000 in another);
+- runs a **pre-flight** check of public figures against the live web;
+- guesses the client's **likely worries** and prepares an answer for each.
+
+You check everything and click **Confirm and start meeting →**.
+
+**2. Meet (during the meeting).** Keep it open while the client talks. When a
+moment needs a careful answer, a card slides in with what's underneath, what to
+say, the facts behind it, and what *not* to claim.
+- Press **/** to find any figure in your materials, instantly.
+- The **client picture** on the side tracks worries as they open and get resolved.
+- **Premise check:** if the client states a "fact" about markets, rates or tax
+  rules, Second Chair checks it live and flags it if it's wrong.
+
+**3. Wrap up (after the meeting).** **End meeting** shows what was caught and
+what's still open, gives you follow-ups to copy, and lets you grade each card
+(Helpful / Not needed / Wrong). The record downloads to your computer and opens
+in the compliance **records app**. You only sign in there if you want to save
+it.
+
+## 🖥️ Two ways to use it
+
+| | 🌐 Website | 🍎 Mac app (beta) |
 |---|---|---|
 | Install | Nothing | About 5 minutes, once |
 | Where the meeting shows | A browser tab | A small panel floating over your video call |
-| Can the client see it if you share your screen? | Yes | No: the panel is hidden from screen share |
-| Hears | Your microphone (Chrome) | The call's own audio |
+| Can the client see it when you share your screen? | Yes, if you share that tab | No: the panel hides from screen share |
+| What it hears | Your microphone | The call's own audio |
 
-## Use the website (no install)
+## 🌐 Use the website (zero install)
 
 1. Open **https://second-chair-live.vercel.app** in Chrome.
-2. Click **Prepare a meeting**, add your materials, check what Second Chair
-   drafted, and click **Confirm and start meeting**.
-3. Or click **Try the demo meeting** to watch a sample client meeting: press
-   **Next turn** (or the right arrow key) to play it line by line, or
-   **Auto-play** to let it run.
+2. Click **Try the demo meeting** to watch a sample meeting with Dana Whitfield.
+   Press **Next turn** (or the **→** key) to play it line by line, or
+   **Auto-play** to sit back and watch the cards roll in.
+3. Ready for the real thing? Click **Prepare a meeting**, add your materials,
+   check what Second Chair drafted, and click **Confirm and start meeting →**.
+   No client data handy? Use the sample files in [`public/samples/`](public/samples/).
+4. Before using the live mic, tell everyone the meeting is being recorded, then
+   tick **All parties consent**. (California needs everyone's OK. That's a
+   design rule, not legal advice.)
+5. Click **End meeting** when you're done. 🎉
 
-## Install the Mac app
+## 🍎 Install the Mac app (beta)
 
-### What you need
+> [!NOTE]
+> This is the quick version. The full guide (every button, setting, shortcut
+> and fix) is in [`desktop/README.md`](desktop/README.md).
 
-- A Mac. macOS 14.2 or later to hear the call's audio (tested on macOS 26.3).
-- **Node.js 22.12 or later.** Check with `node -v`; get it from
-  [nodejs.org](https://nodejs.org) if it is missing or older.
-- **Git.** If `git --version` asks you to install developer tools, say yes.
+**What you need:**
+- A Mac. To hear the call's audio, macOS 14.2 or later.
+- **Node.js 22.12 or later.** Check with `node -v`, or get it at [nodejs.org](https://nodejs.org).
+- **Git.** If `git --version` offers to install developer tools, say yes.
 
-### Download and install
-
-Open Terminal and run these one at a time.
-
-Download the code:
+**Install it** (open Terminal and run these one at a time):
 
 ```bash
 git clone https://github.com/TEAM1-THING/Team1.git
@@ -48,230 +133,190 @@ git clone https://github.com/TEAM1-THING/Team1.git
 cd Team1
 ```
 
-Until the desktop app is merged into `main`, it lives on its own branch:
-
-```bash
-git checkout LeavesJ/electron-gpu-ux-bottlenecks-9cf39f
-```
-
-Install what the app needs, build it, and put it in your Applications folder
-(this takes a minute or two):
-
 ```bash
 npm run install-app
 ```
 
-When it finishes it prints `installed .../Applications/Second Chair.app`.
-
-### Open it
+When it prints `installed .../Applications/Second Chair.app`, you're set. Open it:
 
 ```bash
 open "$HOME/Applications/Second Chair.app"
 ```
 
-From then on, open it like any app: Spotlight (Command+Space, type "Second
-Chair"), Finder → Applications, or its Dock icon.
+From then on, open it like any app: Spotlight (⌘ Space, type "Second Chair")
+or the Dock.
 
-The first time it opens, it also opens the website once in your browser and
-shows "Meeting links in this browser now open in the Second Chair desktop app."
-That lets meeting links you click in that browser open in the app (once the
-desktop branch is merged and the site redeployed). Click **Keep them in the
-browser** if you would rather they did not.
+> [!TIP]
+> Installed it earlier from the `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f`
+> branch? The app now lives on `main`. Quit it, then from the `Team1` folder run
+> `git checkout main`, `git pull` and `npm run install-app` again.
 
-## Use the Mac app
+**Using it:** start a meeting and the panel tucks itself into the top-right
+corner, over your call. Drag its top bar to move it, or drag an edge to resize.
+It never steals the keyboard from your call.
 
-### Before the meeting
-
-Opening Second Chair shows its window with the start page. Click **Prepare a
-meeting** (or press Command+N from anywhere in the app), add your materials,
-and click **Confirm and start meeting**.
-
-### During the meeting
-
-When the meeting starts, the window steps aside and the meeting opens in a
-small panel in the top-right corner, over your call. It never takes the
-keyboard away from the call, so the call's own shortcuts keep working.
-
-- **Move it:** drag the bar at the top. **Resize it:** drag an edge. It
-  reopens where you left it.
-- **The buttons on the bar** (point at any of them for a plain description):
-
-| Button | What it does |
+| Shortcut | What it does |
 |---|---|
-| Eye with a slash | The client can't see the panel when you share your screen. Click to let them see it (the eye turns open and amber). |
-| Pointer | **Pass clicks to the call:** the panel stays in view, but your clicks go to the call behind it. Click again to use the panel. |
-| Up arrow | **Shrink to a thin bar** to uncover the call. Double-clicking the bar does the same. |
-| X | **Hide the panel.** It keeps running. |
+| ⌃ ⌥ H | Show or hide the panel |
+| ⌃ ⌥ Space | Type in the panel (Esc to go back to the call) |
+| ⌃ ⌥ G | Let clicks pass through to the call |
+| ⌃ ⌥ B | Shrink to a thin bar |
+| ⌃ ⌥ → | Demo meeting: play the next line |
+| ⌃ ⌥ P | Demo meeting: play or pause |
+| ⌃ ⌥ ⇧ Q | Quit Second Chair |
 
-- **Lost the panel?** Click **Second Chair in the Dock**, or press
-  Control+Option+H.
-- **Recording consent.** California requires everyone on a call to know it is
-  being recorded. Say "This meeting is being recorded" out loud, then tick
-  **I said: "This meeting is being recorded."** The live mic stays off until
-  you do. (A design constraint, not legal advice.)
+🙈 **Screen-share tip:** the panel hides from screen share, but to be extra
+safe share **one window** (your slides) instead of the whole screen. Test it
+once with a colleague before a real client call.
 
-### Shortcuts
+## 💻 Run it on your own computer
 
-They work while the call is in front. Control+Option on a Mac, Ctrl+Alt on
-Windows.
+**You need:** Node.js 20 or newer, and Git.
 
-| Keys | Does |
-|---|---|
-| Control+Option+H | Show or hide the panel |
-| Control+Option+Space | Type in the panel (Esc to stop and go back to the call) |
-| Control+Option+G | Pass clicks to the call |
-| Control+Option+B | Shrink to a thin bar |
-| Control+Option+Right arrow | Sample meeting: play the next line |
-| Control+Option+P | Sample meeting: play or pause |
-| Control+Option+Shift+Q | Quit Second Chair |
+1. Get the code and the bits it needs:
+   ```bash
+   git clone https://github.com/TEAM1-THING/Team1.git
+   ```
+   ```bash
+   cd Team1 && npm ci
+   ```
+2. *(Optional)* Create a file named `.env.local` in the `Team1` folder and add
+   your keys (see [Environment variables](#-environment-variables)). Without
+   any keys it runs in **demo mode**, with ready-made cards.
+3. Start it:
+   ```bash
+   npm run dev
+   ```
+4. Open **http://localhost:3000**. That's it! 🎈
 
-The two-chairs icon in the menu bar at the top of the screen has all of these,
-plus larger or smaller text, **Move under the webcam** (so reading a card keeps
-your eyes near the camera), and **Move back to the corner**.
-
-### Screen sharing
-
-The panel is hidden from screen share. On a Mac, share **one window** (your
-slides, say) rather than your whole screen, to be sure. Before your first real
-call, check once: share your screen with a colleague and ask whether they can
-see the panel.
-
-### Closing and quitting
-
-Closing the app window or hiding the panel keeps Second Chair running, so it
-is ready for the next meeting. To quit: Command+Q with the app in front, right-
-click the Dock icon → Quit, or the menu-bar icon → **Quit Second Chair**.
-
-## Live transcription (optional)
-
-The sample meeting works without this. To transcribe a real call, the app needs
-a speech-to-text service. Any OpenAI-compatible one works (OpenAI, Groq, or a
-local Whisper server so audio never leaves your Mac). Quit the app, then start
-it from Terminal with your key (if the key is in `OPENAI_API_KEY`, the command
-reads it from there); the key stays in your shell and is never saved:
-
-```bash
-open -a "$HOME/Applications/Second Chair.app" --env SC_STT_URL=https://api.openai.com/v1/audio/transcriptions --env SC_STT_KEY="$OPENAI_API_KEY"
-```
-
-If the app was already open, it only comes to the front and keeps its old
-settings, so quit it first.
-
-The first time you turn on the live mic, macOS asks whether Second Chair may
-record your computer's audio. Click **Allow**. If you clicked Don't Allow: open
-System Settings → Privacy & Security → Screen & System Audio Recording, turn
-Second Chair on, then quit and reopen it.
-
-### Settings
-
-Add any of these to the command above the same way, each as another `--env`.
-
-| Setting | Default | What it changes |
-|---|---|---|
-| `SC_STT_URL`, `SC_STT_KEY` | none | The speech-to-text service and its key |
-| `SC_STT_MODEL` | `whisper-1` | The speech-to-text model |
-| `SC_URL` | the live site's `/meeting` | Which Second Chair site the app shows |
-| `SC_PROTECT` | `1` | `0` lets screen share see the panel (for demos on a shared screen) |
-| `SC_SIDE` | `right` | `left` starts the panel in the top-left corner |
-| `SC_WIDTH` | `460` | The panel's starting width |
-| `SC_AUDIO_SOURCE` | `system` | `device` uses a virtual audio device such as BlackHole (macOS before 14.2); `tone` is a self-test |
-| `SC_AUDIO_DEVICE` | BlackHole and similar | Which virtual device to use |
-| `SC_CONSENT_BANNER` | on | `0` hides the "everyone agreed" notice under the panel's header (testing only) |
-| `SC_DEBUG` | off | `1` logs what the panel is doing |
-
-## Update or remove the app
-
-To update, quit the app, then from the `Team1` folder:
-
-```bash
-git pull
-```
-
-```bash
-npm run install-app
-```
-
-To remove it, quit the app and delete `Second Chair` from the Applications
-folder in your home folder. Its saved settings are in
-`~/Library/Application Support/Second Chair`.
-
-## Windows
-
-Not tested yet. `npm run app` runs the app from the code, and
-`npm --prefix desktop run package` builds it into `desktop/out`. Shortcuts use
-Ctrl+Alt, and the menu icon sits in the taskbar tray.
-
-## For developers
-
-### Run the website locally
-
-```bash
-npm install
-```
-
-Create `.env.local` in the `Team1` folder (it is ignored by git; never commit
-it, the repository is public). Every line is optional:
-
-```bash
-ANTHROPIC_API_KEY=...        # live answers; without it the cards come from demo data
-BRIGHTDATA_API_KEY=...       # the pre-meeting check
-NEXT_PUBLIC_BASE44_URL=...   # the records app that End meeting opens
-```
-
-Then start it and open http://localhost:3000:
-
-```bash
-npm run dev
-```
-
-(`npm start` only works after `npm run build`.)
-
-To point the desktop app at your local site, run it from the code:
-
-```bash
-SC_URL=http://localhost:3000/meeting npm run app
-```
-
-Running from the code can't hear the call's audio on a Mac (the sound comes
-through silent); use the installed app for that.
-
-### Checks
-
-Run both before calling anything done. CI runs the first one and `npm run
-build` on every pull request.
+Changed something? Run the checks (type check plus tests) before calling it done:
 
 ```bash
 npm run check
 ```
 
+Changed the Mac app? Run its checks too:
+
 ```bash
 npm --prefix desktop run check
 ```
 
-### Where things are
+> [!CAUTION]
+> This repo is **public**. Never commit `.env.local`, keys, tokens or real
+> client data. `.gitignore` helps, but look at `git status` before every commit.
 
-| Path | What |
+## 🚀 Put your own copy online (Vercel)
+
+The simple way, step by step:
+
+1. **Make a free account** at [vercel.com](https://vercel.com/signup) (click **Continue with GitHub**).
+2. **Install Vercel's command-line tool:**
+   ```bash
+   npm i -g vercel
+   ```
+3. **Log in** (a browser window opens; click to approve):
+   ```bash
+   vercel login
+   ```
+4. **Create a project** from inside your `Team1` folder (pick a name when it asks):
+   ```bash
+   vercel link
+   ```
+5. **Tell Vercel it's a Next.js app.** In the dashboard, open your project →
+   **Settings → Build and Deployment → Framework Preset → Next.js**. A project
+   made from the command line can start as "Other" and show a sad **404**. We
+   learned this one the fun way. 😅
+6. **Add your keys** under **Settings → Environment Variables** (tick
+   Production). See [the list below](#-environment-variables).
+7. **Ship it!** 🚢
+   ```bash
+   vercel --prod
+   ```
+   Vercel prints your new web address. Done.
+
+**Prefer clicking?** In the dashboard, choose **Add New → Project** and import
+the GitHub repo. It then redeploys on every push. Heads-up: every branch push
+also makes a preview build, and the free plan allows **100 deployments a day**.
+Our first project hit that limit and froze, which is why the link above is new.
+
+### 🔁 Redeploying the team's live site
+
+The team site (Vercel project `second-chair-live`) is **not** hooked up to
+GitHub, so merging to `main` doesn't put anything live by itself. After a
+merge, whoever holds the Vercel login runs:
+
+```bash
+cd ~/Documents/team1-deploy && git pull && vercel --prod
+```
+
+That folder is a clean copy of `main`, so only merged code goes live.
+
+## 🔑 Environment variables
+
+Put them in `.env.local` on your computer, and in Vercel under **Settings →
+Environment Variables**. Vercel only picks up a change on the **next
+deployment**. Anything starting with `NEXT_PUBLIC_` is baked into the web page
+when it's built, so it's visible to the browser. Only public values go there.
+
+| Name | What it unlocks | If you leave it out |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Live cards, reading your files, drafting the Mandate | Demo mode: ready-made cards |
+| `BRIGHTDATA_API_KEY` | Pre-flight and the live premise check | Sample pre-flight checks, no premise check |
+| `NEXT_PUBLIC_BASE44_URL` | End meeting opens the records app | The record just downloads |
+| `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | The record arrives in the records app, ready to review | The records app opens empty |
+| `ANTHROPIC_MODEL`, `LIVE_MODEL`, `PREMISE_MODEL` | Choose different Claude models | Opus 5.5 for prep, Sonnet 5.5 live, Haiku 5.5 for premise checks |
+| `BRIGHTDATA_ZONE` | A different Bright Data search zone | `serp_api1` |
+| `PREMISE_CHECK` | Set to `0` to switch the premise check off | On |
+
+## 🗺️ What's where
+
+| Path | What lives there |
 |---|---|
-| `src/app` | The website: start page, prep, meeting, and the API routes |
-| `src/lib/engine` | The engine: Claude calls, Bright Data, the Mandate |
-| `src/components` | The meeting screen, prep screen, mic, and the website's desktop hand-off |
-| `desktop/` | The Mac app (Electron): app window, panel, audio capture, speech-to-text |
+| `src/app/` | The pages: start, prep, meeting, plus the API routes in `src/app/api/` |
+| `src/lib/engine/` | The brains: Claude calls, Bright Data, the Mandate, the premise check |
+| `src/lib/types.ts` | The shared contract every part agrees on |
+| `src/lib/provenance.ts` | The traffic-light rule: every number traced, or downgraded |
+| `src/components/meeting/` | The meeting screen and the end screen |
+| `src/components/prep/` | The prep screen |
+| `src/components/speech/` | The live mic |
+| `src/components/desktop/` | The website's hand-off that opens meeting links in the Mac app |
+| `desktop/` | The Mac app (Electron): app window, floating panel, call audio, speech-to-text ([guide](desktop/README.md)) |
+| `src/lib/record.ts` | The meeting record and the hand-off to the records app |
+| `src/data/` | The demo meeting with Dana Whitfield |
+| `public/samples/` | Sample client files to try Prep with |
 | `tests/` | Vitest tests for all of the above |
-| `docs/` | The running log (`DEVLOG.md`) and handoff notes |
+| `docs/` | The build diary ([`DEVLOG.md`](docs/DEVLOG.md)), handoff notes, and the [records app](docs/base44/README.md) |
 
-The live site deploys from `main` on Vercel.
+## 🛡️ Ground rules we built in
 
-## Troubleshooting
+- **No number without a label.** Untraceable figures get downgraded, never shown as green.
+- **Stay inside the Mandate.** Off-plan questions get a polite *defer*.
+- **Consent first.** The meeting screen always shows a consent notice, and the live mic waits for the box to be ticked.
+- **Your meeting isn't training data.** Cards go through Anthropic's API, which doesn't train on API data by default. Nothing is saved to records unless you sign in and save.
+- **Public repo, private keys.** Keys live in `.env.local` and the Vercel dashboard, never in the code.
+
+## 🧰 Troubleshooting
 
 | What you see | What to do |
 |---|---|
-| The panel disappeared | Click Second Chair in the Dock, or press Control+Option+H |
-| The app window didn't appear | If you were in a full-screen app, it opened on your desktop: swipe left or right with three fingers, or leave full screen |
-| A shortcut does nothing | Another app already uses it; use the menu-bar icon instead |
-| Two panels on screen | Two copies are running (the installed app and one started from the code); quit one |
-| `Missing script: "install-app"` | Run it from the `Team1` folder, on the desktop branch (see Download and install) |
-| The menu still shows old names | You are running an old build: quit it and reinstall (see Update) |
-| Live transcription is off, or you want to see its errors | Quit the app, then start it this way so its messages print in Terminal: `SC_STT_URL=https://api.openai.com/v1/audio/transcriptions SC_STT_KEY="$OPENAI_API_KEY" "$HOME/Applications/Second Chair.app/Contents/MacOS/Second Chair"`. If its window doesn't come forward, click Second Chair in the Dock |
-| The live mic hears nothing | Use the installed app (not `npm run app`), on macOS 14.2 or later, and check the permission under Live transcription |
-| `Could not find a production build` | Use `npm run dev`, or run `npm run build` first |
-| `Electron failed to install correctly` | Run `node desktop/node_modules/electron/install.js`, then try again |
+| A **404** on your own Vercel deploy | Set the Framework Preset to **Next.js**, then `vercel --prod` again |
+| Cards look like the demo even in a real meeting | `ANTHROPIC_API_KEY` is missing. Add it, then redeploy |
+| Pre-flight shows sample checks | `BRIGHTDATA_API_KEY` is missing or wrong |
+| End meeting downloads but the records app is empty | The `NEXT_PUBLIC_SUPABASE_*` values are missing. Add them, then redeploy (they're baked in at build time) |
+| "Deployment rate limited — retry in 24 hours" | The free plan's 100-a-day limit. Wait it out, or deploy only with `vercel --prod` |
+| A red **Vercel** check on a pull request | That's the old frozen project. Ignore it: the **gate** check is the one that counts |
+| Features seem missing | You're probably on `second-chair-seven`. Use **second-chair-live.vercel.app** |
+| The Mac app shows an old version | Reinstall it: quit, `git checkout main`, `git pull`, `npm run install-app` |
+| Meeting links open in the browser, not the Mac app | Open the Mac app once (it pairs your browser), or visit `https://second-chair-live.vercel.app/?sc-desktop=paired` |
+
+## 👥 The team
+
+Team 1 at *Talk to Users*, October 10, 2026, building in four tracks: **A**
+engine and integration, **B** the meeting screen, **C** prep and the landing
+page, **D** shipping (deploy, records app, mic).
+
+Want to contribute? Start with [`CLAUDE.md`](CLAUDE.md) (who owns what, merge
+rules, the non-negotiables), then [`HANDOFF.md`](HANDOFF.md) (where things
+stand) and [`docs/DEVLOG.md`](docs/DEVLOG.md) (how we got here).
+
+<p align="center"><sub>Made with ☕, Claude, and a lot of "wait, what did the client just say?"</sub></p>

@@ -5,7 +5,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AnticipatedPanel } from "@/components/prep/AnticipatedPanel";
 import { ClientFileForm } from "@/components/prep/ClientFileForm";
+import { DataNote } from "@/components/prep/DataNote";
 import { FileDrop, type IngestResponse } from "@/components/prep/FileDrop";
 import { MeetingSummary } from "@/components/prep/MeetingSummary";
 import { MandatePanel } from "@/components/prep/MandatePanel";
@@ -13,6 +15,7 @@ import { confirmPrep } from "@/components/prep/prepModel";
 import { SourcesEditor } from "@/components/prep/SourcesEditor";
 import { Backdrop, btnPrimary, Step } from "@/components/prep/ui";
 import { demoPrep } from "@/data/demo";
+import { traceConflicts } from "@/lib/provenance";
 import { savePrep } from "@/lib/store";
 import type { Prep } from "@/lib/types";
 
@@ -37,9 +40,20 @@ export default function PrepPage() {
   const [reviewing, setReviewing] = useState(false);
   const [missing, setMissing] = useState<string[]>([]);
   const set = (patch: Partial<Prep>) => setPrep((p) => ({ ...p, ...patch }));
+  // Re-traced on every edit, so fixing a figure in a source clears its warning.
+  const conflicts = traceConflicts(prep.conflicts ?? [], prep.sources);
+  const titleOf = (id: string) => prep.sources.find((s) => s.id === id)?.title.trim() || "an untitled file";
 
   function read(r: IngestResponse) {
-    setPrep({ meeting: r.meeting, clientFile: r.clientFile, sources: r.sources, mandate: r.mandate, confirmed: false });
+    setPrep({
+      meeting: r.meeting,
+      clientFile: r.clientFile,
+      sources: r.sources,
+      mandate: r.mandate,
+      conflicts: r.conflicts ?? [],
+      anticipated: r.anticipated ?? [],
+      confirmed: false,
+    });
     setMissing(r.missing);
     setMandateOk(false);
     setReviewing(true);
@@ -56,10 +70,10 @@ export default function PrepPage() {
 
   return (
     <Backdrop>
-      <p role="note" className="bg-indigo-500/20 px-4 py-1.5 text-center text-xs text-indigo-100">
+      <div role="note" className="relative z-20 bg-indigo-500/20 px-4 py-1.5 text-center text-xs text-indigo-100">
         Second Chair listens to the meeting. Tell your client and get their consent before you start; California
-        requires every party to agree.
-      </p>
+        requires every party to agree. <DataNote compact />
+      </div>
 
       <main className="mx-auto flex max-w-3xl flex-col gap-5 px-4 pb-32 sm:px-6">
         <header className="flex items-center justify-between pt-6 pb-1">
@@ -93,6 +107,23 @@ export default function PrepPage() {
           </p>
         )}
 
+        {reviewing && conflicts.length > 0 && (
+          <div role="note" className="rounded-xl bg-amber-500/15 px-4 py-2 text-sm text-amber-100">
+            <p>
+              Your files disagree on {conflicts.length === 1 ? "a figure" : `${conflicts.length} figures`}. Check which
+              is current before the meeting:
+            </p>
+            <ul className="mt-1 list-disc pl-5">
+              {conflicts.map((c, i) => (
+                <li key={i}>
+                  {c.quantity.charAt(0).toUpperCase() + c.quantity.slice(1)}:{" "}
+                  {c.values.map((v) => `${v.value} in ${titleOf(v.sourceId)}`).join(", ")}.
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {reviewing && (
         <Step n={2} title="Client file" hint="Read from your files. Check and edit.">
           <ClientFileForm value={prep.clientFile} onChange={(clientFile) => set({ clientFile })} />
@@ -115,6 +146,12 @@ export default function PrepPage() {
               setMandateOk(false);
             }}
           />
+        </Step>
+        )}
+
+        {reviewing && (
+        <Step n={5} title="Likely worries" hint="What this client is likely to raise, each with a prepared answer. A live card starts from it when the worry comes up.">
+          <AnticipatedPanel prep={prep} value={prep.anticipated ?? []} onChange={(anticipated) => set({ anticipated })} />
         </Step>
         )}
       </main>

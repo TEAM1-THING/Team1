@@ -9,12 +9,11 @@ const cards: Record<string, Card> = {
     moment: "objection",
     concern: "Access and optionality: fear of being unable to reach cash in an emergency.",
     facts: [
-      { text: "The plan keeps a $180,000 liquid reserve, 24 months of expenses.", label: "PREPARED_FACT", sourceId: "plan-1" },
-      { text: "Cash on hand today is $300,000.", label: "PREPARED_FACT", sourceId: "plan-2" },
-      { text: "$120,000 sits above the reserve target.", label: "CALCULATED", math: "$300,000 - $180,000 = $120,000" },
+      { text: "Keep a $180,000 liquid reserve, equal to 24 months of expenses at $7,500 a month.", label: "PREPARED_FACT", sourceId: "plan-1" },
+      { text: "Cash on hand today $300,000, so $120,000 above target can be invested or held.", label: "PREPARED_FACT", sourceId: "plan-2" },
     ],
     recommendedMove: "Acknowledge the worry, separate required liquidity from idle cash, anchor to the reserve, offer an off-ramp.",
-    phrasing: "That's exactly why we built in a 24-month reserve. $180,000 stays liquid no matter what the market does, and if you'd like we can start with less invested and add later.",
+    phrasing: "I hear you, being able to reach your cash matters. That's why the plan keeps a $180,000 reserve, 24 months of expenses, liquid whatever the market does. Would starting with less invested feel better?",
     why: "She asked about access, not returns. Leading with the reserve answers the real question before defending the plan.",
     doNotClaim: ["That the reserve covers every possible emergency."],
     defer: false,
@@ -25,11 +24,11 @@ const cards: Record<string, Card> = {
     moment: "hesitation",
     concern: "Fear of a temporary loss right after investing.",
     facts: [
-      { text: "The plan already enters in 6 monthly tranches of $200,000.", label: "PREPARED_FACT", sourceId: "plan-1" },
-      { text: "Her horizon is 12 years.", label: "PREPARED_FACT", sourceId: "plan-1" },
+      { text: "Enter the market in 6 equal monthly tranches of $200,000 to reduce timing risk.", label: "PREPARED_FACT", sourceId: "plan-1" },
+      { text: "Her client file gives a 12-year horizon.", label: "SUGGESTION" },
     ],
     recommendedMove: "Return to the long horizon and surface the phased entry already in the plan; ask what is behind the hesitation.",
-    phrasing: "We're not going in all at once. The plan spreads it over six months. Can I ask, is it the idea of a drop right after we start, or is there something coming up where you'd need the cash?",
+    phrasing: "A drop right after we start would sting. Your money is for the next 12 years, and the plan goes in over six months. Is it an early drop that worries you, or a coming need for cash?",
     why: "Waiting is often fear of a near-term loss. The phased entry is already the answer; the question finds out if it's really a cash need.",
     doNotClaim: ["That the market will not fall in the next six months."],
     defer: false,
@@ -40,14 +39,29 @@ const cards: Record<string, Card> = {
     moment: "disclosure",
     concern: "New priority: a possible down payment for her son next year changes the liquidity need.",
     facts: [
-      { text: "The plan did not include a down payment.", label: "PREPARED_FACT", sourceId: "plan-1" },
+      { text: "The plan does not mention a down payment.", label: "SUGGESTION" },
       { text: "$120,000 above the reserve could be held back for it.", label: "CALCULATED", math: "$300,000 - $180,000 = $120,000" },
       { text: "A typical down payment amount for her son.", label: "DO_NOT_CLAIM" },
     ],
     recommendedMove: "Treat the down payment as a new goal: ask the amount and timing before changing the plan.",
-    phrasing: "That's important, and it's new to me. Roughly how much might he need, and when? We may want to keep some of that extra $120,000 out of the market for it.",
+    phrasing: "Thank you for telling me; helping your son matters, so let's plan for it. We could keep some of the extra $120,000 out of the market. How much might he need, and when?",
     why: "This is the real reason behind 'wait six months'. Changing the plan without a number would be guessing.",
     doNotClaim: ["Any down payment figure: she has not given one."],
+    defer: false,
+  },
+  t8: {
+    id: "c-t8",
+    turnId: "t8",
+    moment: "contradiction",
+    concern: "She recalls the reserve as $200,000; the plan says $180,000.",
+    facts: [
+      { text: "Keep a $180,000 liquid reserve, equal to 24 months of expenses at $7,500 a month.", label: "PREPARED_FACT", sourceId: "plan-1" },
+      { text: "Enter the market in 6 equal monthly tranches of $200,000 to reduce timing risk.", label: "PREPARED_FACT", sourceId: "plan-1" },
+    ],
+    recommendedMove: "Give the plan's reserve figure gently and check it matches what she recalled.",
+    phrasing: "Good thing to check. The reserve is $180,000, 24 months of expenses at $7,500 a month. Does that match what you had in mind?",
+    why: "$200,000 is the plan's monthly tranche size, the likely source of the mix-up.",
+    doNotClaim: ["That the reserve is $200,000."],
     defer: false,
   },
 };
@@ -58,7 +72,8 @@ export function mockMoment(turnId: string, state: ConversationState): MomentResp
   const concerns = state.concerns.map((c) =>
     turnId === "t4" && c.topic === "liquidity" ? { ...c, status: "resolved" as const, resolvedAtTurn: turnId } : c,
   );
-  const topic = { t2: "liquidity", t4: "market timing", t6: "down payment" }[turnId]!;
-  concerns.push({ id: `k-${turnId}`, topic, status: "open", raisedAtTurn: turnId });
+  // t8 is answered on the spot with the plan's figure, so, as live, it opens no follow-up.
+  const topic = ({ t2: "liquidity", t4: "market timing", t6: "life event: son's down payment" } as Record<string, string>)[turnId];
+  if (topic) concerns.push({ id: `k-${turnId}`, topic, status: "open", raisedAtTurn: turnId });
   return { card, state: { concerns, cards: [...state.cards, card] } };
 }
