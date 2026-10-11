@@ -9,6 +9,28 @@ index below.
 
 ## Current state (2026-10-10, 12:35 PDT, end of session 1)
 
+**Update 19:30: Track D (ship) is done; D1 #4, D2 #8 and D3 #12 are closed.**
+- **Records app:** https://second-chair-view.base44.app (Base44, owned by
+  track D's account), backed by the Supabase project "second chair"
+  (`utaoxurejczyedqgvmso`, us-west-1). End meeting downloads the record and
+  opens the app with a one-time id only (`#handoff=<id>`, single use, expires
+  in an hour; #45/#47). Sign in with email + password, **Save to records**,
+  **Records** list; compliance signs off (`sign_off` stamps their own name and
+  time). Card grades (#42/#58) are stored with per-meeting counts. Light
+  record-sleeve palette and Bodoni Moda headings to match B's theme.
+- **Access rules** (Postgres RLS, tested): advisors save and read only their
+  own records; compliance reads all and signs off; saved records cannot be
+  edited or deleted from the apps; signed-out visitors read nothing. New
+  accounts are advisors; promote with
+  `update public.profiles set role = 'compliance' where email = '...'`.
+  The demo compliance account is track D's. Email confirmation is off for
+  demo accounts. Details: `docs/base44/README.md`.
+- **Mic:** Live mic opens the consent popup (#34/#72): the advisor reads the
+  line aloud, ticks Done, then Start. The mic cannot tell speakers apart (B's
+  note), so only the client speaks in a mic demo.
+- **Restore points:** the records app has Base44 checkpoints for every step
+  (latest "records: Bodoni Moda headings (option C)").
+
 **Update 19:15: main (d9bdf91) is live, desktop app included.** #74 merged
 the Mac app (`desktop/`, guide in `desktop/README.md`) and its practice-run
 fixes: a click on the panel hands the keyboard back to the call and never
