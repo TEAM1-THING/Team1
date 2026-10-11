@@ -33,9 +33,9 @@ describe("meeting replay", () => {
     expect(calls).toBe(demoTranscript.filter((t) => t.speaker === "client").length);
   });
 
-  it("shows three cards: objection, hesitation, disclosure", async () => {
+  it("shows four cards: objection, hesitation, disclosure, contradiction", async () => {
     const { cards } = await replayAll();
-    expect(cards.map((c) => c.moment)).toEqual(["objection", "hesitation", "disclosure"]);
+    expect(cards.map((c) => c.moment)).toEqual(["objection", "hesitation", "disclosure", "contradiction"]);
   });
 
   it("opens liquidity at t2, resolves it at t4, leaves timing and down payment open", async () => {

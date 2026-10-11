@@ -44,6 +44,7 @@ describe("endSummary", () => {
       ["t2", true],
       ["t4", false],
       ["t6", false],
+      ["t8", false],
     ]);
     expect([s.resolved, s.open]).toEqual([1, 2]);
   });

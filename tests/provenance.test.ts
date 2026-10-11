@@ -48,7 +48,7 @@ describe("number-trace invariant", () => {
 describe("mock engine honours the contract", () => {
   it("returns schema-valid cards whose prepared facts survive the trace", () => {
     let state = emptyState();
-    for (const id of ["t2", "t4", "t6"]) {
+    for (const id of ["t2", "t4", "t6", "t8"]) {
       const res = MomentResponse.parse(mockMoment(id, state));
       const card = Card.parse(res.card);
       expect(enforceNumberTrace(card, demoPrep)).toEqual(card);
