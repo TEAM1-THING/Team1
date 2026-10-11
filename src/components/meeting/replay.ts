@@ -1,6 +1,7 @@
 // Replay logic for the meeting screen, kept free of React so a test can drive
 // it through the real /api/moment handler.
 import type { Card, Concern, ConversationState, MomentRequest, MomentResponse, Prep, TranscriptTurn } from "@/lib/types";
+import { kindOf } from "./picture";
 
 export type PostMoment = (req: MomentRequest, signal?: AbortSignal) => Promise<MomentResponse>;
 
@@ -37,5 +38,5 @@ export const LABELS = {
 
 // End-of-meeting follow-ups: one task line per concern still open.
 export function followUpTasks(concerns: Concern[], client: string): string[] {
-  return concerns.filter((c) => c.status === "open").map((c) => `Follow up with ${client}: ${c.topic} (raised at ${c.raisedAtTurn})`);
+  return concerns.filter((c) => c.status === "open").map((c) => `Follow up with ${client}: ${kindOf(c.topic).text} (raised at ${c.raisedAtTurn})`);
 }
