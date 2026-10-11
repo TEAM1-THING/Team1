@@ -115,9 +115,8 @@ it.
 ## 🍎 Install the Mac app (beta)
 
 > [!NOTE]
-> The Mac app lives on its own branch, `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f`,
-> until it's merged into `main`. Its full guide (every button, setting and fix) is
-> in [that branch's README](https://github.com/TEAM1-THING/Team1/blob/LeavesJ/electron-gpu-ux-bottlenecks-9cf39f/README.md).
+> This is the quick version. The full guide (every button, setting, shortcut
+> and fix) is in [`desktop/README.md`](desktop/README.md).
 
 **What you need:**
 - A Mac. To hear the call's audio, macOS 14.2 or later.
@@ -135,10 +134,6 @@ cd Team1
 ```
 
 ```bash
-git checkout LeavesJ/electron-gpu-ux-bottlenecks-9cf39f
-```
-
-```bash
 npm run install-app
 ```
 
@@ -152,9 +147,9 @@ From then on, open it like any app: Spotlight (⌘ Space, type "Second Chair")
 or the Dock.
 
 > [!TIP]
-> Installed it before 6:17 PM on build day? That copy still opens the old
-> frozen site. Quit it, then from the `Team1` folder run `git pull` and
-> `npm run install-app` again.
+> Installed it earlier from the `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f`
+> branch? The app now lives on `main`. Quit it, then from the `Team1` folder run
+> `git checkout main`, `git pull` and `npm run install-app` again.
 
 **Using it:** start a meeting and the panel tucks itself into the top-right
 corner, over your call. Drag its top bar to move it, or drag an edge to resize.
@@ -198,6 +193,12 @@ Changed something? Run the checks (type check plus tests) before calling it done
 
 ```bash
 npm run check
+```
+
+Changed the Mac app? Run its checks too:
+
+```bash
+npm --prefix desktop run check
 ```
 
 > [!CAUTION]
@@ -278,6 +279,8 @@ when it's built, so it's visible to the browser. Only public values go there.
 | `src/components/meeting/` | The meeting screen and the end screen |
 | `src/components/prep/` | The prep screen |
 | `src/components/speech/` | The live mic |
+| `src/components/desktop/` | The website's hand-off that opens meeting links in the Mac app |
+| `desktop/` | The Mac app (Electron): app window, floating panel, call audio, speech-to-text ([guide](desktop/README.md)) |
 | `src/lib/record.ts` | The meeting record and the hand-off to the records app |
 | `src/data/` | The demo meeting with Dana Whitfield |
 | `public/samples/` | Sample client files to try Prep with |
@@ -303,7 +306,8 @@ when it's built, so it's visible to the browser. Only public values go there.
 | "Deployment rate limited — retry in 24 hours" | The free plan's 100-a-day limit. Wait it out, or deploy only with `vercel --prod` |
 | A red **Vercel** check on a pull request | That's the old frozen project. Ignore it: the **gate** check is the one that counts |
 | Features seem missing | You're probably on `second-chair-seven`. Use **second-chair-live.vercel.app** |
-| The Mac app shows an old version | Reinstall it: quit, `git pull`, `npm run install-app` (see the Mac app section) |
+| The Mac app shows an old version | Reinstall it: quit, `git checkout main`, `git pull`, `npm run install-app` |
+| Meeting links open in the browser, not the Mac app | Open the Mac app once (it pairs your browser), or visit `https://second-chair-live.vercel.app/?sc-desktop=paired` |
 
 ## 👥 The team
 

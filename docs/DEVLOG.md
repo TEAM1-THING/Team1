@@ -4,6 +4,28 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (19:10) - Desktop panel: practice-run bugs fixed
+
+A real practice run (a full-screen stand-in call, the dashboard open on another
+desktop) reproduced the advisor's reports:
+
+- **A click on the panel took the keyboard from the call, and could jump to the
+  dashboard's desktop.** Electron's panel is not a true non-activating NSPanel,
+  so a click makes Second Chair the front app; macOS then brings its last
+  window forward. Now the dashboard steps aside during a meeting as soon as the
+  advisor leaves it, and after each click on the panel the keyboard goes back
+  to the app that had it (`desktop/src/main/focus.ts`; a drag hands it back when
+  it ends; not while typing in the panel). Checked: eye, click-through, shrink,
+  expand and Next turn all work with no desktop jump, and typing lands in the
+  call after each.
+- **Live mic said "Speech service blocked in this browser."** The Mac app
+  transcribes with its own speech-to-text service, unset here. The panel now
+  says the Mac app needs a speech-to-text key and that the sample meeting works
+  without one.
+- **Not glassy, and now the editorial theme.** The panel is the meeting page's
+  cream paper, frosted: a .74 tint over the blurred call, cards at .86, the end
+  screen opaque. Checked against main's new theme on a local production build.
+
 ## 2026-10-10 (19:00) - Track B: meeting screen from feedback, editorial theme, pitch deck
 
 **Built and merged (track B paths):** meeting screen and replay (#14); sources on
@@ -30,6 +52,22 @@ stylesheet order, focus contrast, sentence split after abbreviations).
 Sense AI transcripts, every claimed feature checked against main; premise check
 kept to the speaker notes (its live Bright Data path is unrun). Private artifact;
 share before the judges need it.
+
+## 2026-10-10 (18:55) - Desktop app merged into main; panel review fixes
+
+- The Mac app (`desktop/`) and the website's hand-off to it
+  (`src/components/desktop/`, mounted in `layout.tsx`) are on `main` now, so
+  the live site can open meeting links in the app once it is redeployed. A
+  browser opens links in the app only after it is paired (the app's first run
+  visits `/?sc-desktop=paired`).
+- Panel fixes from the 460/340 px review (482d308): the end screen starts below
+  the title bar; the body scrolls inside the rounded border; the header is
+  compact (19% of the panel at 460 px, was 26%; 27% at 340 px), with no
+  sideways overflow and the data list opening inside the panel; click-through
+  mode is lighter. The consent notice shows by default.
+- README: the main README keeps the short Mac app guide and links the full one,
+  now `desktop/README.md` (it was the desktop branch's README). Anyone who
+  installed from the desktop branch reinstalls from `main`.
 
 ## 2026-10-10 (18:50) - Engine fixes from the feature sweep
 
@@ -244,6 +282,21 @@ and model. D reviews the record shape.
 
 ---
 
+## 2026-10-10 (17:05) - Desktop: the panel drags reliably
+
+The title bar used `-webkit-app-region: drag`, and on macOS that stops
+responding on a window that toggles click-through, as the panel does on every
+pointer move: the panel could not be moved. The bar now drags it itself: a
+press on the bar (not a button) and main moves the window by how far the
+cursor has moved, keeping its size, until release; the position is saved. The
+hit report is held during the drag so the panel never turns click-through
+under the pointer. Grab cursor on the bar. Driven on a throwaway copy: the
+panel follows the pointer, stops on release, buttons still click, double-click
+still shrinks it. Not yet tried with a physical mouse. After a security
+review: only a real press drags (a press made up by page script is ignored,
+checked), a move with no button held ends the drag, and a page reload, crash
+or hidden window cancels one.
+
 ## 2026-10-10 (16:56) - Built: same answer for a reworded worry (#41), anticipated worries at prep (#38)
 
 Both are from Block 2 tester 2. Both are in review: PR #48 and PR #54.
@@ -340,6 +393,86 @@ audited over time; landing copy in the advisory voice.
 
 ---
 
+## 2026-10-10 (16:43) - README: start to finish
+
+`README.md` (new): the website with no install, then the Mac app (download,
+install, open, prep, the panel's buttons, shortcuts, screen share, quitting),
+live transcription and its settings, updating and removing, Windows status,
+running locally, the checks, and a troubleshooting table. The install steps
+were followed from a fresh clone of this branch: install and package succeed.
+
+## 2026-10-10 (16:38) - Desktop: a regular Mac app; prep in an app window, the meeting in the panel
+
+Branch `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f`.
+
+- **Why:** with no Dock icon the only handle was a menu-bar glyph; once the
+  panel was hidden there was no obvious way back, and its X read as "close".
+- **Now:** a Dock icon, Command+Q, Command+Tab. Opening the app shows a normal
+  window with the start page and prep. Starting the meeting (prep's button or
+  the demo link) hides that window and opens the meeting in the private panel;
+  both share one session, so the prep carries over with no link. The panel's X
+  hides it; clicking the Dock icon brings it back (or the app window when no
+  meeting is hidden). Menus: Meeting (Prepare a meeting, Command+N), Edit (copy
+  and paste in the prep form), Panel, Window; the Dock menu has the first two.
+- **Checked on macOS 26.3:** the panel still floats over a full-screen app with
+  the app no longer an accessory; with protection on, the system screen capture
+  leaves the panel out (off: it shows). Real Zoom or Meet share not yet tried.
+- The "everyone has been told" line hides again (B's markup changed twice
+  today); the rule covers both versions.
+
+## 2026-10-10 (16:23) - Desktop: plain names, a separate screen-share button, hover labels
+
+Branch `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f`.
+
+- **One eye, one meaning.** The title bar's eye now only means screen share
+  (slashed: the client can't see the panel; open, in amber: they can). Click
+  through has its own pointer button.
+- **Every icon says what it does on hover.** The bar draws its own label,
+  because macOS shows native tooltips only for the active app, and the panel
+  never becomes active.
+- **Names say what the user gets.** "Panel" everywhere, never "overlay".
+  "Type into overlay" became "Type in the panel", "See-through" became "Pass
+  clicks to the call", "Collapse to title bar" became "Shrink to a thin bar",
+  and the replay controls sit under "Sample meeting" as "Play the next line"
+  and "Play or pause". The status reads "Not listening" (not "Mic off": the
+  source may be call audio).
+- **Consent checkbox wording:** "I said: 'This meeting is being recorded.'"
+  The client is told out loud, so the checkbox records that the advisor said it.
+- Open for track B: the meeting page's own "Next turn" and "Auto-play" buttons
+  could take the same names; not edited here (track B's file).
+
+## 2026-10-10 (16:25) - Desktop: site links open the overlay; real macOS app; native call audio
+
+Branch `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f` (pushed, not merged).
+
+- **Links open the overlay.** `cd desktop && npm run install-app` builds
+  `Second Chair.app`, signs it ad hoc, installs it to `~/Applications` and
+  registers `secondchair://`. On first run it opens the site once with
+  `?sc-desktop=paired`; from then on that browser hands `/` and `/meeting` to
+  the overlay (`src/components/desktop/OpenInDesktop.tsx`, mounted in the root
+  layout), with the advisor's prep in the link's fragment (never sent to a
+  server). Browsers that were never paired, phones, and the overlay itself
+  see the site as before. Chrome asks once before opening the app; "always
+  allow" makes it automatic. Live on the production link only after a merge.
+- **macOS audio without BlackHole.** Electron 39+ captures system audio on
+  macOS 14.2+ through a Core Audio tap. It needs `NSAudioCaptureUsageDescription`
+  in the app's Info.plist (a dev run gets a silent stream, no error), so it
+  works from the packaged app. The capture's video is the hidden window's own
+  frame, so no Screen Recording permission is asked for. BlackHole remains the
+  fallback for older macOS.
+- **Testing the undisclosed scenario (user's call):** the meeting page's
+  "everyone has been told" notice is hidden in the overlay by default, with a
+  menu-bar toggle. The all-parties consent checkbox still gates recording:
+  California requires every party's consent to record.
+- Also: "Move under the camera" keeps the advisor's eyes near the lens.
+
+Verified with the installed app: a `secondchair://` link through macOS opened
+the meeting with the handed-off prep (the demo client's name gone); a hostile
+`path` stayed on `/meeting`; a malformed link was ignored. 155 tests, next
+build green. Not verified: the Chrome prompt (needs a person to click), Core
+Audio capture of a real call, capture exclusion on macOS (needs Screen
+Recording permission for the test runner).
+
 ## 2026-10-10 (16:15) - Track D done: live engine on production, record hand-off live
 
 **Bright Data fixed on production.** Pre-flight was returning `source:
@@ -393,6 +526,7 @@ Pitch: lead with the 15-to-20-minute hunt (speed), then show the catch.
 
 ---
 
+
 ## 2026-10-10 (16:05) - Block 2 sense check launched
 
 Test `53289620-a96e-41c4-8229-9448b1187d8d`, session 2, theme Catch what
@@ -409,6 +543,44 @@ records app empty (#25 and #27 pending review).
 
 ---
 
+## 2026-10-10 (15:55) - Desktop overlay (Electron), on its own branch
+
+Branch `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f`, not merged (code freeze).
+New package `desktop/` with its own `package.json`, so the root package,
+lockfile and every track's files are untouched. Root `tsconfig.json` now
+excludes `desktop`. Run: `cd desktop && npm install && npm start`.
+
+**What it is:** the deployed `/meeting` page in a compact always-on-top panel
+over the call: title bar with the logo and live status, movable, resizable,
+collapsible to the bar, remembers its place and text size, menu-bar icon.
+Hotkeys are Control+Option (Ctrl+Alt): H hide, Space type, G see-through,
+B collapse, Right next turn, P auto-play, Shift+Q quit.
+
+**Decided:**
+- **Content protection is on, but it is not a promise on macOS.** Electron's
+  own docs: macOS apps that capture with ScreenCaptureKit (recent Zoom, Teams,
+  the macOS screenshot tool) capture the window anyway. Windows
+  (`WDA_EXCLUDEFROMCAPTURE`) works. On a Mac, share a window, not the desktop.
+  Not verified here: this shell has no Screen Recording permission.
+- **Focus:** a non-activating panel that never takes focus from the call; it
+  only does when the advisor asks to type, and Esc gives it back.
+- **Lag:** the main process never waits on audio, speech or the network.
+  System audio is captured in a hidden window, voice detection runs on the
+  audio thread, speech-to-text runs in a utility process with backpressure
+  (merges waiting sentences instead of queueing). Turns enter through the
+  meeting page's own mic button, consent checkbox included (shimmed
+  SpeechRecognition). Testing showed the page dropping lines spoken during
+  an analysis; main's live-turn change (f2fa17d) fixed that in the page, so
+  the shim passes each line straight through.
+- **Speech-to-text** is any OpenAI-compatible endpoint in `SC_STT_URL`
+  (local whisper keeps audio on the machine). macOS needs a virtual audio
+  device (BlackHole) for the call's sound; Electron has loopback on Windows only.
+- OCR and screen extraction dropped (finance tool, not code).
+
+**Verified** (CDP-driven, tone source and mock speech service): click-through
+zones, collapse, see-through, no sideways overflow, no page errors, tone to
+card in 9 s, nothing sent after Stop mic. 125 tests green. Not verified: real
+call audio (no BlackHole here), capture exclusion, Windows.
 ## 2026-10-10 (15:55) - Track A: prep from files, live turns, speaker labels
 
 **Live:** https://second-chair-seven.vercel.app. Merged #19 (C), #20 (D) and
