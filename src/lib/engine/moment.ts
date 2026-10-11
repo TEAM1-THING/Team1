@@ -7,7 +7,7 @@ import { FALLBACK_BETA, LIVE_MODEL, LIVE_TIMEOUT_MS, getClient, supportsFallback
 import { classifyUtterance, echoesCard } from "./gate";
 import { demoPrep, demoTranscript } from "../../data/demo";
 import { mockMoment } from "../mock";
-import { enforceNumberTrace, parseNumber } from "../provenance";
+import { enforceNumberTrace, parseNumber, traceConflicts } from "../provenance";
 import {
   Card,
   MOMENT_TYPES,
@@ -105,6 +105,7 @@ Rules:
 - Figures belong in facts. concern, recommendedMove, phrasing, why and deferReason may only repeat a figure that appears in a source or in a CALCULATED fact on this card; otherwise leave numbers out of them.
 - List under doNotClaim what the evidence does not support, so the advisor does not say it. The phrasing must never assert anything on that list.
 - When a prepared figure answers the client's concern (for example the reserve amount), say that figure in the phrasing, exactly as the source writes it.
+- <file_conflicts>, when present, lists figures the advisor's own files disagree on, each value with the id of the source it is in. If the client's turn touches one, present neither value as settled: give each value as its own PREPARED_FACT with its own sourceId, and suggest the advisor confirm which figure is current. A conflict is the advisor's own issue: never open it as a client concern.
 - If the client asks about anything in mandate.outOfScope, or anything outside the Mandate, set defer to true, give a deferReason, write a phrasing that politely defers the topic (for example to a follow-up or a specialist), and include no PREPARED_FACT.
 - If nothing decision-relevant happened (small talk, a plain acknowledgement), set relevant to false. The other fields may then be brief placeholders.
 - moment is the one type that fits best from: ${MOMENT_TYPES.join(", ")}.
@@ -156,6 +157,10 @@ export function buildMomentParts(
     statedGoals: clipList(cf.statedGoals),
     statedConcerns: clipList(cf.statedConcerns),
   };
+  // Re-traced against the sources Claude sees: the advisor may have edited one.
+  const conflicts = traceConflicts(prep.conflicts ?? [], sources)
+    .slice(0, MAX_LIST_ITEMS)
+    .map((c) => ({ quantity: clip(c.quantity, MAX_ITEM_CHARS), values: c.values.slice(0, MAX_LIST_ITEMS) }));
   const m = prep.mandate;
   const mandate = {
     thesis: clip(m.thesis, MAX_FIELD_CHARS),
@@ -180,6 +185,7 @@ export function buildMomentParts(
       `<client_file>${data(clientFile)}</client_file>`,
       `<sources>${data(sources)}</sources>`,
       `<mandate>${data(mandate)}</mandate>`,
+      ...(conflicts.length ? [`<file_conflicts>${data(conflicts)}</file_conflicts>`] : []),
     ].join("\n"),
     live: [
       `<concern_ledger>${data(ledger)}</concern_ledger>`,

@@ -66,12 +66,22 @@ export const Meeting = z.object({
 });
 export type Meeting = z.infer<typeof Meeting>;
 
+// A quantity the advisor's files give different figures for, found at prep
+// (e.g. the reserve as $180,000 in the plan and $200,000 in a summary). Each
+// value is written as in the source it names; provenance.ts re-checks that.
+export const FileConflict = z.object({
+  quantity: z.string(), // what the figure measures, e.g. "cash reserve"
+  values: z.array(z.object({ value: z.string(), sourceId: z.string() })),
+});
+export type FileConflict = z.infer<typeof FileConflict>;
+
 export const Prep = z.object({
   meeting: Meeting.optional(),
   clientFile: ClientFile,
   sources: z.array(PrepSource),
   mandate: Mandate,
   confirmed: z.boolean(),
+  conflicts: z.array(FileConflict).optional(), // figures the files disagree on
 });
 export type Prep = z.infer<typeof Prep>;
 

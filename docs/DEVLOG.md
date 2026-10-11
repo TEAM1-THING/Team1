@@ -4,6 +4,32 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (16:56) - Built: same answer for a reworded worry (#41), anticipated worries at prep (#38)
+
+Both are from Block 2 tester 2. Both are in review: PR #48 and PR #54.
+
+**#41, "Same question, reworded, gets the same answer."** Claude now sees the
+cards already shown in the meeting and names the one a client turn rewords.
+The engine then keeps that card's facts, move and do-not-claims; only the
+concern line and the suggested line are reworded. A new figure from the client,
+or Claude judging that something new was added, releases the hold. Live, 2
+runs × 2 rewordings of the reserve worry: 3 of 4 gave identical facts and move.
+The 4th added a health angle; it kept the facts and asked about health costs.
+3.3 to 3.7 s each.
+
+**#38, "Anticipate likely worries at prep."** From the advisor's files, 3 to 5
+likely worries, each with why, a prepared answer in the advisory shape
+(acknowledge, the client's goal, the plan's figures, a question) and traced,
+labelled facts. They show as step 5 of prep for the advisor to edit, and they
+travel to the meeting, where a live card starts from the prepared answer.
+**Decided:** a separate call that runs beside the Mandate draft, not a field
+in the file read. The upload waits no longer, and a hand-entered prep can use
+it too. A worry whose answer carries a figure in no file is dropped. Live:
+demo prep 10.6 s; the sample files through the whole upload 19.4 s, with 5
+sensible worries; the t2 card opens from the prepared answer in 2.9 to 3.8 s.
+
+---
+
 ## 2026-10-10 (16:50) - Track D: records database on Supabase; hand-off by id (#45)
 
 **Built: records database** (Supabase project "second chair", us-west-1). The
