@@ -3,7 +3,7 @@
 // record went. Shown over the live view once End meeting is pressed.
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { base44Url, buildRecord, openRecordsApp, recordFileName } from "@/lib/record";
+import { base44Url, buildRecord, exportRecord, openRecordsApp, recordFileName, type CardGrade, type Grade } from "@/lib/record";
 import type { Card, Concern, Prep } from "@/lib/types";
 import Concerns from "./Concerns";
 import { endSummary } from "./endSummary";
@@ -11,8 +11,28 @@ import { ui } from "./ui";
 
 type Props = { prep: Prep; cards: Card[]; concerns: Concern[]; tasks: string[]; clock: string; onBack: () => void };
 
+// #42: the advisor grades each card so the record can be audited over time.
+const GRADE_BUTTONS: [Exclude<Grade, "ungraded">, string][] = [
+  ["helpful", "Helpful"],
+  ["not_needed", "Not needed"],
+  ["wrong", "Wrong"],
+];
+
 export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
+  const [grades, setGrades] = useState<Record<string, CardGrade>>({});
+  const [handed, setHanded] = useState(false);
+  const graded = Object.values(grades);
+  // Pressing the chosen grade again clears it back to ungraded.
+  const grade = (cardId: string, g: Exclude<Grade, "ungraded">) => {
+    setHanded(false);
+    setGrades((prev) => {
+      const next = { ...prev };
+      if (next[cardId]?.grade === g) delete next[cardId];
+      else next[cardId] = { cardId, grade: g, gradedAt: new Date().toISOString() };
+      return next;
+    });
+  };
   const summary = endSummary(cards, concerns);
   // Once, at the moment the record was exported, not on every re-render.
   const [record] = useState(() => buildRecord(prep, { concerns, cards }));
@@ -83,6 +103,24 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
                         {m.resolved && <span className={`${ui.chip} ml-auto bg-emerald-400/15 text-emerald-300`}>Resolved</span>}
                       </p>
                       <p className={`mt-0.5 text-pretty ${ui.muted}`}>{m.concern}</p>
+                      <div role="group" aria-label={`Grade the card at ${m.turnId}`} className="mt-2 flex flex-wrap gap-1.5">
+                        {GRADE_BUTTONS.map(([g, label]) => {
+                          const on = grades[m.id]?.grade === g;
+                          return (
+                            <button
+                              key={g}
+                              type="button"
+                              aria-pressed={on}
+                              onClick={() => grade(m.id, g)}
+                              className={`${ui.chip} border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ecebe8] ${
+                                on ? "border-transparent bg-[#ecebe8] text-[#141518]" : `border-white/[0.12] ${ui.muted} hover:bg-white/[0.06]`
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </li>
                 ))}
@@ -128,11 +166,38 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
                 Record
               </h2>
               <p className={`mb-3 text-sm break-all ${ui.muted}`}>Downloaded {fileName}</p>
-              {hasRecordsApp && (
-                <button type="button" onClick={() => void openRecordsApp(record)} className={`${ui.btn} ${ui.outline}`}>
-                  Open compliance records
-                </button>
+              {cards.length > 0 && (
+                <p role="status" className={`mb-3 text-sm ${ui.faint}`}>
+                  {handed
+                    ? `Downloaded again with ${graded.length} of ${cards.length} graded. Save this version in the records app.`
+                    : `Graded ${graded.length} of ${cards.length}. Ungraded cards are marked ungraded in the record.`}
+                </p>
               )}
+              <div className="flex flex-wrap gap-2">
+                {cards.length > 0 && (
+                  <button
+                    type="button"
+                    disabled={graded.length === 0}
+                    // From the click, so the records app tab opens with the graded record.
+                    onClick={() => {
+                      setHanded(true);
+                      void exportRecord(prep, { concerns, cards }, graded);
+                    }}
+                    className={`${ui.btn} ${ui.primary}`}
+                  >
+                    Hand over with grades
+                  </button>
+                )}
+                {hasRecordsApp && (
+                  <button
+                    type="button"
+                    onClick={() => void openRecordsApp(graded.length ? buildRecord(prep, { concerns, cards }, graded) : record)}
+                    className={`${ui.btn} ${ui.outline}`}
+                  >
+                    Open compliance records
+                  </button>
+                )}
+              </div>
             </section>
           </div>
         </div>
