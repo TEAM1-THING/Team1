@@ -9,7 +9,8 @@
 import * as z from "zod/v4";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { extractNumbers, traceConflicts } from "@/lib/provenance";
-import { ClientFile, type FileConflict, type Meeting, PrepSource } from "@/lib/types";
+import { type AnticipatedWorry, ClientFile, type FileConflict, type Meeting, PrepSource } from "@/lib/types";
+import { anticipateWorries } from "./anticipate";
 import { FALLBACK_BETA, LIVE_MODEL, getClient, supportsFallback } from "./client";
 import { draftMandate, type MandateDraftResult } from "./mandate";
 import { extractText, imageMediaType, kindOf, type FileKind } from "./office";
@@ -33,6 +34,8 @@ export type IngestResult = {
   missing: string[];
   // Figures the files disagree on, each value traced to its file.
   conflicts: FileConflict[];
+  // Worries the client is likely to raise, with prepared answers (#38).
+  anticipated: AnticipatedWorry[];
   source: "claude" | "text-only";
 };
 
@@ -290,6 +293,7 @@ export async function ingestFiles(files: UploadedFile[], signal?: AbortSignal): 
       files: reports,
       missing: ["everything: fill in the client file"],
       conflicts: [],
+      anticipated: [],
       source: "text-only",
     };
   }
@@ -363,11 +367,16 @@ export async function ingestFiles(files: UploadedFile[], signal?: AbortSignal): 
     );
     if (conflicts.length < claimed.length)
       console.warn(`[ingest] dropped ${claimed.length - conflicts.length} conflict(s) not traced to two files`);
-    const m = await draftMandate(sources);
+    // Side by side: the worries add no wait beyond the Mandate draft.
+    const [m, a] = await Promise.all([
+      draftMandate(sources),
+      anticipateWorries({ meeting, clientFile: traced.clientFile, sources }, signal),
+    ]);
     return {
       ...traced,
       missing,
       conflicts,
+      anticipated: a.anticipated,
       meeting,
       sources,
       mandate: m.mandate,
@@ -389,6 +398,7 @@ export async function ingestFiles(files: UploadedFile[], signal?: AbortSignal): 
       files: reports,
       missing: ["everything: fill in the client file"],
       conflicts: [],
+      anticipated: [],
       source: "text-only",
     };
   } finally {

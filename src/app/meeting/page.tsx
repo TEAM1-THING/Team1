@@ -8,6 +8,7 @@ import { ui } from "@/components/meeting/ui";
 import EndScreen from "@/components/meeting/EndScreen";
 import Find, { FIND_INPUT_ID } from "@/components/meeting/Find";
 import Transcript from "@/components/meeting/Transcript";
+import { DataNote } from "@/components/prep/DataNote";
 import { LIVE_PAUSE_MS, isLiveTurn, relabel, windowThrough } from "@/components/meeting/live";
 import { followUpTasks, postMoment, processTurn } from "@/components/meeting/replay";
 import MicInput from "@/components/speech/MicInput";
@@ -252,9 +253,10 @@ export default function MeetingPage() {
           </div>
         </div>
         {/* The read-aloud consent script belongs in the live mic's start popup (track D, #34). */}
-        <p role="note" className={`border-t border-white/[0.05] px-4 py-1.5 text-center text-xs ${ui.faint}`}>
-          This meeting uses Second Chair. All participants have been told and agreed.
-        </p>
+        {/* #40: the data note's detail floats above the columns, so the page still does not scroll. */}
+        <div role="note" className={`relative z-20 border-t border-white/[0.05] px-4 py-1.5 text-center text-xs ${ui.faint}`}>
+          This meeting uses Second Chair. All participants have been told and agreed. <DataNote compact />
+        </div>
       </header>
 
       {error && (

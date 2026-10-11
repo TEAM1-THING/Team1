@@ -4,6 +4,7 @@
 import * as z from "zod/v4";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { FALLBACK_BETA, LIVE_MODEL, LIVE_TIMEOUT_MS, getClient, supportsFallback } from "./client";
+import { checkPrepared } from "./anticipate";
 import { earlierCards, holdSteady } from "./consistency";
 import { MOMENT_SYSTEM } from "./moment-prompt";
 import { classifyUtterance, echoesCard } from "./gate";
@@ -137,6 +138,8 @@ export function buildMomentParts(
   const conflicts = traceConflicts(prep.conflicts ?? [], sources)
     .slice(0, MAX_LIST_ITEMS)
     .map((c) => ({ quantity: clip(c.quantity, MAX_ITEM_CHARS), values: c.values.slice(0, MAX_LIST_ITEMS) }));
+  // Re-traced too: the advisor may have edited a prepared answer at prep.
+  const anticipated = checkPrepared(prep.anticipated ?? [], sources);
   const m = prep.mandate;
   const mandate = {
     thesis: clip(m.thesis, MAX_FIELD_CHARS),
@@ -163,6 +166,7 @@ export function buildMomentParts(
       `<sources>${data(sources)}</sources>`,
       `<mandate>${data(mandate)}</mandate>`,
       ...(conflicts.length ? [`<file_conflicts>${data(conflicts)}</file_conflicts>`] : []),
+      ...(anticipated.length ? [`<anticipated>${data(anticipated)}</anticipated>`] : []),
     ].join("\n"),
     live: [
       `<concern_ledger>${data(ledger)}</concern_ledger>`,
@@ -204,12 +208,25 @@ function toMomentType(raw: string): MomentType | null {
 
 // Deterministic ledger update: resolve matching open concerns, then open new
 // topics that are not already open (and were not just resolved).
+// #39 kind tags the meeting screen groups by. Any other "word: " prefix the
+// model invents ("fear: ") is a worry, which the screen reads untagged.
+const KIND_TAG = /^\s*([a-z]+(?: [a-z]+)?)\s*:\s*(?=\S)/i;
+const KIND_TAGS = new Set(["learn", "decide", "life event", "request"]);
+
+export function tagged(raw: string): string {
+  const t = raw.trim();
+  const m = t.match(KIND_TAG);
+  if (!m) return t;
+  const kind = m[1].toLowerCase();
+  return KIND_TAGS.has(kind) ? `${kind}: ${t.slice(m[0].length)}` : t.slice(m[0].length);
+}
+
 export function applyConcernUpdates(
   concerns: Concern[],
   updates: { open: string[]; resolve: string[] },
   turnId: string,
 ): Concern[] {
-  const resolving = new Set(updates.resolve.map(norm).filter(Boolean));
+  const resolving = new Set(updates.resolve.map((t) => norm(tagged(t))).filter(Boolean));
   const next: Concern[] = concerns.map((c) =>
     c.status === "open" && resolving.has(norm(c.topic))
       ? { ...c, status: "resolved", resolvedAtTurn: turnId }
@@ -219,7 +236,7 @@ export function applyConcernUpdates(
   const ids = new Set(next.map((c) => c.id));
   let n = 0;
   for (const raw of updates.open) {
-    const topic = raw.trim();
+    const topic = tagged(raw);
     const key = norm(topic);
     if (!key || open.has(key) || resolving.has(key)) continue;
     open.add(key);
