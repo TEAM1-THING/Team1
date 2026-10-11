@@ -1,4 +1,5 @@
 import type { Card, PrepSource } from "@/lib/types";
+import { cite } from "./cite";
 import { LABELS } from "./replay";
 import { ui } from "./ui";
 
@@ -9,13 +10,6 @@ const momentText = (m: string) => {
 
 function Chip({ label }: { label: keyof typeof LABELS }) {
   return <span className={`${ui.chip} ${LABELS[label].chip}`}>{LABELS[label].text}</span>;
-}
-
-// Where a fact came from, and when that document was made (tester feedback:
-// "I like it when they ... cite their sources and when the sources were made").
-function sourceLine(sourceId: string | undefined, sources: PrepSource[]): string | null {
-  const s = sourceId ? sources.find((x) => x.id === sourceId) : undefined;
-  return s ? `From ${s.title}${s.date ? `, ${s.date}` : ""}` : null;
 }
 
 // One glance (#37 order): the worry, what to say, your move in a line, the facts
@@ -44,6 +38,7 @@ export default function MomentCard({
 
   const backing = card.facts.filter((f) => f.label !== "DO_NOT_CLAIM");
   const avoid = [...card.facts.filter((f) => f.label === "DO_NOT_CLAIM").map((f) => f.text), ...card.doNotClaim];
+  const citations = cite(backing, sources);
 
   return (
     <article data-testid="current-card" className={`sc-arrive ${ui.raised} p-5 md:p-6`}>
@@ -53,7 +48,7 @@ export default function MomentCard({
 
       <blockquote className="mb-4">
         <Chip label="SUGGESTION" />
-        <p className="mt-2 text-[19px] leading-[1.45] font-medium tracking-[-0.01em] text-pretty text-[#f4f3f0] md:text-[22px]">
+        <p className="mt-2 text-[18px] leading-[1.5] font-medium tracking-[-0.01em] text-pretty text-[#f4f3f0] lg:text-[20px]">
           “{card.phrasing}”
         </p>
       </blockquote>
@@ -71,25 +66,42 @@ export default function MomentCard({
         </div>
       ) : (
         backing.length > 0 && (
-          <ul data-testid="backing" className="mb-4 space-y-2.5 border-t border-white/[0.06] pt-4">
-            {backing.map((f, i) => (
-              <li key={i} className="grid grid-cols-1 items-baseline gap-x-3 gap-y-1 sm:grid-cols-[6.5rem_1fr] text-sm">
-                <Chip label={f.label} />
-                <div>
-                  <p className="text-pretty text-[#dedcd6]">{f.text}</p>
-                  {f.math && <p className="mt-0.5 font-mono text-xs text-amber-200/80">{f.math}</p>}
-                  {f.label === "PREPARED_FACT" && sourceLine(f.sourceId, sources) && (
-                    <p className={`mt-0.5 text-xs ${ui.faint}`}>{sourceLine(f.sourceId, sources)}</p>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
+          <div className="mb-4 border-t border-white/[0.06] pt-4">
+            <ul data-testid="backing" className="space-y-2">
+              {backing.map((f, i) => (
+                <li key={i} className="flex items-baseline gap-2.5 text-sm">
+                  <Chip label={f.label} />
+                  <div className="min-w-0">
+                    <p className="text-pretty text-[#dedcd6]">
+                      {f.text}
+                      {citations.numberOf(f) && (
+                        <sup className={`ml-0.5 text-[10px] tabular-nums ${ui.faint}`}>{citations.numberOf(f)}</sup>
+                      )}
+                    </p>
+                    {f.math && <p className="mt-0.5 font-mono text-xs text-amber-200/80">{f.math}</p>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {citations.list.length > 0 && (
+              <ol aria-label="Sources" className={`mt-3 space-y-0.5 text-xs ${ui.faint}`}>
+                {citations.list.map((c) => (
+                  <li key={c.n} className="flex gap-1.5">
+                    <span className="tabular-nums">{c.n}</span>
+                    <span>
+                      {c.title}
+                      {c.date ? `, ${c.date}` : ""}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
         )
       )}
 
       {avoid.length > 0 && (
-        <div data-testid="avoid" className="mb-4 grid grid-cols-1 items-baseline gap-x-3 gap-y-1 sm:grid-cols-[6.5rem_1fr] text-sm">
+        <div data-testid="avoid" className="mb-4 flex items-baseline gap-2.5 text-sm">
           <Chip label="DO_NOT_CLAIM" />
           <ul className={`space-y-0.5 text-pretty ${ui.muted}`}>
             {avoid.map((d, i) => (
