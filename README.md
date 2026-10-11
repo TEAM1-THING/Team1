@@ -176,7 +176,7 @@ Add any of these to the command above the same way, each as another `--env`.
 | `SC_WIDTH` | `460` | The panel's starting width |
 | `SC_AUDIO_SOURCE` | `system` | `device` uses a virtual audio device such as BlackHole (macOS before 14.2); `tone` is a self-test |
 | `SC_AUDIO_DEVICE` | BlackHole and similar | Which virtual device to use |
-| `SC_CONSENT_BANNER` | off | `1` shows the "everyone agreed" banner at the top of the panel |
+| `SC_CONSENT_BANNER` | on | `0` hides the "everyone agreed" notice under the panel's header (testing only) |
 | `SC_DEBUG` | off | `1` logs what the panel is doing |
 
 ## Update or remove the app

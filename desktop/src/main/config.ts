@@ -27,11 +27,12 @@ export const config = {
   // through Core Audio taps), falling back to a virtual device on older Macs.
   // "device": always the virtual device. "tone": dev self-test, no capture.
   audioSource: (["device", "tone"].includes(env.SC_AUDIO_SOURCE ?? "") ? env.SC_AUDIO_SOURCE : "system") as "system" | "device" | "tone",
-  // Testing the undisclosed-meeting scenario: the meeting page's "everyone has
-  // been told" notice is hidden in the overlay unless this is "1" (also a
-  // menu-bar toggle). Recording still needs the page's all-parties consent
-  // checkbox, which is never hidden.
-  disclosureNotice: env.SC_CONSENT_BANNER === "1",
+  // The meeting page's "everyone has been told" notice shows in the overlay,
+  // as it does in every mode (CLAUDE.md: recording needs consent). "0" hides
+  // it, for testing the undisclosed-meeting case only (also a menu-bar
+  // toggle). Recording still needs the page's all-parties consent checkbox,
+  // which is never hidden.
+  disclosureNotice: env.SC_CONSENT_BANNER !== "0",
   debug: env.SC_DEBUG === "1",
 };
 

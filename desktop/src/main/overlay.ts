@@ -13,28 +13,46 @@ import { BAR_HEIGHT, ignoreMouse, initialMode, onScreen, type Hit, type OverlayM
 import type { DeepLink } from "../core/deepLink";
 import { asset, config, dist } from "./config";
 
-// Turns the meeting page into one solid panel under the title bar, so its text
-// never sits on top of the app behind, wraps instead of running off the edge,
-// and scrolls inside the panel. Scoped by the meeting screen's own classes, so
-// no web file changes for the desktop.
-const OVERLAY_CSS = `
+// Turns the meeting page into one panel under the title bar, so its text wraps
+// instead of running off the edge and scrolls inside the panel. On macOS the
+// panel is frosted glass: the window's vibrancy blurs the call behind it and
+// the page's surfaces turn translucent over that, while cards stay dark enough
+// for text to read over a bright window. Elsewhere there is no OS blur, so the
+// panel stays solid. The end screen is always opaque, so the meeting never
+// shows through it. Selectors use structure and roles (the root that holds
+// header and main, role=dialog, the ui.ts radius and border classes), never
+// colours, which the web tracks restyle. No web file changes for the desktop.
+const PAGE_ROOT = "body div:has(> header):has(> main)";
+const CARDS = "body main .rounded-xl.border";
+function overlayCss(glass: boolean): string {
+  // .78 over the HUD material keeps the faintest text above 4.5:1 on a white
+  // window behind; the blur still shows through as the glass.
+  const tint = glass ? ".78" : ".95";
+  return `
 html { background: transparent !important; }
-body { background: rgb(13 18 25 / .95) !important; border: 1px solid rgb(255 255 255 / .1); border-radius: 14px;
+body { background: rgb(15 16 18 / ${tint}) !important; border: 1px solid rgb(255 255 255 / ${glass ? ".14" : ".1"}); border-radius: 14px;
   box-sizing: border-box; height: 100vh; margin: 0; padding-top: ${BAR_HEIGHT}px; overflow: hidden auto;
   overflow-wrap: anywhere; scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / .2) transparent; }
-[class~="bg-[#0d1219]"] { background: transparent !important; min-height: 0 !important; }
-[class~="bg-[#0d1219]"] > [aria-hidden="true"].absolute.inset-0 { display: none !important; }
+${PAGE_ROOT} { background: transparent !important; min-height: 0 !important; height: auto !important; }
+${PAGE_ROOT} > [aria-hidden="true"].absolute.inset-0 { display: none !important; }
+${glass ? `body { box-shadow: inset 0 1px 0 rgb(255 255 255 / .08); }
+body header { background: rgb(15 16 18 / .55) !important; border-color: rgb(255 255 255 / .08) !important; }
+${CARDS} { background-color: rgb(24 26 30 / .82) !important; border-color: rgb(255 255 255 / .12) !important;
+  backdrop-filter: blur(14px) saturate(1.3); box-shadow: inset 0 1px 0 rgb(255 255 255 / .06) !important; }` : ""}
+body [role="dialog"][aria-modal="true"] { background: rgb(15 16 18 / .97) !important; }
+body [role="dialog"][aria-modal="true"] .rounded-xl.border { background-color: rgb(24 26 30) !important; backdrop-filter: none; }
 body .truncate { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
 body main { padding: 12px !important; gap: 12px !important; }
 body header span.font-semibold.tracking-tight { display: none !important; } /* the title bar already names it */
 html[data-sc-typing] body { border-color: #8ec5f2; box-shadow: inset 0 0 0 1px #8ec5f2; }
 html[data-sc-ghost] body > :not(#sc-bar) { opacity: .45; }
-html[data-sc-ghost] body { background: rgb(13 18 25 / .55) !important; }
+html[data-sc-ghost] body { background: rgb(15 16 18 / .55) !important; }
 `;
+}
 
-// Hides only the "everyone has been told and agreed" line; the "Ask first"
-// script under it (what the advisor says to get consent) stays.
-const NO_BANNER_CSS = `[class~="bg-[#0d1219]"] > p[role="note"], [class~="bg-[#0d1219]"] > [role="note"] > p:first-child { display: none !important; }`;
+// Hides the "everyone has been told and agreed" notice under the header, for
+// testing the undisclosed-meeting case only (config.disclosureNotice).
+const NO_BANNER_CSS = `body header > [role="note"] { display: none !important; }`;
 const PREP_KEY = "secondchair.prep"; // where the meeting page reads the prep (src/lib/store.ts)
 
 const MARGIN = 16;
@@ -103,7 +121,13 @@ export function createOverlay(onChange: (v: OverlayView) => void, showAtLaunch: 
     focusable: false,
     acceptFirstMouse: true,
     hiddenInMissionControl: true,
-    ...(mac ? { type: "panel" } : process.platform === "win32" ? { type: "toolbar" } : {}),
+    // macOS glass: the HUD material blurs and darkens what is behind the
+    // panel. "active" keeps it frosted although the panel is never focused.
+    ...(mac
+      ? { type: "panel", vibrancy: "hud" as const, visualEffectState: "active" as const }
+      : process.platform === "win32"
+        ? { type: "toolbar" }
+        : {}),
     webPreferences: {
       preload: dist("preload-overlay.js"),
       contextIsolation: true,
@@ -134,7 +158,7 @@ export function createOverlay(onChange: (v: OverlayView) => void, showAtLaunch: 
   };
   wc.on("dom-ready", () => {
     noticeCss = null; // a new document starts without it
-    void wc.insertCSS(OVERLAY_CSS);
+    void wc.insertCSS(overlayCss(mac));
     void applyNotice();
   });
   wc.on("did-finish-load", () => {
@@ -219,6 +243,8 @@ export function createOverlay(onChange: (v: OverlayView) => void, showAtLaunch: 
     if (win.isDestroyed()) return;
     if (config.debug) console.log(`[overlay] mode typing=${mode.typing} ghost=${mode.ghost} ignoreMouse=${ignoreMouse(mode)}`);
     win.setIgnoreMouseEvents(ignoreMouse(mode), { forward: true });
+    // Click-through dims the panel so the call shows through: drop the blur there.
+    if (mac) win.setVibrancy(mode.ghost ? null : "hud");
     publish();
   }
 
