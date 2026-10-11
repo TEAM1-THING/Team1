@@ -19,6 +19,8 @@ import {
   whyNotReady,
 } from "@/components/prep/prepModel";
 import { demoPrep } from "@/data/demo";
+import { DEFAULT_OUT_OF_SCOPE, NEUTRAL_RISK_STANCE, STANDARD_DISCLAIMERS } from "@/lib/engine/mandate";
+import { outOfScopeHit } from "@/lib/engine/scope";
 import { Prep } from "@/lib/types";
 
 const draft = (): Prep => ({ ...demoPrep, confirmed: false });
@@ -111,6 +113,32 @@ describe("enter by hand", () => {
     const named = { ...p, clientFile: { ...p.clientFile, name: " Sam Lee " } };
     expect(whyNotReady(named)).toBeNull();
     expect(confirmPrep(named).clientFile.name).toBe("Sam Lee");
+  });
+
+  it("starts from the engine's neutral Mandate, not an empty one", () => {
+    expect(emptyPrep().mandate).toEqual({
+      thesis: "",
+      assumptions: [],
+      riskStance: NEUTRAL_RISK_STANCE,
+      disclaimers: STANDARD_DISCLAIMERS,
+      outOfScope: DEFAULT_OUT_OF_SCOPE,
+    });
+    // Fresh lists each time, so an edit to one prep never leaks into the next.
+    expect(emptyPrep().mandate.outOfScope).not.toBe(emptyPrep().mandate.outOfScope);
+  });
+
+  it("hands the meeting an out-of-scope list the forced defer keys on", () => {
+    const p = emptyPrep();
+    const out = confirmPrep({ ...p, clientFile: { ...p.clientFile, name: "Sam Lee" } });
+    expect(outOfScopeHit("Should I put some of this into bitcoin?", out.mandate.outOfScope)).toBe("Crypto");
+  });
+
+  it("blocks Confirm while the out-of-scope list is empty", () => {
+    const p = emptyPrep();
+    const named = { ...p, clientFile: { ...p.clientFile, name: "Sam Lee" } };
+    expect(whyNotReady({ ...named, mandate: { ...named.mandate, outOfScope: [] } })).toMatch(/out-of-scope/);
+    expect(whyNotReady({ ...named, mandate: { ...named.mandate, outOfScope: ["", "  "] } })).toMatch(/out-of-scope/);
+    expect(whyNotReady({ ...named, mandate: { ...named.mandate, outOfScope: ["Crypto"] } })).toBeNull();
   });
 
   it("sends the Mandate draft and pre-flight an empty prep they accept", () => {

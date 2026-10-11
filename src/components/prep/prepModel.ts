@@ -3,8 +3,18 @@
 import { z } from "zod";
 import { Mandate, Prep, type PrepSource } from "@/lib/types";
 
+// The engine's neutral Mandate (src/lib/engine/mandate.ts), copied rather than
+// imported because that module would pull the Anthropic client into the
+// browser bundle. tests/prep-model.test.ts keeps the copies equal. The
+// out-of-scope list matters most: the meeting's forced defer keys on it, so an
+// empty list would leave staying inside the Mandate to the model alone.
+const STANDARD_DISCLAIMERS = ["Projections are not guarantees.", "Past performance does not predict future results."];
+const DEFAULT_OUT_OF_SCOPE = ["Individual stock picks", "Tax filing advice", "Crypto", "Legal or estate advice"];
+const NEUTRAL_RISK_STANCE = "To be set by the advisor before the meeting.";
+
 // Where "Enter by hand" starts: the advisor's own meeting, so no client and no
-// sources. The demo client comes only from the sample files or the demo meeting.
+// sources, and the neutral Mandate rather than the demo's. The demo client
+// comes only from the sample files or the demo meeting.
 export const emptyPrep = (): Prep => ({
   clientFile: {
     name: "",
@@ -17,16 +27,26 @@ export const emptyPrep = (): Prep => ({
     statedConcerns: [],
   },
   sources: [],
-  mandate: { thesis: "", assumptions: [], riskStance: "", disclaimers: [], outOfScope: [] },
+  mandate: {
+    thesis: "",
+    assumptions: [],
+    riskStance: NEUTRAL_RISK_STANCE,
+    disclaimers: [...STANDARD_DISCLAIMERS],
+    outOfScope: [...DEFAULT_OUT_OF_SCOPE],
+  },
   confirmed: false,
   conflicts: [],
   anticipated: [],
 });
 
 // Why Confirm is not available yet, or null when it is. The Mandate tick sits
-// beside the button and speaks for itself, so only the name needs saying.
+// beside the button and speaks for itself. An out-of-scope list the advisor
+// has cleared (or a draft kept from before it was filled in) blocks too,
+// because without it nothing outside the Mandate is deferred for certain.
 export function whyNotReady(prep: Prep): string | null {
-  return prep.clientFile.name.trim() ? null : "Add the client's name in step 2 to confirm.";
+  if (!prep.clientFile.name.trim()) return "Add the client's name in step 2 to confirm.";
+  if (tidy(prep.mandate.outOfScope).length === 0) return "List at least one out-of-scope topic in step 4 to confirm.";
+  return null;
 }
 
 // A pre-flight check's run time as the viewer's own date. The engine sends a
