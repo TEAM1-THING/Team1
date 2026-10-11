@@ -7,7 +7,7 @@ import { FALLBACK_BETA, LIVE_MODEL, LIVE_TIMEOUT_MS, getClient, supportsFallback
 import { checkPrepared } from "./anticipate";
 import { earlierCards, holdSteady } from "./consistency";
 import { MOMENT_SYSTEM } from "./moment-prompt";
-import { classifyUtterance, echoesCard } from "./gate";
+import { classifyUtterance, echoesCard, soundsLikeAdvisor } from "./gate";
 import { outOfScopeHit } from "./scope";
 import { demoPrep, demoTranscript } from "../../data/demo";
 import { mockMoment } from "../mock";
@@ -457,7 +457,10 @@ export async function runMoment(
   // The advisor reading the last card aloud: label it, no call.
   if (echoesCard(latest.text, state.cards.at(-1)?.phrasing)) return { card: null, state, speaker: "advisor" };
   // Plain statements and filler do not run; questions and worries do.
-  if (!classifyUtterance(latest.text).run) return { card: null, state };
+  // Skipped without a Claude call; an advisor's plain line is still relabelled.
+  if (!classifyUtterance(latest.text).run) {
+    return soundsLikeAdvisor(latest.text) ? { card: null, state, speaker: "advisor" } : { card: null, state };
+  }
   try {
     const out = await callClaude(req, latest, signal, opts);
     if (typeof out === "string") return fallback(prep, state, latest, out);

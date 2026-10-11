@@ -23,7 +23,7 @@ const FILLER =
 // Cues that a client statement carries something worth a card: worry,
 // hesitation, loss, a new need or a life event.
 const CONCERN_CUES =
-  /\b(worr(y|ied|ies|ying)|afraid|scared|nervous|anxious|concern(ed|s)?|uncertain|unsure|not sure|risk(y)?|lose|losing|lost|loss|crash|downturn|recession|wait(ing)?|delay|hold off|too much|too risky|can't afford|afford|emergency|need (help|money|cash)|short of|run out|sister|brother|son|daughter|kids?|grandchild(ren)?|wife|husband|spouse|partner|divorce|sick|illness|health|hospital|job|laid off|retire(ment)?|inherit(ance)?|house|home|mortgage|down payment|college|tuition|debt|loan|tax(es)?|lawsuit|died|passed away|funeral)\b/;
+  /\b(worr(y|ied|ies|ying)|afraid|scared|nervous|anxious|concern(ed|s)?|uncertain|unsure|not sure|risk(y)?|lose|losing|lost|loss|crash|downturn|recession|wait(ing)?|delay|hold off|too much|too risky|can't afford|afford|emergency|need (help|money|cash)|short of|run out|sister|brother|son|daughter|kids?|grandchild(ren)?|grandkids?|wife|husband|spouse|partner|parents?|mom|dad|mother|father|divorc(e|ed|ing)|married|marry(ing)?|wedding|engaged|baby|pregnant|expecting|adopt(ed|ing)?|sick|illness|health|diagnos(ed|is)|surgery|hospital|caregiv(er|ing)|job|new job|promot(ed|ion)|quit|fired|laid off|retir(e|ed|ing|ement)|inherit(ed|ance)?|house|home|mortgage|down payment|moved|moving|relocat(e|ed|ing)|sold|selling|bought|business|college|tuition|debt|loan|tax(es)?|lawsuit|died|passed away|widow(ed)?|funeral)\b/;
 
 // A changed goal or a contradiction ("stop working at 65, not 70"), a buying
 // signal ("let's go ahead"), or any figure the client says.
@@ -40,6 +40,22 @@ export function echoesCard(text: string, phrasing: string | undefined): boolean 
   if (said.length < 4) return false;
   const card = new Set(words(phrasing));
   return said.filter((w) => card.has(w)).length / said.length >= 0.6;
+}
+
+// Live speech-to-text labels every line "client". A line the gate skips never
+// reaches Claude's who-said-it judgement, so the advisor's own plain lines
+// ("Let me walk you through the reserve") would stay labelled client. These
+// are the cheap tells: the advisor steering or following up, or talking about
+// the plan to the client ("you", "your") rather than about their own life.
+const ADVISOR_MOVES =
+  /\b(let me|let's (look|go back|review|walk|talk|turn|take a look|start with)|i'll (send|follow up|set up|check|get back|walk you|show you|email|put together)|i (recommend|suggest)|i'd (recommend|suggest)|my recommendation|we recommend|as we discussed|as i mentioned|here's (what|how)|if you look at|you can see|on page \d+|in the report)\b/;
+const SECOND_PERSON = /\b(you|your|you're|you'll|you've|yours)\b/;
+const PLAN_TALK = /\b(the|this|our) (plan|reserve|portfolio|strategy|allocation|tranches?|report|proposal)\b/;
+
+export function soundsLikeAdvisor(raw: string): boolean {
+  // Fillers that put "you" in a client's mouth.
+  const text = raw.toLowerCase().replace(/\b(you know|thank you|you see|mind you)\b/g, " ");
+  return ADVISOR_MOVES.test(text) || (SECOND_PERSON.test(text) && PLAN_TALK.test(text));
 }
 
 export function classifyUtterance(raw: string): Gate {

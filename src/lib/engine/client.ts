@@ -10,8 +10,10 @@ export const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5-5";
 // Haiku 3.80) at median 3.96 s, max 4.59 s. Override per deployment.
 export const LIVE_MODEL = process.env.LIVE_MODEL || "claude-sonnet-5-5";
 
-// A live card that arrives late is useless; past this the route falls back.
-export const LIVE_TIMEOUT_MS = 5_000;
+// Past this the route falls back: the canned card for the demo script, no
+// card otherwise. Live replies take about 3 to 4.7 s, so a 5 s cutoff turned
+// roughly one in five into no card at all; a card at 6 s beats none.
+export const LIVE_TIMEOUT_MS = 8_000;
 
 // Server-side refusal fallback: a declined request is re-run on Anthropic's
 // recommended model inside the same call.

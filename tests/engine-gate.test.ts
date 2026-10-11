@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyUtterance, echoesCard } from "@/lib/engine/gate";
+import { classifyUtterance, echoesCard, soundsLikeAdvisor } from "@/lib/engine/gate";
 import { demoTranscript } from "@/data/demo";
 
 describe("classifyUtterance", () => {
@@ -66,5 +66,51 @@ describe("echoesCard", () => {
     expect(echoesCard("I'm worried I won't have enough cash if something happens", phrasing)).toBe(false);
     expect(echoesCard("a fair worry", phrasing)).toBe(false);
     expect(echoesCard("the plan keeps a reserve", undefined)).toBe(false);
+  });
+});
+
+describe("life events reach the engine", () => {
+  it("runs a plain statement that carries a life event", () => {
+    for (const line of [
+      "We moved to Austin last year.",
+      "I just got married.",
+      "My mother needs a caregiver now.",
+      "I retired in March.",
+      "We're expecting a baby.",
+      "I sold my business.",
+    ]) {
+      expect(classifyUtterance(line).run, line).toBe(true);
+    }
+  });
+
+  it("still skips small talk", () => {
+    expect(classifyUtterance("The weather's been nice.").run).toBe(false);
+    expect(classifyUtterance("Okay.").run).toBe(false);
+  });
+});
+
+describe("soundsLikeAdvisor", () => {
+  it("recognises the advisor steering, following up, or talking plan to the client", () => {
+    for (const line of [
+      "Let me walk you through the reserve figure in the report.",
+      "I'll send you the fee schedule tomorrow.",
+      "Let's go back to the plan.",
+      "Your reserve stays outside the portfolio.",
+      "I'd suggest we keep the allocation as it is.",
+    ]) {
+      expect(soundsLikeAdvisor(line), line).toBe(true);
+    }
+  });
+
+  it("leaves the client's own plain lines alone", () => {
+    for (const line of [
+      "We moved to Austin last year.",
+      "The weather's been nice.",
+      "You know, the plan seemed fine to me.",
+      "Thank you, the plan is clear.",
+      "Okay.",
+    ]) {
+      expect(soundsLikeAdvisor(line), line).toBe(false);
+    }
   });
 });

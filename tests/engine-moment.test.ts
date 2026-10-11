@@ -313,6 +313,43 @@ describe("runMoment", () => {
   });
 });
 
+describe("gate-skipped advisor lines", () => {
+  it("relabels a plain advisor line without a Claude call", async () => {
+    const parse = returning(liveT2);
+    const turns: TranscriptTurn[] = [
+      ...upTo("t2"),
+      { id: "m1", speaker: "client", t: 20, text: "Let me walk you through the reserve figure in the report." },
+    ];
+    const res = await runMoment({ prep: demoPrep, turns, state: emptyState() });
+    expect(res).toMatchObject({ card: null, speaker: "advisor" });
+    expect(parse).not.toHaveBeenCalled();
+  });
+
+  it("keeps the client's plain line unlabelled", async () => {
+    const parse = returning(liveT2);
+    const turns: TranscriptTurn[] = [...upTo("t2"), { id: "m1", speaker: "client", t: 20, text: "The weather's been nice." }];
+    const res = await runMoment({ prep: demoPrep, turns, state: emptyState() });
+    expect(res.card).toBeNull();
+    expect(res.speaker).toBeUndefined();
+    expect(parse).not.toHaveBeenCalled();
+  });
+});
+
+describe("canned demo cards", () => {
+  it("quote every prepared fact word for word from the source it cites", () => {
+    let state = emptyState();
+    for (const turn of demoTranscript) {
+      const res = mockMoment(turn.id, state);
+      state = res.state;
+      for (const f of res.card?.facts ?? []) {
+        if (f.label !== "PREPARED_FACT") continue;
+        const source = demoPrep.sources.find((s) => s.id === f.sourceId);
+        expect(source?.text, `${turn.id}: ${f.text}`).toContain(f.text);
+      }
+    }
+  });
+});
+
 describe("do-not-claim list", () => {
   it("shows a claim once when the model gives it as a fact and in doNotClaim", async () => {
     returning({
