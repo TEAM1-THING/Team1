@@ -20,7 +20,7 @@ export default function Find({ sources }: { sources: PrepSource[] }) {
       <label htmlFor={FIND_INPUT_ID} className="sr-only">
         Find in your materials
       </label>
-      <div className="flex h-10 items-center gap-2 rounded-lg border border-[#1c1a3a]/20 bg-white px-3 transition-colors focus-within:border-[#2f6bff]">
+      <div className="flex h-10 items-center gap-2 rounded-lg border border-[#161412]/20 bg-[#faf6ef] px-3 transition-colors focus-within:border-[#161412]">
         <input
           id={FIND_INPUT_ID}
           type="search"
@@ -34,7 +34,7 @@ export default function Find({ sources }: { sources: PrepSource[] }) {
           }}
           placeholder="Find in your materials"
           aria-describedby={query.trim() ? undefined : "find-hint"}
-          className="min-w-0 flex-1 bg-transparent text-sm text-[#1c1a3a] placeholder:text-[#646282] focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
+          className="min-w-0 flex-1 bg-transparent text-sm text-[#161412] placeholder:text-[#74695d] focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
         />
         <kbd className={ui.kbd}>/</kbd>
       </div>
@@ -57,10 +57,10 @@ export default function Find({ sources }: { sources: PrepSource[] }) {
         <ul role="list" aria-label={`${hits.length} matches`} className="mt-3 space-y-3">
           {hits.map((h, i) => (
             <li key={`${h.sourceId}-${i}`} className="text-sm">
-              <p className="text-pretty text-[#1c1a3a]">
+              <p className="text-pretty text-[#161412]">
                 {figureParts(h.line).map((p, j) =>
                   p.figure ? (
-                    <mark key={j} className="rounded-sm bg-[#cff5dc] px-0.5 font-semibold text-[#0e5a2c]">
+                    <mark key={j} className="rounded-sm bg-[#dde9d0] px-0.5 font-semibold text-[#2f5a1e]">
                       {p.text}
                     </mark>
                   ) : (

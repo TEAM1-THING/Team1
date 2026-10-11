@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Concerns from "@/components/meeting/Concerns";
 import MomentCard from "@/components/meeting/Card";
+import { display } from "@/components/meeting/fonts";
 import { ui } from "@/components/meeting/ui";
 import EndScreen from "@/components/meeting/EndScreen";
 import Find, { FIND_INPUT_ID } from "@/components/meeting/Find";
@@ -204,7 +205,7 @@ export default function MeetingPage() {
   return (
     // Desktop: the page is exactly one screen and each column scrolls on its own.
     // Phones stack the columns, so the page scrolls there.
-    <div className={`${ui.page} flex min-h-[100dvh] flex-col lg:h-[100dvh]`}>
+    <div className={`${ui.page} ${display.variable} flex min-h-[100dvh] flex-col lg:h-[100dvh]`}>
       <style>{`
         @media (prefers-reduced-motion: no-preference) {
           @keyframes sc-arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -212,31 +213,31 @@ export default function MeetingPage() {
         }
       `}</style>
 
-      <header inert={!!ended} className="bg-[#1c1a3a] text-white">
+      <header inert={!!ended} className="border-b border-[#161412]/15">
         <div className="mx-auto flex w-full max-w-[1400px] flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 md:px-6">
           <div className="mr-auto flex min-w-0 items-baseline gap-3">
-            <span className="text-[15px] font-semibold tracking-tight">Second Chair</span>
-            <span className="truncate text-sm text-[#b9b7d6]">with {prep?.clientFile.name ?? "your client"}</span>
-            <span className="flex items-center gap-1.5 text-sm tabular-nums text-[#b9b7d6]">
+            <span className={`${ui.display} text-[22px] leading-none italic`}>Second Chair</span>
+            <span className={`truncate text-sm ${ui.muted}`}>with {prep?.clientFile.name ?? "your client"}</span>
+            <span className={`flex items-center gap-1.5 text-sm tabular-nums ${ui.faint}`}>
               {/* Live state, not decoration: shown while the meeting is running. */}
-              {turns.length > 0 && <span aria-hidden className="size-2 rounded-full bg-[#ff7a6b] motion-safe:animate-pulse" />}
+              {turns.length > 0 && <span aria-hidden className="size-2 rounded-full bg-[#e8571a] motion-safe:animate-pulse" />}
               {mmss}
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <button type="button" onClick={nextTurn} disabled={!prep || busy || done} className={`${ui.btn} ${ui.primary}`}>
-              Next turn <kbd className={ui.kbdOnLight}>→</kbd>
+              Next turn <kbd className={ui.kbdOnDark}>→</kbd>
             </button>
-            <button type="button" onClick={() => setAuto((a) => !a)} disabled={!prep || done} className={`${ui.btn} ${ui.ghostOnDark}`}>
+            <button type="button" onClick={() => setAuto((a) => !a)} disabled={!prep || done} className={`${ui.btn} ${ui.ghost}`}>
               {auto ? "Pause" : "Auto-play"}
             </button>
             {/* Fit the ship track's mic control to this bar without editing its file. */}
             {/* Unmounted once the meeting ends: its cleanup stops the recognizer. */}
-            <span className="text-[#d8d6ee] [&_button]:h-9 [&_button]:rounded-lg [&_button]:border-white/25 [&_button]:px-3 [&_button]:text-[#e9e8f5]">
+            <span className="text-[#5b5248] [&_button]:h-9 [&_button]:rounded-full [&_button]:border-[#161412]/30 [&_button]:px-4 [&_button]:text-[#161412]">
               {!ended && <MicInput onTurn={onMicTurn} />}
             </span>
-            <button type="button" onClick={() => setHidden((h) => !h)} className={`${ui.btn} ${ui.ghostOnDark}`} aria-pressed={hidden}>
-              {hidden ? "Show" : "Hide"} <kbd className={ui.kbdOnDark}>H</kbd>
+            <button type="button" onClick={() => setHidden((h) => !h)} className={`${ui.btn} ${ui.ghost}`} aria-pressed={hidden}>
+              {hidden ? "Show" : "Hide"} <kbd className={ui.kbd}>H</kbd>
             </button>
             <button
               type="button"
@@ -253,7 +254,7 @@ export default function MeetingPage() {
                 void exportRecord(prep, state);
               }}
               disabled={!prep}
-              className={`${ui.btn} ${ui.danger}`}
+              className={`${ui.btn} ${ui.accentBtn}`}
             >
               End meeting
             </button>
@@ -261,7 +262,7 @@ export default function MeetingPage() {
         </div>
         {/* The read-aloud consent script belongs in the live mic's start popup (track D, #34). */}
         {/* #40: the data note's detail floats above the columns, so the page still does not scroll. */}
-        <div role="note" className="relative z-20 bg-[#ffe36e] px-4 py-1.5 text-center text-xs text-[#1c1a3a]">
+        <div role="note" className={`relative z-20 border-t border-[#161412]/10 px-4 py-1.5 text-center text-xs ${ui.muted}`}>
           This meeting uses Second Chair. All participants have been told and agreed. <DataNote compact />
         </div>
       </header>
@@ -273,16 +274,16 @@ export default function MeetingPage() {
       )}
 
       <main inert={!!ended} className="mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 gap-6 p-4 md:p-6 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,600px)_minmax(0,280px)] lg:grid-rows-[minmax(0,1fr)]">
-        <div className={`${ui.sky} order-3 p-4 lg:order-1 lg:min-h-0 lg:overflow-y-auto`}>
+        <div className="order-3 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:border-r lg:border-[#161412]/15 lg:pr-6">
           <Find sources={prep?.sources ?? []} />
           <Transcript turns={turns} onToggle={toggleSpeaker} />
         </div>
         <div ref={cardColumn} className={`order-1 space-y-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto lg:pr-1 ${hidden ? "invisible" : ""}`} aria-live="polite" aria-busy={waiting}>
           {waiting && (
             <div aria-label="Reading the client's last turn" className={`${ui.surface} space-y-3 p-5`}>
-              <div className="h-3 w-28 rounded bg-[#1c1a3a]/[0.07] motion-safe:animate-pulse" />
-              <div className="h-5 w-11/12 rounded bg-[#1c1a3a]/[0.07] motion-safe:animate-pulse" />
-              <div className="h-5 w-3/4 rounded bg-[#1c1a3a]/[0.07] motion-safe:animate-pulse" />
+              <div className="h-3 w-28 rounded bg-[#161412]/[0.07] motion-safe:animate-pulse" />
+              <div className="h-5 w-11/12 rounded bg-[#161412]/[0.07] motion-safe:animate-pulse" />
+              <div className="h-5 w-3/4 rounded bg-[#161412]/[0.07] motion-safe:animate-pulse" />
             </div>
           )}
           {current ? (

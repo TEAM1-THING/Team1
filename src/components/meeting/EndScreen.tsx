@@ -7,7 +7,8 @@ import { base44Url, buildRecord, openRecordsApp, recordFileName } from "@/lib/re
 import type { Card, Concern, Prep } from "@/lib/types";
 import Concerns from "./Concerns";
 import { endSummary } from "./endSummary";
-import { MOMENT_TINT, ui } from "./ui";
+import { display } from "./fonts";
+import { ui } from "./ui";
 
 type Props = { prep: Prep; cards: Card[]; concerns: Concern[]; tasks: string[]; clock: string; onBack: () => void };
 
@@ -50,8 +51,8 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
 
   return (
     // A full-screen layer over the live view, so Back to meeting returns to it as it was.
-    <div role="dialog" aria-modal="true" aria-labelledby="end-h" className={`${ui.page} fixed inset-0 z-30 overflow-y-auto`}>
-      <p role="note" className="bg-[#ffe36e] px-4 py-1.5 text-center text-xs text-[#1c1a3a]">
+    <div role="dialog" aria-modal="true" aria-labelledby="end-h" className={`${ui.page} ${display.variable} fixed inset-0 z-30 overflow-y-auto`}>
+      <p role="note" className={`border-b border-[#161412]/15 px-4 py-1.5 text-center text-xs ${ui.muted}`}>
         This meeting uses Second Chair. All participants have been told and agreed.
       </p>
       <main className="sc-arrive mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 md:p-8">
@@ -59,8 +60,14 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
           <p className={`text-sm ${ui.faint}`}>
             Meeting with {prep.clientFile.name} ended at <span className="tabular-nums">{clock}</span>
           </p>
-          <h1 id="end-h" ref={heading} tabIndex={-1} className="text-2xl font-semibold tracking-tight text-balance outline-none md:text-[28px]">
-            Here&apos;s what Second Chair caught
+          {/* Display size only: the bright orange is 3:1 on cream, enough for large type. */}
+          <h1
+            id="end-h"
+            ref={heading}
+            tabIndex={-1}
+            className={`${ui.display} max-w-[14ch] py-1 text-[44px] leading-[0.95] text-balance text-[#e8571a] uppercase outline-none md:text-[64px]`}
+          >
+            What Second Chair caught
           </h1>
           <p className={`text-[15px] ${ui.muted}`}>{tally}</p>
         </header>
@@ -79,10 +86,10 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
                     <span className={`pt-px text-xs tabular-nums ${ui.faint}`}>{m.turnId}</span>
                     <div>
                       <p className="flex items-baseline gap-2">
-                        <span className={`rounded-md border border-[#1c1a3a]/15 px-2 py-0.5 text-xs font-semibold ${MOMENT_TINT[m.moment.toLowerCase().replace(/\s+/g, "_")] ?? "bg-[#e2e2ea]"}`}>
+                        <span className={`${ui.display} ${ui.accent} text-[17px] italic`}>
                           {m.moment}
                         </span>
-                        {m.resolved && <span className={`${ui.chip} ml-auto bg-[#cff5dc] text-[#0e5a2c]`}>Resolved</span>}
+                        {m.resolved && <span className={`${ui.chip} ml-auto bg-[#dde9d0] text-[#2f5a1e]`}>Resolved</span>}
                       </p>
                       <p className={`mt-0.5 text-pretty ${ui.muted}`}>{m.concern}</p>
                     </div>
@@ -95,7 +102,7 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
           <div className="flex flex-col gap-6">
             {/* #39: the same client picture the meeting screen showed. */}
             <Concerns concerns={concerns} />
-            <section aria-labelledby="followups-h" className={`${ui.sky} p-5`}>
+            <section aria-labelledby="followups-h" className={`${ui.surface} p-5`}>
               <h2 id="followups-h" className="mb-1 text-sm font-medium">
                 Follow-ups from this meeting
               </h2>
@@ -112,7 +119,7 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
                     ))}
                   </ul>
                   <div className="flex flex-wrap items-center gap-3">
-                    <button type="button" onClick={() => void copyTasks()} className={`${ui.btn} ${ui.primary} ${ui.pop}`}>
+                    <button type="button" onClick={() => void copyTasks()} className={`${ui.btn} ${ui.primary}`}>
                       Copy as tasks
                     </button>
                     {copied && (
@@ -125,7 +132,7 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
               )}
             </section>
 
-            <section aria-labelledby="record-h" className={`${ui.butter} p-5`}>
+            <section aria-labelledby="record-h" className={`${ui.surface} p-5`}>
               <h2 id="record-h" className="mb-1 text-sm font-medium">
                 Record
               </h2>
@@ -139,11 +146,11 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
           </div>
         </div>
 
-        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[#1c1a3a]/10 pt-5">
+        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[#161412]/10 pt-5">
           <button type="button" onClick={onBack} className={`${ui.btn} ${ui.ghost}`}>
             Back to meeting
           </button>
-          <Link href="/prep" className={`${ui.btn} ${ui.primary} ${ui.pop}`}>
+          <Link href="/prep" className={`${ui.btn} ${ui.primary}`}>
             Prepare next meeting
           </Link>
         </footer>

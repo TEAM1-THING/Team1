@@ -30,10 +30,10 @@ export const postMoment: PostMoment = async (req, signal) => {
 
 // chip: the colours of the label.
 export const LABELS = {
-  PREPARED_FACT: { text: "Prepared fact", chip: "bg-[#cff5dc] text-[#0e5a2c]" },
-  CALCULATED: { text: "Calculation", chip: "bg-[#ffe9a8] text-[#6a4500]" },
-  SUGGESTION: { text: "Suggestion", chip: "bg-[#ffd3de] text-[#8c1238]" },
-  DO_NOT_CLAIM: { text: "Do not claim", chip: "bg-[#e6e6ee] text-[#3b3a52]" },
+  PREPARED_FACT: { text: "Prepared fact", chip: "bg-[#dde9d0] text-[#2f5a1e]" },
+  CALCULATED: { text: "Calculation", chip: "bg-[#f5e2b3] text-[#6e4600]" },
+  SUGGESTION: { text: "Suggestion", chip: "bg-[#f6d3d8] text-[#8a1f35]" },
+  DO_NOT_CLAIM: { text: "Do not claim", chip: "bg-[#e3dcd0] text-[#4a433a]" },
 } as const;
 
 // End-of-meeting follow-ups: one task line per concern still open.

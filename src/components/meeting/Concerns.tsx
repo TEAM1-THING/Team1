@@ -11,7 +11,7 @@ export default function Concerns({ concerns }: { concerns: Concern[] }) {
   const groups = clientPicture(concerns);
   const open = concerns.filter((c) => c.status === "open").length;
   return (
-    <section aria-labelledby={headingId} className={`${ui.mint} p-4`}>
+    <section aria-labelledby={headingId} className={`${ui.surface} p-4`}>
       <h2 id={headingId} className="mb-3 flex items-baseline justify-between text-sm font-medium">
         Client picture
         <span className={`text-xs font-normal tabular-nums ${ui.faint}`}>{open} open</span>
@@ -29,7 +29,7 @@ export default function Concerns({ concerns }: { concerns: Concern[] }) {
             <ul className="space-y-1.5">
               {g.items.map((c) => (
                 <li key={c.id} className="flex items-baseline gap-3 text-sm">
-                  <span className={c.status === "open" ? "text-[#1c1a3a]" : `line-through ${ui.faint}`}>
+                  <span className={c.status === "open" ? "text-[#161412]" : `line-through ${ui.faint}`}>
                     {c.text}
                     {c.status === "resolved" && <span className="sr-only"> (resolved)</span>}
                   </span>

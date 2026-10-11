@@ -1,7 +1,7 @@
 import type { Card, PrepSource } from "@/lib/types";
 import { cite } from "./cite";
 import { LABELS } from "./replay";
-import { MOMENT_TINT, ui } from "./ui";
+import { ui } from "./ui";
 
 const momentText = (m: string) => {
   const s = m.replace(/_/g, " ");
@@ -43,45 +43,43 @@ export default function MomentCard({
   return (
     <article data-testid="current-card" className={`sc-arrive ${ui.raised} p-5 md:p-6`}>
       <p className={`mb-4 text-sm leading-snug text-pretty ${ui.muted}`}>
-        <span className={`mr-2 inline-block rounded-md border border-[#1c1a3a]/15 px-2 py-0.5 text-xs font-semibold text-[#1c1a3a] ${MOMENT_TINT[card.moment] ?? "bg-[#e2e2ea]"}`}>
-          {momentText(card.moment)}
-        </span>
+        <span className={`${ui.display} ${ui.accent} mr-1.5 text-[17px] italic`}>{momentText(card.moment)}.</span>
         {card.concern}
       </p>
 
       <blockquote className="mb-4">
         <Chip label="SUGGESTION" />
-        <p className="mt-2 text-[18px] leading-[1.5] font-medium tracking-[-0.01em] text-pretty text-[#1c1a3a] lg:text-[20px]">
+        <p className={`${ui.display} mt-2 text-[20px] leading-[1.35] text-pretty text-[#161412] lg:text-[22px]`}>
           “{card.phrasing}”
         </p>
       </blockquote>
 
       <p data-testid="your-move" title={card.recommendedMove} className={`mb-5 line-clamp-2 text-sm text-pretty ${ui.muted}`}>
-        <span className="font-medium text-[#1c1a3a]">Your move. </span>
+        <span className="font-medium text-[#161412]">Your move. </span>
         {card.recommendedMove}
       </p>
 
       {card.defer ? (
-        <div className="mb-4 rounded-lg border border-[#1c1a3a]/15 bg-[#ffe3cc] px-4 py-3 text-sm text-[#7a3100]">
+        <div className="mb-4 rounded-lg border border-[#161412]/15 bg-[#ffe3cc] px-4 py-3 text-sm text-[#7a3100]">
           <strong className="font-medium">Defer this one.</strong> It is outside the confirmed Mandate, so offer to follow
           up rather than answer now.
           {card.deferReason && <span className="mt-1 block text-[#7a3100]">{card.deferReason}</span>}
         </div>
       ) : (
         backing.length > 0 && (
-          <div className="mb-4 border-t border-[#1c1a3a]/10 pt-4">
+          <div className="mb-4 border-t border-[#161412]/10 pt-4">
             <ul data-testid="backing" className="space-y-2">
               {backing.map((f, i) => (
                 <li key={i} className="flex items-baseline gap-2.5 text-sm">
                   <Chip label={f.label} />
                   <div className="min-w-0">
-                    <p className="text-pretty text-[#1c1a3a]">
+                    <p className="text-pretty text-[#161412]">
                       {f.text}
                       {citations.numberOf(f) && (
                         <sup className={`ml-0.5 text-[10px] tabular-nums ${ui.faint}`}>{citations.numberOf(f)}</sup>
                       )}
                     </p>
-                    {f.math && <p className="mt-0.5 font-mono text-xs text-[#92400e]">{f.math}</p>}
+                    {f.math && <p className="mt-0.5 font-mono text-xs text-[#7a4e00]">{f.math}</p>}
                   </div>
                 </li>
               ))}
@@ -115,7 +113,7 @@ export default function MomentCard({
       )}
 
       <details className={`text-sm ${ui.faint}`}>
-        <summary className="w-fit cursor-pointer select-none rounded transition-colors hover:text-[#1c1a3a] focus-visible:outline-2 focus-visible:outline-[#2f6bff]">
+        <summary className="w-fit cursor-pointer select-none rounded transition-colors hover:text-[#161412] focus-visible:outline-2 focus-visible:outline-[#161412]">
           Why
         </summary>
         <div className={`mt-2 space-y-2 ${ui.muted}`}>
