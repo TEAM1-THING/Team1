@@ -4,6 +4,33 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (19:00) - Track B: meeting screen from feedback, editorial theme, pitch deck
+
+**Built and merged (track B paths):** meeting screen and replay (#14); sources on
+facts and follow-ups at End meeting (#21); no page scroll on desktop (#24);
+simpler card (#29); Find in your materials with `/`, demo intro, empty states
+(#36); card in #37 order (#51); client picture grouped by kind (#53); records
+button by one-time id (#55); quieter design pass, numbered sources, card fits the
+screen (#61, landed by A).
+
+**Open:** #73, the editorial record-sleeve theme the team picked (cream
+`#f2ebdf`, ink `#161412`, one orange, Bodoni Moda display via next/font,
+hairlines, pill buttons). Trial merge with main a5e6a9a and D's #72: check 235
+passed, build green, consent popup renders in the theme. Style guide for C and
+D on #13; D matched the records app to it.
+
+**Decisions:** colour only where it means something (provenance labels, live
+dot); bright orange `#e8571a` only at display sizes or as a fill with ink text
+(3.05:1 on cream), small orange text `#b8410c`. Every text colour computed
+against WCAG AA. Each B UI PR had an independent review in an isolated worktree;
+findings fixed (consent wording named Google and Anthropic, kbd colour lost to
+stylesheet order, focus contrast, sentence split after abbreviations).
+
+**Pitch:** three-slide deck in the editorial theme, quotes verbatim from the
+Sense AI transcripts, every claimed feature checked against main; premise check
+kept to the speaker notes (its live Bright Data path is unrun). Private artifact;
+share before the judges need it.
+
 ## 2026-10-10 (18:50) - Engine fixes from the feature sweep
 
 A sweep of every feature on the live build found these engine defects. Fixed
