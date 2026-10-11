@@ -79,7 +79,9 @@ export function AnticipatedPanel({ prep, value, onChange }: Props) {
                 Remove
               </button>
             </div>
-            {w.why && <p className="text-sm text-[#5b5248]">Likely because {w.why.charAt(0).toLowerCase() + w.why.slice(1)}</p>}
+            {/* The reason as written, after a label rather than inside a sentence:
+                lower-casing its first letter turned "Dana holds" into "dana holds". */}
+            {w.why && <p className="text-sm text-[#5b5248]">Why it is likely: {w.why}</p>}
             <label className="flex flex-col gap-1.5 text-sm">
               <span className="font-medium text-[#5b5248]">Prepared answer</span>
               <textarea rows={3} className={inputClass} value={w.answer} onChange={(e) => edit(i, e.target.value)} />

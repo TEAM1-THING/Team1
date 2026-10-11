@@ -1,7 +1,7 @@
 // #40: the data note must describe the app as built. If the record starts
 // carrying the transcript or audio, this fails: change DataNote.tsx with it.
 import { describe, expect, it } from "vitest";
-import { DATA_DETAILS, DATA_SUMMARY } from "@/components/prep/DataNote";
+import { DATA_DETAILS, DATA_SUMMARY, escapeAction } from "@/components/prep/DataNote";
 import { demoPrep, demoTranscript } from "@/data/demo";
 import { buildRecord } from "@/lib/record";
 import { mockMoment } from "@/lib/mock";
@@ -31,5 +31,20 @@ describe("data note", () => {
     for (const where of ["Anthropic's API", "speech service", "downloads to your computer", "records database", "compliance"]) {
       expect(all).toContain(where);
     }
+  });
+});
+
+describe("Escape on the open note", () => {
+  it("closes it and keeps focus on its summary when pressed from inside the note", () => {
+    expect(escapeAction({ inNote: true, inField: false })).toBe("close-and-refocus");
+  });
+
+  it("leaves a text field's own Escape alone: the find box clears, the note stays open", () => {
+    expect(escapeAction({ inNote: false, inField: true })).toBe("ignore");
+  });
+
+  it("closes it from the page or another control without pulling focus to the summary", () => {
+    // A focused summary turns off the meeting's arrow, A and H shortcuts.
+    expect(escapeAction({ inNote: false, inField: false })).toBe("close");
   });
 });

@@ -1,6 +1,64 @@
 // Pure helpers behind the prep screen, kept apart from React so they can be
 // tested without a DOM. Owned by the prep track.
+import { z } from "zod";
 import { Mandate, Prep, type PrepSource } from "@/lib/types";
+
+// The engine's neutral Mandate (src/lib/engine/mandate.ts), copied rather than
+// imported because that module would pull the Anthropic client into the
+// browser bundle. tests/prep-model.test.ts keeps the copies equal. The
+// out-of-scope list matters most: the meeting's forced defer keys on it, so an
+// empty list would leave staying inside the Mandate to the model alone.
+const STANDARD_DISCLAIMERS = ["Projections are not guarantees.", "Past performance does not predict future results."];
+const DEFAULT_OUT_OF_SCOPE = ["Individual stock picks", "Tax filing advice", "Crypto", "Legal or estate advice"];
+const NEUTRAL_RISK_STANCE = "To be set by the advisor before the meeting.";
+
+// Where "Enter by hand" starts: the advisor's own meeting, so no client and no
+// sources, and the neutral Mandate rather than the demo's. The demo client
+// comes only from the sample files or the demo meeting.
+export const emptyPrep = (): Prep => ({
+  clientFile: {
+    name: "",
+    age: 0,
+    horizonYears: 0,
+    cashOnHand: 0,
+    investable: 0,
+    riskTolerance: "moderate",
+    statedGoals: [],
+    statedConcerns: [],
+  },
+  sources: [],
+  mandate: {
+    thesis: "",
+    assumptions: [],
+    riskStance: NEUTRAL_RISK_STANCE,
+    disclaimers: [...STANDARD_DISCLAIMERS],
+    outOfScope: [...DEFAULT_OUT_OF_SCOPE],
+  },
+  confirmed: false,
+  conflicts: [],
+  anticipated: [],
+});
+
+// Why Confirm is not available yet, or null when it is. The Mandate tick sits
+// beside the button and speaks for itself. An out-of-scope list the advisor
+// has cleared (or a draft kept from before it was filled in) blocks too,
+// because without it nothing outside the Mandate is deferred for certain.
+export function whyNotReady(prep: Prep): string | null {
+  if (!prep.clientFile.name.trim()) return "Add the client's name in step 2 to confirm.";
+  if (tidy(prep.mandate.outOfScope).length === 0) return "List at least one out-of-scope topic in step 4 to confirm.";
+  return null;
+}
+
+// A pre-flight check's run time as the viewer's own date. The engine sends a
+// full ISO timestamp because a date-only UTC value reads as tomorrow during an
+// evening meeting in California; a date-only value is shown as sent.
+// timeZone is for tests; the screen leaves it to the browser.
+export function checkedOn(checkedAt: string, timeZone?: string): string {
+  if (!checkedAt.includes("T")) return checkedAt;
+  const when = new Date(checkedAt);
+  if (Number.isNaN(when.getTime())) return checkedAt;
+  return when.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", timeZone });
+}
 
 // Multi-line fields keep blank lines while the advisor types; clean() drops
 // them on confirm.
@@ -72,4 +130,41 @@ export function confirmPrep(prep: Prep): Prep {
 export function readMandate(json: unknown): Mandate | null {
   const parsed = Mandate.safeParse((json as { mandate?: unknown } | null)?.mandate);
   return parsed.success ? parsed.data : null;
+}
+
+// Work in progress on the prep screen, so a reload does not lose it. Session
+// storage, not local: a draft holds client details and goes with the tab. The
+// confirmed prep reaches the meeting through store.ts, not through this.
+// Storage that is blocked or full just means no draft is kept.
+export const DRAFT_KEY = "secondchair.prep.draft";
+const Draft = z.object({ prep: Prep, reviewing: z.boolean(), missing: z.array(z.string()) });
+export type Draft = z.infer<typeof Draft>;
+type DraftStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+const session = (): DraftStorage => window.sessionStorage;
+
+export function loadDraft(storage: () => DraftStorage = session): Draft | null {
+  try {
+    const raw = storage().getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = Draft.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveDraft(draft: Draft, storage: () => DraftStorage = session): void {
+  try {
+    storage().setItem(DRAFT_KEY, JSON.stringify(draft));
+  } catch {
+    // blocked or full: the prep still works, it just will not survive a reload
+  }
+}
+
+export function clearDraft(storage: () => DraftStorage = session): void {
+  try {
+    storage().removeItem(DRAFT_KEY);
+  } catch {
+    // blocked: nothing was kept to clear
+  }
 }
