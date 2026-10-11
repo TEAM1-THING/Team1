@@ -17,6 +17,7 @@ import { parseDeepLink, SCHEME } from "../core/deepLink";
 import { createAudioWindow } from "./audio";
 import { config, dist } from "./config";
 import { actions, createTray, registerHotkeys, setAppMenus } from "./controls";
+import { returnFocus } from "./focus";
 import { createHome } from "./home";
 import { createOverlay } from "./overlay";
 
@@ -73,11 +74,16 @@ function start() {
   // panel during a meeting, otherwise the app window.
   reopen = () => (overlay.meeting && !overlay.win.isVisible() ? overlay.show() : home.show());
   app.on("activate", reopen);
+  // During a meeting the app window steps aside as soon as the advisor leaves
+  // it. Otherwise a click on the panel, which activates the app on macOS,
+  // brings that window forward and switches to its Space, away from the call.
+  home.win.on("blur", () => overlay.meeting && overlay.win.isVisible() && home.win.hide());
 
   openLink = (url) => {
     const link = parseDeepLink(url);
-    if (link) void overlay.openLink(link);
-    else console.warn(`[link] ignored ${url.slice(0, 80)}`);
+    if (!link) return console.warn(`[link] ignored ${url.slice(0, 80)}`);
+    home.win.hide(); // the meeting opens in the panel; the app window steps aside
+    void overlay.openLink(link);
   };
   waiting.splice(0).forEach(openLink);
   // First run of an installed build: tell the advisor's browser that meeting
@@ -130,8 +136,19 @@ function start() {
     if (fromOverlay(e.sender) && typeof name === "string" && Object.hasOwn(barActions, name)) barActions[name]();
   });
   ipcMain.on("sc:typing", (e, on) => fromOverlay(e.sender) && overlay.setTyping(on === true));
+  // A click on the panel takes the keyboard from the call on macOS; give it
+  // back once the click has landed (a drag, once it ends), unless the advisor
+  // is typing in the panel or working in the app window.
+  const giveBackKeyboard = () => {
+    if (process.platform !== "darwin" || overlay.mode.typing || overlay.dragging || home.win.isFocused()) return;
+    if (config.debug) console.log("[focus] panel pressed: returning the keyboard to the call");
+    void returnFocus(app.getName());
+  };
+  ipcMain.on("sc:press", (e) => fromOverlay(e.sender) && setTimeout(giveBackKeyboard, 120));
   ipcMain.on("sc:drag", (e, phase) => {
-    if (fromOverlay(e.sender) && (phase === "start" || phase === "move" || phase === "end")) overlay.drag(phase);
+    if (!fromOverlay(e.sender) || (phase !== "start" && phase !== "move" && phase !== "end")) return;
+    overlay.drag(phase);
+    if (phase === "end") giveBackKeyboard();
   });
 
   app.on("before-quit", () => {

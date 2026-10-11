@@ -42,6 +42,19 @@ function relabelConsent() {
   }
 }
 
+// The page's mic error names the browser's speech service, which the desktop
+// never uses: here the live mic needs a speech-to-text service of its own.
+const MIC_BLOCKED = "Speech service blocked in this browser.";
+const MIC_SETUP = "Live mic needs a speech-to-text key in the Mac app (see desktop/README.md). The sample meeting works without one.";
+function relabelMicError() {
+  const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) if (n.nodeValue?.trim() === MIC_BLOCKED) n.nodeValue = MIC_SETUP;
+}
+const relabel = () => {
+  relabelConsent();
+  relabelMicError();
+};
+
 // ---- Input: click-through hit-testing --------------------------------------
 
 function hitAt(x: number, y: number): Hit {
@@ -85,11 +98,13 @@ window.addEventListener("DOMContentLoaded", () => {
     px = -1;
     if (!barDragging()) report("none");
   });
+  // A press on the panel activates the app on macOS; main hands focus back.
+  window.addEventListener("pointerdown", () => ipcRenderer.send("sc:press"), true);
   updateBar = mountBar();
   if (pendingStatus) updateBar(pendingStatus);
   // MicInput re-mounts the checkbox each time the mic stops.
-  relabelConsent();
-  new MutationObserver(relabelConsent).observe(document.body, { childList: true, subtree: true });
+  relabel();
+  new MutationObserver(relabel).observe(document.body, { childList: true, subtree: true, characterData: true });
 });
 
 // ---- Focus: typing mode -----------------------------------------------------

@@ -27,7 +27,7 @@ const CARDS = "body main .rounded-xl.border";
 function overlayCss(glass: boolean): string {
   // .78 over the HUD material keeps the faintest text above 4.5:1 on a white
   // window behind; the blur still shows through as the glass.
-  const tint = glass ? ".78" : ".95";
+  const tint = glass ? ".5" : ".95";
   // html: a near-zero (not transparent) background stops the browser painting
   // body's background over the whole square window, and overflow hidden stops
   // body's overflow passing to the viewport, so body is the rounded, framed
@@ -315,6 +315,9 @@ export function createOverlay(onChange: (v: OverlayView) => void, showAtLaunch: 
         dragFrom = null;
         persist();
       }
+    },
+    get dragging() {
+      return dragFrom !== null;
     },
     toggleGhost() {
       mode.ghost = !mode.ghost;
