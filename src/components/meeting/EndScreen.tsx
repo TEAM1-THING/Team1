@@ -2,15 +2,33 @@
 // End screen: what the meeting caught, what is still open, and where the
 // record went. Shown over the live view once End meeting is pressed.
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { base44Url, buildRecord, exportRecord, openRecordsApp, recordFileName, type CardGrade, type Grade } from "@/lib/record";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { base44Url, buildRecord, openRecordsApp, recordFileName, type CardGrade, type Grade } from "@/lib/record";
 import type { Card, Concern, Prep } from "@/lib/types";
 import Concerns from "./Concerns";
-import { endSummary } from "./endSummary";
+import { downloadLabel, endSummary, gradeStatus, gradedFor, type Grades } from "./endSummary";
 import { display } from "./fonts";
 import { ui } from "./ui";
 
-type Props = { prep: Prep; cards: Card[]; concerns: Concern[]; tasks: string[]; clock: string; onBack: () => void };
+type Props = {
+  prep: Prep;
+  cards: Card[];
+  concerns: Concern[];
+  tasks: string[];
+  clock: string;
+  // Grades and downloads belong to the meeting screen, so leaving this screen
+  // and ending again keeps the grades and does not download a second time.
+  grades: Grades;
+  onGrade: (cardId: string, g: Exclude<Grade, "ungraded">) => void;
+  // Whether the record already downloaded holds exactly what this screen shows,
+  // and the grades it holds. The meeting screen keeps both, so they outlast
+  // this screen closing and opening again.
+  recordCurrent: boolean;
+  savedGrades: CardGrade[];
+  // Downloads the record with these grades; called inside the click.
+  onDownload: (graded: CardGrade[]) => void;
+  onBack: () => void;
+};
 
 // #42: the advisor grades each card so the record can be audited over time.
 const GRADE_BUTTONS: [Exclude<Grade, "ungraded">, string][] = [
@@ -19,28 +37,27 @@ const GRADE_BUTTONS: [Exclude<Grade, "ungraded">, string][] = [
   ["wrong", "Wrong"],
 ];
 
-export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack }: Props) {
+export default function EndScreen(props: Props) {
+  const { prep, cards, concerns, tasks, clock, grades, onGrade, recordCurrent, savedGrades, onDownload, onBack } = props;
   const [copied, setCopied] = useState<string | null>(null);
-  const [grades, setGrades] = useState<Record<string, CardGrade>>({});
-  const [handed, setHanded] = useState(false);
-  const graded = Object.values(grades);
-  // Pressing the chosen grade again clears it back to ungraded.
-  const grade = (cardId: string, g: Exclude<Grade, "ungraded">) => {
-    setHanded(false);
-    setGrades((prev) => {
-      const next = { ...prev };
-      if (next[cardId]?.grade === g) delete next[cardId];
-      else next[cardId] = { cardId, grade: g, gradedAt: new Date().toISOString() };
-      return next;
-    });
-  };
+  const graded = gradedFor(cards, grades);
   const summary = endSummary(cards, concerns);
-  // Once, at the moment the record was exported, not on every re-render.
+  // Once per opening, not on every re-render, so the file name keeps one date.
   const [record] = useState(() => buildRecord(prep, { concerns, cards }));
   const fileName = recordFileName(record);
   // Reopening the records app hands this record over by one-time id, as End
   // meeting does (openRecordsApp opens the tab inside the click).
   const hasRecordsApp = base44Url() !== null;
+  const action = downloadLabel(hasRecordsApp);
+  // From the click, so the records app tab opens with this record.
+  const download = () => onDownload(graded);
+  // The record downloads by itself only at the first End meeting. Leaving with
+  // it behind would leave cards out of the compliance record, so ask first.
+  const leave = (e: MouseEvent) => {
+    if (!recordCurrent && !window.confirm("The record you downloaded is missing the end of this meeting. Leave without downloading it?")) {
+      e.preventDefault();
+    }
+  };
   const heading = useRef<HTMLHeadingElement>(null);
   const back = useRef(onBack);
   useEffect(() => {
@@ -90,6 +107,20 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
             What Second Chair caught
           </h1>
           <p className={`text-[15px] ${ui.muted}`}>{tally}</p>
+          {/* Up here, not only in the Record section below the fold: after
+              Back to meeting nothing downloads by itself, so a later card is
+              in no record until this is pressed. Ink on paper passes AA. */}
+          {!recordCurrent && (
+            <div role="status" className={`${ui.raised} mt-3 flex flex-wrap items-center gap-x-4 gap-y-3 border-l-4 border-l-[#e8571a] px-4 py-3`}>
+              <p className="min-w-0 flex-1 basis-64 text-[15px] font-medium text-pretty">
+                The record you downloaded is out of date. The meeting went on after it was saved, and what came after is
+                not in it.
+              </p>
+              <button type="button" onClick={download} className={`${ui.btn} ${ui.primary}`}>
+                {action}
+              </button>
+            </div>
+          )}
         </header>
 
         <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
@@ -120,7 +151,7 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
                               key={g}
                               type="button"
                               aria-pressed={on}
-                              onClick={() => grade(m.id, g)}
+                              onClick={() => onGrade(m.id, g)}
                               className={`${ui.chip} border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#161412] ${
                                 on ? "border-[#161412] bg-[#161412] text-[#f2ebdf]" : `border-[#161412]/25 ${ui.muted} hover:bg-[#161412]/5`
                               }`}
@@ -174,29 +205,21 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
               <h2 id="record-h" className="mb-1 text-sm font-medium">
                 Record
               </h2>
-              <p className={`mb-3 text-sm break-all ${ui.muted}`}>Downloaded {fileName}</p>
+              {/* Breaks only a string too long for the line, so ordinary words stay whole. */}
+              <p className={`mb-3 text-sm [overflow-wrap:anywhere] ${ui.muted}`}>
+                {recordCurrent
+                  ? `Downloaded ${fileName}`
+                  : `Downloaded ${fileName} earlier, before the meeting went on. ${action} to include the rest.`}
+              </p>
               {cards.length > 0 && (
                 <p role="status" className={`mb-3 text-sm ${ui.faint}`}>
-                  {handed
-                    ? `Downloaded again with ${graded.length} of ${cards.length} graded. Save this version in the records app.`
-                    : `Graded ${graded.length} of ${cards.length}. Ungraded cards are marked ungraded in the record.`}
+                  {gradeStatus({ total: cards.length, graded, saved: savedGrades, recordCurrent, action })}
                 </p>
               )}
               <div className="flex flex-wrap gap-2">
-                {cards.length > 0 && (
-                  <button
-                    type="button"
-                    disabled={graded.length === 0}
-                    // From the click, so the records app tab opens with the graded record.
-                    onClick={() => {
-                      setHanded(true);
-                      void exportRecord(prep, { concerns, cards }, graded);
-                    }}
-                    className={`${ui.btn} ${ui.primary}`}
-                  >
-                    Hand over with grades
-                  </button>
-                )}
+                <button type="button" onClick={download} className={`${ui.btn} ${ui.primary}`}>
+                  {action}
+                </button>
                 {hasRecordsApp && (
                   <button
                     type="button"
@@ -215,7 +238,7 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
           <button type="button" onClick={onBack} className={`${ui.btn} ${ui.ghost}`}>
             Back to meeting
           </button>
-          <Link href="/prep" className={`${ui.btn} ${ui.primary}`}>
+          <Link href="/prep" onClick={leave} className={`${ui.btn} ${ui.primary}`}>
             Prepare next meeting
           </Link>
         </footer>
