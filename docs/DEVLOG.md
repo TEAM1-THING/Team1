@@ -14,7 +14,10 @@ cursor has moved, keeping its size, until release; the position is saved. The
 hit report is held during the drag so the panel never turns click-through
 under the pointer. Grab cursor on the bar. Driven on a throwaway copy: the
 panel follows the pointer, stops on release, buttons still click, double-click
-still shrinks it. Not yet tried with a physical mouse.
+still shrinks it. Not yet tried with a physical mouse. After a security
+review: only a real press drags (a press made up by page script is ignored,
+checked), a move with no button held ends the drag, and a page reload, crash
+or hidden window cancels one.
 
 ## 2026-10-10 (16:43) - README: start to finish
 

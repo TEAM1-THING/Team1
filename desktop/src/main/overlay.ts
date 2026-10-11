@@ -183,6 +183,15 @@ export function createOverlay(onChange: (v: OverlayView) => void, showAtLaunch: 
   };
   win.on("moved", persist);
   win.on("resized", persist);
+  // A drag in progress: where the cursor and the window were when it began.
+  let dragFrom: { x: number; y: number; bounds: Rectangle } | null = null;
+  // A drag never outlives its page or a hidden window.
+  const cancelDrag = () => {
+    dragFrom = null;
+  };
+  wc.on("did-start-navigation", (d) => d.isMainFrame && !d.isSameDocument && cancelDrag());
+  wc.on("render-process-gone", cancelDrag);
+  win.on("hide", cancelDrag);
 
   // A monitor unplugged mid-meeting must not strand the overlay off-screen.
   const rescue = () => {
@@ -214,8 +223,6 @@ export function createOverlay(onChange: (v: OverlayView) => void, showAtLaunch: 
   }
 
   const barHeight = () => Math.round(BAR_HEIGHT * zoom) + 2;
-  // A drag in progress: where the cursor and the window were when it began.
-  let dragFrom: { x: number; y: number; bounds: Rectangle } | null = null;
 
   const self = {
     win,

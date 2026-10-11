@@ -148,15 +148,19 @@ export function mountBar(): (s: BarStatus) => void {
 
   // Drag: main moves the window by how far the pointer has moved on screen.
   let moveFrame = 0;
+  // Only a real press drags (never an event the page script made up), and a
+  // move with no button held ends the drag, so it can never stick.
   bar.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0 || (e.target as Element).closest("button")) return;
+    if (!e.isTrusted || e.button !== 0 || (e.target as Element).closest("button")) return;
     bar.setPointerCapture(e.pointerId);
     dragging = true;
     bar.setAttribute("data-dragging", "");
     ipcRenderer.send("sc:drag", "start");
   });
-  bar.addEventListener("pointermove", () => {
-    if (!dragging || moveFrame) return;
+  bar.addEventListener("pointermove", (e) => {
+    if (!dragging || !e.isTrusted) return;
+    if (!(e.buttons & 1)) return endDrag();
+    if (moveFrame) return;
     moveFrame = requestAnimationFrame(() => {
       moveFrame = 0;
       if (dragging) ipcRenderer.send("sc:drag", "move");
