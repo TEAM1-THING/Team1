@@ -1,11 +1,15 @@
 // Home. Owned by the prep track.
 import Link from "next/link";
+import { DataNote } from "@/components/prep/DataNote";
 import { Backdrop, btnGhost, btnPrimary } from "@/components/prep/ui";
 
+// Advisory first (#43): it reads the client and suggests the answer; the
+// figures back the answer up. Block 2 tester 2: naming the worry lets the
+// advisor focus on responding.
 const POINTS = [
-  ["Live, during the meeting", "As the client talks, it spots the worry behind a question, a contradiction or a buying signal, and privately shows you what to say next."],
-  ["Not a note-taker", "It works in the room, while it still matters, not in a summary afterwards."],
-  ["You always know what's solid", "Every suggestion is labelled: a prepared fact from your own plan, a quick calculation with the math shown, or just a suggested way to put it."],
+  ["It reads the client", "As they talk, it names the worry behind a question, what they want to decide, or a life event you should not miss."],
+  ["It suggests your answer", "A line you could say, the way good advisors answer: acknowledge the feeling, tie it to their goal, give the plan's figures, ask. You decide what to say."],
+  ["Backed by your own figures", "Every figure is labelled: a prepared fact from your files, a calculation with the math shown, or a suggestion."],
 ] as const;
 
 // The same label pills the advisor sees on a live card.
@@ -21,7 +25,15 @@ export default function Home() {
       <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-8 px-4 py-12 sm:px-6">
         <div className="flex flex-col gap-3">
           <p className="text-sm font-medium text-indigo-300">Second Chair · for wealth advisors</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-5xl">Catch what you&apos;d miss in the moment</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-5xl">
+            It reads your client, so you can focus on the answer
+          </h1>
+          {/* Block 2 tester 1, on opening the link: "I don't know what I'm looking at." */}
+          <p className="text-lg text-slate-300">
+            A private screen you keep open while a client talks: it shows what they likely mean, what to say next, and the
+            figures from your own plan. New here? <span className="font-medium text-white">Try the demo meeting</span>, a
+            short replay with a fictional client.
+          </p>
         </div>
         <ul className="flex flex-col gap-3">
           {POINTS.map(([title, body]) => (
@@ -46,6 +58,7 @@ export default function Home() {
             Try the demo meeting
           </Link>
         </div>
+        <DataNote className="text-sm text-slate-400" />
       </main>
     </Backdrop>
   );

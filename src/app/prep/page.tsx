@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ClientFileForm } from "@/components/prep/ClientFileForm";
+import { DataNote } from "@/components/prep/DataNote";
 import { FileDrop, type IngestResponse } from "@/components/prep/FileDrop";
 import { MeetingSummary } from "@/components/prep/MeetingSummary";
 import { MandatePanel } from "@/components/prep/MandatePanel";
@@ -67,10 +68,10 @@ export default function PrepPage() {
 
   return (
     <Backdrop>
-      <p role="note" className="bg-indigo-500/20 px-4 py-1.5 text-center text-xs text-indigo-100">
+      <div role="note" className="relative z-20 bg-indigo-500/20 px-4 py-1.5 text-center text-xs text-indigo-100">
         Second Chair listens to the meeting. Tell your client and get their consent before you start; California
-        requires every party to agree.
-      </p>
+        requires every party to agree. <DataNote compact />
+      </div>
 
       <main className="mx-auto flex max-w-3xl flex-col gap-5 px-4 pb-32 sm:px-6">
         <header className="flex items-center justify-between pt-6 pb-1">

@@ -7,6 +7,7 @@ import MomentCard from "@/components/meeting/Card";
 import EndScreen from "@/components/meeting/EndScreen";
 import Find, { FIND_INPUT_ID } from "@/components/meeting/Find";
 import Transcript from "@/components/meeting/Transcript";
+import { DataNote } from "@/components/prep/DataNote";
 import { LIVE_PAUSE_MS, isLiveTurn, relabel, windowThrough } from "@/components/meeting/live";
 import { followUpTasks, postMoment, processTurn } from "@/components/meeting/replay";
 import MicInput from "@/components/speech/MicInput";
@@ -221,9 +222,9 @@ export default function MeetingPage() {
       `}</style>
 
       {/* The read-aloud consent script belongs in the live mic's start popup (track D, #34). */}
-      <p role="note" className="relative z-10 border-b border-white/5 bg-sky-400/10 px-4 py-1.5 text-center text-xs text-sky-100">
-        This meeting uses Second Chair. All participants have been told and agreed.
-      </p>
+      <div role="note" className="relative z-20 border-b border-white/5 bg-sky-400/10 px-4 py-1.5 text-center text-xs text-sky-100">
+        This meeting uses Second Chair. All participants have been told and agreed. <DataNote compact />
+      </div>
 
       <header inert={!!ended} className="sc-glass relative z-10 mx-4 mt-4 flex flex-wrap items-center gap-1 rounded-2xl border border-white/10 bg-slate-900/70 p-1.5 pl-4 backdrop-blur-xl sm:mx-auto sm:rounded-full">
         <span className="mr-2 flex items-center gap-2 text-sm">
