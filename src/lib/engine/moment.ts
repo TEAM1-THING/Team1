@@ -8,6 +8,7 @@ import { checkPrepared } from "./anticipate";
 import { earlierCards, holdSteady } from "./consistency";
 import { MOMENT_SYSTEM } from "./moment-prompt";
 import { classifyUtterance, echoesCard } from "./gate";
+import { checkPremise, premiseCheckEnabled, premiseWithin, withPremise } from "./premise";
 import { outOfScopeHit } from "./scope";
 import { demoPrep, demoTranscript } from "../../data/demo";
 import { mockMoment } from "../mock";
@@ -458,6 +459,12 @@ export async function runMoment(
   if (echoesCard(latest.text, state.cards.at(-1)?.phrasing)) return { card: null, state, speaker: "advisor" };
   // Plain statements and filler do not run; questions and worries do.
   if (!classifyUtterance(latest.text).run) return { card: null, state };
+  // The premise check runs beside the card call; a finished card waits for it
+  // at most PREMISE_GRACE_MS, and it stops once the card is settled.
+  const premiseStop = new AbortController();
+  const onAbort = () => premiseStop.abort();
+  signal?.addEventListener("abort", onAbort, { once: true });
+  const premise = premiseCheckEnabled() ? checkPremise(latest.text, prep, premiseStop.signal) : null;
   try {
     const out = await callClaude(req, latest, signal, opts);
     if (typeof out === "string") return fallback(prep, state, latest, out);
@@ -466,7 +473,8 @@ export async function runMoment(
     const steady = holdSteady(out, state, latest, turns);
     const traced = toCard(steady, prep, latest, turns);
     if (!traced) return fallback(prep, state, latest, "card failed schema or number trace");
-    const card: Card = { ...traced, at: latest.t, model: out.model || opts.model || LIVE_MODEL };
+    const checked = premise ? withPremise(traced, await premiseWithin(premise)) : traced;
+    const card: Card = { ...checked, at: latest.t, model: out.model || opts.model || LIVE_MODEL };
     const result = MomentResponse.safeParse({
       card,
       state: {
@@ -478,5 +486,8 @@ export async function runMoment(
     return result.data;
   } catch (err) {
     return fallback(prep, state, latest, describe(err));
+  } finally {
+    premiseStop.abort();
+    signal?.removeEventListener("abort", onAbort);
   }
 }
