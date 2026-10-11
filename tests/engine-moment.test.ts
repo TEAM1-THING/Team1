@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { demoPrep, demoTranscript } from "@/data/demo";
 import { POST } from "@/app/api/moment/route";
 import { LIVE_TIMEOUT_MS, setClientForTests } from "@/lib/engine/client";
-import { buildMomentPrompt, outOfScopeHit, runMoment, type LlmMoment } from "@/lib/engine/moment";
+import { applyConcernUpdates, buildMomentPrompt, outOfScopeHit, runMoment, tagged, type LlmMoment } from "@/lib/engine/moment";
 import { mockMoment } from "@/lib/mock";
 import { MomentResponse, emptyState, type ConversationState, type Prep, type TranscriptTurn } from "@/lib/types";
 
@@ -310,6 +310,24 @@ describe("runMoment", () => {
       { id: "k-t2-1", topic: "liquidity", status: "resolved", raisedAtTurn: "t2", resolvedAtTurn: "t4" },
       { id: "k-t4-1", topic: "market timing", status: "open", raisedAtTurn: "t4" },
     ]);
+  });
+});
+
+describe("concern kind tags (#39)", () => {
+  it("keeps the screen's tags in lower case and reads any other prefix as a worry", () => {
+    expect(tagged("Life Event: son's down payment")).toBe("life event: son's down payment");
+    expect(tagged("decide:wait six months")).toBe("decide: wait six months");
+    expect(tagged("request: send fee schedule")).toBe("request: send fee schedule");
+    expect(tagged("fear: sister's 2008 loss")).toBe("sister's 2008 loss");
+    expect(tagged("worry: liquidity")).toBe("liquidity");
+    expect(tagged("liquidity")).toBe("liquidity");
+  });
+
+  it("opens and resolves by the cleaned topic", () => {
+    const opened = applyConcernUpdates([], { open: ["fear: market drop", "Learn: how tranches work"], resolve: [] }, "t2");
+    expect(opened.map((c) => c.topic)).toEqual(["market drop", "learn: how tranches work"]);
+    const resolved = applyConcernUpdates(opened, { open: [], resolve: ["fear: market drop"] }, "t4");
+    expect(resolved[0].status).toBe("resolved");
   });
 });
 
