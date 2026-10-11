@@ -3,7 +3,7 @@
 // record went. Shown over the live view once End meeting is pressed.
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { base44Url, buildRecord, recordFileName, recordLink } from "@/lib/record";
+import { base44Url, buildRecord, openRecordsApp, recordFileName } from "@/lib/record";
 import type { Card, Concern, Prep } from "@/lib/types";
 import Concerns from "./Concerns";
 import { endSummary } from "./endSummary";
@@ -20,9 +20,9 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
   // Once, at the moment the record was exported, not on every re-render.
   const [record] = useState(() => buildRecord(prep, { concerns, cards }));
   const fileName = recordFileName(record);
-  // Reopening the records app brings this record with it, as End meeting does.
-  const base = base44Url();
-  const records = base ? recordLink(base, record) : null;
+  // Reopening the records app hands this record over by one-time id, as End
+  // meeting does (openRecordsApp opens the tab inside the click).
+  const hasRecordsApp = base44Url() !== null;
   const heading = useRef<HTMLHeadingElement>(null);
   const back = useRef(onBack);
   useEffect(() => {
@@ -152,15 +152,14 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
               <p className="mb-3 break-all text-sm text-slate-400">
                 <span className="text-emerald-300">✓</span> Downloaded {fileName}
               </p>
-              {records && (
-                <a
-                  href={records}
-                  target="_blank"
-                  rel="noopener noreferrer"
+              {hasRecordsApp && (
+                <button
+                  type="button"
+                  onClick={() => void openRecordsApp(record)}
                   className={`${btn} inline-block border border-white/15 text-slate-100 hover:bg-white/10`}
                 >
                   Open compliance records ↗
-                </a>
+                </button>
               )}
             </section>
           </div>
