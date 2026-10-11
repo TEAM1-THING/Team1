@@ -70,7 +70,7 @@ Git), so PRs stop getting a failing "Vercel" check and pushes stop trying to
 deploy there. The repo's website field still points to the old URL and needs
 an org admin to change it. Redeploy after #70 and after every merge.
 
-**Update 18:20.** #70 (B's card fit) and #71 merged. #71 adds the full
+**Update 18:17.** #70 (B's card fit) and #71 merged. #71 adds the full
 README with the logo and merges the two-chairs icon (`src/app/icon.svg`,
 `favicon.ico`). Production redeployed at `351407e`; every page and
 `/icon.svg` return 200. The desktop branch defaulted the Mac app to the old
