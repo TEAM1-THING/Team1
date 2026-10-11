@@ -57,3 +57,28 @@ export function recordIsCurrent(downloaded: ConversationState | null, now: Pick<
   const same = (a: unknown, b: unknown) => a === b || JSON.stringify(a) === JSON.stringify(b);
   return same(downloaded.cards, now.cards) && same(downloaded.concerns, now.concerns);
 }
+
+// Grades compared by card and verdict, not by when they were given, so
+// changing a grade and changing it back still counts as saved.
+export function sameGrades(a: CardGrade[], b: CardGrade[]): boolean {
+  const key = (gs: CardGrade[]) => gs.map((g) => `${g.cardId}:${g.grade}`).sort().join("|");
+  return key(a) === key(b);
+}
+
+// The download button says what a press does: exportRecord also opens the
+// records app in a new tab whenever one is configured.
+export const downloadLabel = (hasRecordsApp: boolean) => (hasRecordsApp ? "Download and open records" : "Download record");
+
+// The line under the grades. It compares the grades on screen with the ones in
+// the last download, so ending the meeting again after a download with grades
+// does not ask for the same file twice.
+export function gradeStatus(o: { total: number; graded: CardGrade[]; saved: CardGrade[]; recordCurrent: boolean; action: string }): string {
+  const n = o.graded.length;
+  // A record behind the meeting has to be downloaded again anyway; say the grades go with it.
+  if (!sameGrades(o.graded, o.saved) || (n > 0 && !o.recordCurrent)) {
+    return `Graded ${n} of ${o.total}. ${o.action} to save the grades; ungraded cards are marked ungraded.`;
+  }
+  return n > 0
+    ? `Downloaded again with ${n} of ${o.total} graded. Save this version in the records app.`
+    : `Graded 0 of ${o.total}. Ungraded cards are marked ungraded in the record.`;
+}
