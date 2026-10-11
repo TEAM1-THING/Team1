@@ -4,6 +4,28 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (19:58) - Pre-flight fixed on production; B and C small fixes; demo guide
+
+Deployed 28ac583 to second-chair-live (gate 321/321, build green).
+
+- **Bright Data pre-flight.** Production fell back because Bright Data, slow
+  tonight (3 s to over 30 s per search), sometimes answered 200 with an empty
+  body. Searches are now hedged (another request when one fails or none has
+  answered after 4 s, at most three; a 4xx stops it), pre-flight allows 25 s
+  for search (route 60 s), and found results are kept 6 hours with the time
+  they were searched. Production: 13 s cold with every check sourced, about
+  3 s warm. Three independent reviews; their points are fixed.
+- **B (meeting screen).** Grades survive Back to meeting; the record downloads
+  by itself only on the first End meeting, then "Download and open records";
+  focus returns to End meeting and the arrow keys work from a focused button;
+  the earlier card passes AA contrast; filenames no longer break mid-word.
+- **C (prep).** The data note closes on Escape; worries keep capital letters;
+  a reload keeps the draft (session storage); hand entry starts empty with the
+  neutral Mandate; Confirm needs a client name and an out-of-scope topic; the
+  pre-flight date shows in local time.
+- **Demo guide:** `docs/demo-guide.md`, PDF in `docs/pdf/demo-guide.pdf`.
+  Operating steps for the video and judging, checked against this build.
+
 ## 2026-10-10 (19:10) - Desktop panel: practice-run bugs fixed
 
 A real practice run (a full-screen stand-in call, the dashboard open on another
