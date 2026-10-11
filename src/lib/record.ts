@@ -5,19 +5,37 @@
 // to review, save and sign off.
 import type { ConversationState, Prep } from "./types";
 
+// The advisor's verdict on each card, so the records database can audit how
+// well Second Chair did over many meetings (#42). Agreed with track B.
+export type Grade = "helpful" | "not_needed" | "wrong" | "ungraded";
+export const GRADES: readonly Grade[] = ["helpful", "not_needed", "wrong", "ungraded"];
+export type CardGrade = { cardId: string; grade: Grade; gradedAt?: string };
+
 export type MeetingRecord = {
   client: string;
   endedAt: string;
   concerns: ConversationState["concerns"];
   cards: ConversationState["cards"];
+  grades: CardGrade[]; // one per card, in card order; "ungraded" unless the advisor chose
 };
 
-export function buildRecord(prep: Prep, state: ConversationState): MeetingRecord {
+// One grade per card: the advisor's where given (and valid), "ungraded" otherwise.
+export function completeGrades(cards: ConversationState["cards"], given: CardGrade[] = []): CardGrade[] {
+  const byId = new Map(given.filter((g) => GRADES.includes(g.grade)).map((g) => [g.cardId, g]));
+  return cards.map((c) => {
+    const g = byId.get(c.id);
+    if (!g || g.grade === "ungraded") return { cardId: c.id, grade: "ungraded" };
+    return { cardId: c.id, grade: g.grade, ...(g.gradedAt ? { gradedAt: g.gradedAt } : {}) };
+  });
+}
+
+export function buildRecord(prep: Prep, state: ConversationState, grades?: CardGrade[]): MeetingRecord {
   return {
     client: prep.clientFile.name,
     endedAt: new Date().toISOString(),
     concerns: state.concerns,
     cards: state.cards,
+    grades: completeGrades(state.cards, grades),
   };
 }
 
@@ -100,10 +118,10 @@ export async function openRecordsApp(record: MeetingRecord | null): Promise<void
 }
 
 // Must not throw: every step is guarded so the meeting screen never breaks.
-export async function exportRecord(prep: Prep, state: ConversationState): Promise<void> {
+export async function exportRecord(prep: Prep, state: ConversationState, grades?: CardGrade[]): Promise<void> {
   let record: MeetingRecord | null = null;
   try {
-    record = buildRecord(prep, state);
+    record = buildRecord(prep, state, grades);
     const blob = new Blob([JSON.stringify(record, null, 2)], { type: "application/json" });
     const href = URL.createObjectURL(blob);
     const a = document.createElement("a");

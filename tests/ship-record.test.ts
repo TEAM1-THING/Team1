@@ -2,13 +2,13 @@ import { afterEach, describe, expect, it } from "vitest";
 import { FATAL_ERRORS, finalTexts, getRecognitionCtor } from "@/components/speech/MicInput";
 import { demoPrep } from "@/data/demo";
 import { mockMoment } from "@/lib/mock";
-import { base44Url, buildRecord, createHandoff, handoffLink, recordFileName, recordLink, supabaseConfig } from "@/lib/record";
+import { base44Url, buildRecord, completeGrades, createHandoff, handoffLink, recordFileName, recordLink, supabaseConfig } from "@/lib/record";
 import { emptyState } from "@/lib/types";
 
 describe("record hand-off by id (#45)", () => {
   const config = { url: "https://example.supabase.co", key: "sb_publishable_test" };
   const id = "fe3f39af-0301-495c-92bc-36ecfacf04fa";
-  const record = { client: "Zoë Ångström — 李", endedAt: "2026-10-10T20:00:00.000Z", concerns: [], cards: [] };
+  const record = { client: "Zoë Ångström — 李", endedAt: "2026-10-10T20:00:00.000Z", concerns: [], cards: [], grades: [] };
   const reply = (status: number, body: unknown) =>
     (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
 
@@ -74,9 +74,41 @@ describe("buildRecord", () => {
   });
 
   it("names the file after the client and date", () => {
-    const record = { client: "Maria Lopez", endedAt: "2026-10-10T20:00:00.000Z", concerns: [], cards: [] };
+    const record = { client: "Maria Lopez", endedAt: "2026-10-10T20:00:00.000Z", concerns: [], cards: [], grades: [] };
     expect(recordFileName(record)).toBe("second-chair-record-maria-lopez-2026-10-10.json");
     expect(recordFileName({ ...record, client: "!!" })).toBe("second-chair-record-client-2026-10-10.json");
+  });
+});
+
+describe("card grades (#42)", () => {
+  let state = emptyState();
+  for (const t of ["t2", "t4", "t6"]) state = mockMoment(t, state).state;
+  const [a, b, c] = state.cards.map((card) => card.id);
+
+  it("marks every card ungraded when the advisor graded none", () => {
+    const record = buildRecord(demoPrep, state);
+    expect(record.grades).toEqual(state.cards.map((card) => ({ cardId: card.id, grade: "ungraded" })));
+  });
+
+  it("keeps the advisor's grades in card order and fills the rest", () => {
+    const at = "2026-10-10T20:00:00.000Z";
+    const grades = completeGrades(state.cards, [
+      { cardId: c, grade: "wrong", gradedAt: at },
+      { cardId: a, grade: "helpful", gradedAt: at },
+    ]);
+    expect(grades).toEqual([
+      { cardId: a, grade: "helpful", gradedAt: at },
+      { cardId: b, grade: "ungraded" },
+      { cardId: c, grade: "wrong", gradedAt: at },
+    ]);
+  });
+
+  it("drops grades for unknown cards or unknown values", () => {
+    const grades = completeGrades(state.cards, [
+      { cardId: "no-such-card", grade: "helpful" },
+      { cardId: a, grade: "great" as never },
+    ]);
+    expect(grades.map((g) => g.grade)).toEqual(["ungraded", "ungraded", "ungraded"]);
   });
 });
 

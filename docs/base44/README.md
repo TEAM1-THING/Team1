@@ -24,6 +24,14 @@ time zone), open and resolved concerns, and every card with its labelled facts
 grey do-not-claim), the suggested phrasing (labelled suggestion) and the
 do-not-claim list. **Download raw file** keeps a JSON copy.
 
+**Card grades (#42).** The record carries `grades`: one entry per card,
+`helpful`, `not_needed`, `wrong` or `ungraded`, with `gradedAt` when graded.
+`buildRecord(prep, state, grades?)` and `exportRecord(prep, state, grades?)`
+take the advisor's grades and fill in `ungraded` for the rest. The database
+counts them per meeting (`helpful_count`, `not_needed_count`, `wrong_count`,
+`ungraded_count`), the Records list shows the counts and each card shows its
+grade, so compliance can audit how well Second Chair did over time.
+
 **Access rules** (Postgres row-level security, tested as advisor, compliance
 and signed out):
 
