@@ -19,6 +19,20 @@ export const DATA_DETAILS = [
   "Saved records: only when you sign in to the records app and save. You see your own; compliance can read and mark them reviewed. No one can edit or delete a saved record from the apps.",
 ] as const;
 
+// What Escape does to the open note, decided from where it was pressed. A text
+// field outside the note keeps its own Escape (the meeting's find box clears
+// and blurs itself), so one press closes one layer. Focus goes back to the
+// summary only when it was inside the note: pressed from the page body, as
+// after a mouse click in Safari, which does not focus a summary, focus stays
+// put, because a focused summary switches off the meeting screen's shortcuts.
+export type EscapeAction = "ignore" | "close" | "close-and-refocus";
+export function escapeAction(where: { inNote: boolean; inField: boolean }): EscapeAction {
+  if (where.inNote) return "close-and-refocus";
+  return where.inField ? "ignore" : "close";
+}
+
+const FIELDS = "input, textarea, select, [contenteditable]";
+
 // The sentence is always visible; the detail opens on click. compact: the
 // detail floats over the page instead of pushing it down (the meeting screen
 // does not scroll).
@@ -28,16 +42,19 @@ export function DataNote({ compact = false, className = "" }: { compact?: boolea
 
   // Escape closes the open note. Listened for on the document, not the note,
   // because a mouse click does not leave focus on the summary in every
-  // browser. Focus goes back to the summary, the control that opened it,
-  // unless the advisor has since moved on to another control.
+  // browser. Decided from e.target, which is fixed when the key is pressed,
+  // not document.activeElement: React's own handlers sit on the document and
+  // run first, so by now the find box may already have blurred itself.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       const el = note.current;
       if (e.key !== "Escape" || !el) return;
-      const active = document.activeElement;
+      const target = e.target instanceof Element ? e.target : null;
+      const action = escapeAction({ inNote: !!target && el.contains(target), inField: !!target?.closest(FIELDS) });
+      if (action === "ignore") return;
       el.open = false;
-      if (!active || active === document.body || el.contains(active)) el.querySelector("summary")?.focus();
+      if (action === "close-and-refocus") el.querySelector("summary")?.focus();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
