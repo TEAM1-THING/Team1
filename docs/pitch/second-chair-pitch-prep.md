@@ -72,17 +72,17 @@ difference worth saying out loud.
 | Card grades | Grade each card Helpful, Not needed or Wrong; each card carries its time and model ("canned" for fallback cards). | No | `EndScreen.tsx`, `record.ts` |
 | Record and compliance app | End meeting downloads a JSON record (no transcript, no audio) and hands it to the records app by a one-time id that expires in an hour. Advisors read their own records, compliance reads all and signs off, nobody edits or deletes. | No | `src/lib/record.ts`, `docs/base44/README.md` |
 
-### The desktop app (branch `LeavesJ/electron-gpu-ux-bottlenecks-9cf39f`, not merged)
+### The desktop app (merged in #74, live 19:12; guide in `desktop/README.md`)
 
 | Function | What it does for the advisor | Overlay? | Where |
 |---|---|---|---|
 | Regular Mac app | Dock icon, a normal window for prep; the meeting moves into the floating panel when it starts. | Yes | `desktop/src/main/home.ts` |
-| Panel hidden from screen share | Always on top, even over full-screen apps; never takes focus from the call; excluded from screen capture (checked on macOS 26.3). | Yes | `desktop/src/main/overlay.ts` |
+| Panel hidden from screen share | Always on top, even over full-screen apps; excluded from screen capture (checked on macOS 26.3). A click on it hands the keyboard straight back to the call and never jumps to another desktop (checked in a practice run, 19:05). | Yes | `desktop/src/main/overlay.ts`, `focus.ts` |
 | Move, shrink, pass clicks | Drag by the bar, shrink to a thin bar, pass clicks to the call, move under the webcam. | Yes | `desktop/src/preload/bar.ts` |
 | Hotkeys | Control+Option with H, Space, G, B, Right, P. | Yes | `desktop/src/main/controls.ts` |
 | Call audio and transcription | Captures system audio (macOS 14.2+), falls back to BlackHole, detects speech, transcribes in its own process. Needs `SC_STT_URL` (a Whisper-compatible endpoint). | Yes | `desktop/src/main/audio.ts`, `pipeline/` |
 | Links from the website | "Open in the desktop app" carries the prep in the link fragment, so it never reaches a server. | Yes | `desktop/src/core/deepLink.ts` |
-| Spoken notice | The consent box reads "I said: 'This meeting is being recorded.'" and gates the mic. | No | `desktop/src/preload/overlay.ts` |
+| Consent before the mic | The meeting page's consent popup (read aloud, then "Done: the client agreed") gates the mic in the panel too; the "everyone agreed" notice shows by default. | No | `src/components/speech/MicInput.tsx`, `desktop/src/main/config.ts` |
 
 ### Guardrails that run on every answer
 
@@ -121,14 +121,14 @@ difference worth saying out loud.
 
 ## Risks to settle before judging
 
-1. **The live site may be behind main.** Vercel's build rate limit has held
-   production at #52 since about 17:10. PR #68's preview at 17:49 was refused
-   with "retry in 24 hours". Not on the live site: #30, #37, #38, #39, #40, #42,
-   #43 and the premise check. Demo from a local build of main, or confirm the
-   deploy first.
-2. **The desktop app is on a branch** and loads the production URL unless
-   `SC_URL` is set, so it shows the #52 site by default. Point it at the build
-   you demo from.
+1. **Resolved 19:12: the live site is main.** Production
+   (second-chair-live.vercel.app) is d9bdf91, with every merged PR, the
+   editorial theme and the desktop hand-off. The old second-chair-seven URL is
+   frozen; do not demo from it.
+2. **Resolved 19:12: the desktop app is on main** and loads the live site.
+   Reinstall from main (`git checkout main`, `git pull`, `npm run install-app`)
+   if yours was installed from the branch. Live transcription in the panel
+   still needs `SC_STT_URL` and a key; demo the panel with the sample meeting.
 3. **The premise check is on PR #68, unmerged.** Its real Bright Data path has
    not been run: the key is blank on our laptops, and the live tests used real
    Claude with hand-written search results. Run it once on a deploy before
@@ -136,8 +136,8 @@ difference worth saying out loud.
 4. **Screen-share hiding is the most Cluely-like part.** Frame it as hidden from
    the client's view of the screen, never hidden from the client: the advisor
    says "This meeting is being recorded" before the mic starts, and the record
-   goes to compliance. The desktop app hides the page's "everyone agreed"
-   banner by default for testing (`SC_CONSENT_BANNER=1` shows it). California
+   goes to compliance. The desktop app shows the page's "everyone agreed"
+   notice by default (`SC_CONSENT_BANNER=0` hides it, for testing). California
    requires all-party consent; this is a design constraint, not legal advice.
 5. **Do not overclaim.** The website mic cannot tell speakers apart (the model
    guesses; a click flips the label). The word-meaning catch is a prompt rule,

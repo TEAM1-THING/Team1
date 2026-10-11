@@ -9,6 +9,16 @@ index below.
 
 ## Current state (2026-10-10, 12:35 PDT, end of session 1)
 
+**Update 19:15: main (d9bdf91) is live, desktop app included.** #74 merged
+the Mac app (`desktop/`, guide in `desktop/README.md`) and its practice-run
+fixes: a click on the panel hands the keyboard back to the call and never
+jumps to another desktop; the panel is the editorial cream paper, frosted.
+Production runs main with the editorial theme and the website-to-app
+hand-off. Reinstall the Mac app from `main`. Pre-flight returns live Bright
+Data checks on production; one call logged a non-JSON reply (devlog 19:10).
+Live transcription in the panel needs `SC_STT_URL` and a key, so demo the
+panel with the sample meeting.
+
 **Update 18:10: production is https://second-chair-live.vercel.app.** The old
 `second-chair-seven.vercel.app` is frozen at `961310a` (#65) and lacks every
 fix since then; do not demo, test or share it. Merges no longer deploy
