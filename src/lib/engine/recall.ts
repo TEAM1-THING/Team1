@@ -7,15 +7,17 @@
 import { extractNumbers, parseNumber } from "../provenance";
 import type { CardFact, Prep, PrepSource } from "../types";
 
-// Figures keep their unit: "$180000", "%5", "24".
-const FIGURE = /\$?\d[\d,]*(?:\.\d+)?\s*(?:[kKmM](?![a-zA-Z])|%)?/g;
+// Figures keep their unit: "$180000", "%5", "24". Speech says "4 percent"
+// where a card writes "4%"; both are "%4".
+const FIGURE = /\$?\d[\d,]*(?:\.\d+)?\s*(?:[kKmM](?![a-zA-Z])|%|[Pp]ercent\b)?/g;
 
 export function figures(text: string): string[] {
   const out: string[] = [];
   for (const raw of text.match(FIGURE) ?? []) {
-    const value = parseNumber(raw);
+    const unit = raw.trim().replace(/\s*percent$/i, "%");
+    const value = parseNumber(unit);
     if (value === null) continue;
-    out.push(`${raw.includes("$") ? "$" : raw.trim().endsWith("%") ? "%" : ""}${value}`);
+    out.push(`${raw.includes("$") ? "$" : unit.endsWith("%") ? "%" : ""}${value}`);
   }
   return out;
 }

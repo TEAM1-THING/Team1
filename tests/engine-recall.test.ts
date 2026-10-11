@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { demoPrep, demoTranscript } from "@/data/demo";
 import { setClientForTests } from "@/lib/engine/client";
 import { buildMomentPrompt, runMoment, type LlmMoment } from "@/lib/engine/moment";
-import { checkClientFigures } from "@/lib/engine/recall";
+import { checkClientFigures, figures } from "@/lib/engine/recall";
 import { mockMoment } from "@/lib/mock";
 import { emptyState, type TranscriptTurn } from "@/lib/types";
 
@@ -87,6 +87,9 @@ describe("checkClientFigures", () => {
     expect(pct?.figures).toEqual([{ said: "24%", inMaterials: false, foundIn: [] }]);
     // The same unit still matches.
     expect(checkClientFigures("Is the return still 5%?", demoPrep, 12)?.figures[0]).toMatchObject({ inMaterials: true, foundIn: [{ sourceId: "plan-1" }] });
+    // Speech-to-text writes "percent" as a word.
+    expect(checkClientFigures("Is the return still 5 percent?", demoPrep, 12)?.figures[0]).toMatchObject({ said: "5 percent", inMaterials: true });
+    expect(figures("What if returns are 4 percent?")).toEqual(["%4"]);
   });
 
   it("matches a bare figure to a dollar amount, since speech-to-text can drop the $", () => {

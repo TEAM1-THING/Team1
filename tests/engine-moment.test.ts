@@ -364,6 +364,22 @@ describe("do-not-claim list", () => {
   });
 });
 
+describe("safe card", () => {
+  it("replaces an off-script card that fails the number trace, with no figures on it", async () => {
+    returning({
+      ...liveT2,
+      phrasing: "At 4% you would get about $7,000 a month instead.",
+      doNotClaim: ["That income stays at $9,000.", "That lower returns change nothing."],
+    });
+    const turns: TranscriptTurn[] = [...upTo("t1"), { id: "x2", speaker: "client", t: 8, text: "What if returns are only 4 percent?" }];
+    const res = await runMoment({ prep: demoPrep, turns, state: emptyState() });
+    expect(res.card).toMatchObject({ turnId: "x2", moment: "question", facts: [], defer: true });
+    expect(res.card?.phrasing).not.toMatch(/\d/);
+    expect(res.card?.doNotClaim).toEqual(["That lower returns change nothing."]);
+    expect(res.state.cards.map((c) => c.id)).toEqual(["c-x2"]);
+  });
+});
+
 describe("concern kind tags (#39)", () => {
   it("keeps the screen's tags in lower case and reads any other prefix as a worry", () => {
     expect(tagged("Life Event: son's down payment")).toBe("life event: son's down payment");

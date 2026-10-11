@@ -9,6 +9,8 @@ import { earlierCards, holdSteady } from "./consistency";
 import { MOMENT_SYSTEM } from "./moment-prompt";
 import { classifyUtterance, echoesCard, soundsLikeAdvisor } from "./gate";
 import { checkPremise, premiseCheckEnabled, premiseWithin, withPremise } from "./premise";
+import { distinctClaims } from "./claims";
+import { safeCard } from "./safe-card";
 import { outOfScopeHit } from "./scope";
 import { demoPrep, demoTranscript } from "../../data/demo";
 import { mockMoment } from "../mock";
@@ -343,19 +345,6 @@ export function toCard(out: LlmMoment, prep: Prep, latest: TranscriptTurn, turns
   return textTraced(topic ? [card.concern] : spoken(card), card.facts, prep, turns) ? card : null;
 }
 
-// The card shows DO_NOT_CLAIM facts and doNotClaim as one list, so a claim
-// the model gave both ways, or twice, shows once.
-const claimKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9$%]+/g, " ").trim();
-function distinctClaims(claims: string[], facts: CardFact[]): string[] {
-  const seen = new Set(facts.filter((f) => f.label === "DO_NOT_CLAIM").map((f) => claimKey(f.text)));
-  return claims.filter((c) => {
-    const k = claimKey(c);
-    if (!k || seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
-}
-
 // The canned cards belong to the demo client and script. Any other meeting
 // gets no card on failure rather than the demo client's numbers.
 function isDemoReplay(prep: Prep, latest: TranscriptTurn): boolean {
@@ -475,7 +464,12 @@ export async function runMoment(
     if (!out.relevant) return { card: null, state, speaker: "client" };
     const steady = holdSteady(out, state, latest, turns);
     const traced = toCard(steady, prep, latest, turns);
-    if (!traced) return fallback(prep, state, latest, "card failed schema or number trace");
+    if (!traced) {
+      const canned = fallback(prep, state, latest, "card failed schema or number trace");
+      if (canned.card) return canned;
+      const card = safeCard(latest, steady.doNotClaim.filter((d) => !figures(d).length));
+      return { card, state: { concerns: state.concerns, cards: [...state.cards.filter((c) => c.id !== card.id), card] } };
+    }
     const checked = premise ? withPremise(traced, await premiseWithin(premise)) : traced;
     const card: Card = { ...checked, at: latest.t, model: out.model || opts.model || LIVE_MODEL };
     const result = MomentResponse.safeParse({

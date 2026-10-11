@@ -33,5 +33,11 @@ export async function POST(req: Request) {
       data: Buffer.from(await f.arrayBuffer()),
     })),
   );
-  return NextResponse.json(await ingestFiles(files, req.signal));
+  const result = await ingestFiles(files, req.signal);
+  // Nothing readable: say so, rather than open a review with nothing in it.
+  if (result.sources.length === 0 && result.files.every((f) => !f.read)) {
+    const why = result.files.map((f) => `${f.name}: ${f.note ?? "could not be read"}`).join(" ");
+    return bad(`None of these files could be read. ${why}`.trim(), 422);
+  }
+  return NextResponse.json(result);
 }

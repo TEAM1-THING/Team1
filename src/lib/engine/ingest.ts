@@ -236,6 +236,8 @@ const blankClient = (): ClientFile => ({
 const NUMBER_FIELDS = ["age", "horizonYears", "cashOnHand", "investable"] as const;
 // Money fields are expected only of a client or prospect.
 const MONEY_FIELDS = new Set(["age", "horizonYears", "cashOnHand", "investable", "riskTolerance"]);
+// Every client-file field, for a prep where nothing could be read into it.
+const ALL_CLIENT_FIELDS = ["name", "age", "horizonYears", "cashOnHand", "investable", "riskTolerance", "statedGoals", "statedConcerns"];
 const MONEY_ROLES = /client|prospect/;
 
 // Invariant: a client-file figure must appear in the documents. One that does
@@ -291,7 +293,7 @@ export async function ingestFiles(files: UploadedFile[], signal?: AbortSignal): 
       mandate: m.mandate,
       mandateSource: m.source,
       files: reports,
-      missing: ["everything: fill in the client file"],
+      missing: [...ALL_CLIENT_FIELDS],
       conflicts: [],
       anticipated: [],
       source: "text-only",
@@ -396,7 +398,7 @@ export async function ingestFiles(files: UploadedFile[], signal?: AbortSignal): 
       mandate: m.mandate,
       mandateSource: m.source,
       files: reports,
-      missing: ["everything: fill in the client file"],
+      missing: [...ALL_CLIENT_FIELDS],
       conflicts: [],
       anticipated: [],
       source: "text-only",

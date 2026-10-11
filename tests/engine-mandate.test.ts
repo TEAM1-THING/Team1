@@ -55,6 +55,19 @@ describe("draftMandate", () => {
     expect(r).toEqual({ mandate: demoPrep.mandate, source: "fallback" });
   });
 
+  it("falls back to a neutral Mandate, not the demo's, for anyone else's sources", async () => {
+    setClientForTests(null);
+    const r = await draftMandate([{ text: "Keep a $40,000 reserve for Raj." }]);
+    expect(r.source).toBe("fallback");
+    expect(r.mandate).toEqual({
+      thesis: "",
+      assumptions: [],
+      riskStance: NEUTRAL_RISK_STANCE,
+      disclaimers: STANDARD_DISCLAIMERS,
+      outOfScope: DEFAULT_OUT_OF_SCOPE,
+    });
+  });
+
   it("falls back on empty sources without calling Claude", async () => {
     const parse = fakeClient(reply("end_turn", VALID));
     expect((await draftMandate([])).source).toBe("fallback");

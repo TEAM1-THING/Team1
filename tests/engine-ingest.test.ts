@@ -144,6 +144,7 @@ describe("ingestFiles without Claude", () => {
     expect(r.sources[0].text).toContain("$180,000");
     expect(r.files.find((f) => f.name === "plan.pdf")?.read).toBe(false);
     expect(r.clientFile.investable).toBe(0);
+    expect(r.missing).toEqual(expect.arrayContaining(["name", "investable", "riskTolerance"]));
   });
 });
 
@@ -280,5 +281,15 @@ describe("POST /api/ingest", () => {
       }),
     );
     expect(res.status).toBe(400);
+  });
+
+  it("answers 422 with the reason when no file could be read", async () => {
+    setClientForTests(null);
+    const form = new FormData();
+    form.append("files", new Blob([Buffer.from("%PDF-1.7")]), "plan.pdf");
+    const res = await POST(new Request("http://x/api/ingest", { method: "POST", body: form }));
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as { error: string }).error).toMatch(/^None of these files could be read\. plan\.pdf: /);
+    setClientForTests(undefined);
   });
 });
