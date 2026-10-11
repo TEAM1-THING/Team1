@@ -212,14 +212,14 @@ export default function MeetingPage() {
         }
       `}</style>
 
-      <header inert={!!ended} className="border-b border-white/[0.07]">
+      <header inert={!!ended} className="bg-[#1c1a3a] text-white">
         <div className="mx-auto flex w-full max-w-[1400px] flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 md:px-6">
           <div className="mr-auto flex min-w-0 items-baseline gap-3">
             <span className="text-[15px] font-semibold tracking-tight">Second Chair</span>
-            <span className={`truncate text-sm ${ui.muted}`}>with {prep?.clientFile.name ?? "your client"}</span>
-            <span className={`flex items-center gap-1.5 text-sm tabular-nums ${ui.faint}`}>
+            <span className="truncate text-sm text-[#b9b7d6]">with {prep?.clientFile.name ?? "your client"}</span>
+            <span className="flex items-center gap-1.5 text-sm tabular-nums text-[#b9b7d6]">
               {/* Live state, not decoration: shown while the meeting is running. */}
-              {turns.length > 0 && <span aria-hidden className="size-1.5 rounded-full bg-rose-500 motion-safe:animate-pulse" />}
+              {turns.length > 0 && <span aria-hidden className="size-2 rounded-full bg-[#ff7a6b] motion-safe:animate-pulse" />}
               {mmss}
             </span>
           </div>
@@ -227,16 +227,16 @@ export default function MeetingPage() {
             <button type="button" onClick={nextTurn} disabled={!prep || busy || done} className={`${ui.btn} ${ui.primary}`}>
               Next turn <kbd className={ui.kbdOnLight}>→</kbd>
             </button>
-            <button type="button" onClick={() => setAuto((a) => !a)} disabled={!prep || done} className={`${ui.btn} ${ui.ghost}`}>
+            <button type="button" onClick={() => setAuto((a) => !a)} disabled={!prep || done} className={`${ui.btn} ${ui.ghostOnDark}`}>
               {auto ? "Pause" : "Auto-play"}
             </button>
             {/* Fit the ship track's mic control to this bar without editing its file. */}
             {/* Unmounted once the meeting ends: its cleanup stops the recognizer. */}
-            <span className="text-[#a6a39c] [&_button]:h-9 [&_button]:rounded-lg [&_button]:border-white/[0.12] [&_button]:px-3 [&_button]:text-[#cfccc5]">
+            <span className="text-[#d8d6ee] [&_button]:h-9 [&_button]:rounded-lg [&_button]:border-white/25 [&_button]:px-3 [&_button]:text-[#e9e8f5]">
               {!ended && <MicInput onTurn={onMicTurn} />}
             </span>
-            <button type="button" onClick={() => setHidden((h) => !h)} className={`${ui.btn} ${ui.ghost}`} aria-pressed={hidden}>
-              {hidden ? "Show" : "Hide"} <kbd className={ui.kbd}>H</kbd>
+            <button type="button" onClick={() => setHidden((h) => !h)} className={`${ui.btn} ${ui.ghostOnDark}`} aria-pressed={hidden}>
+              {hidden ? "Show" : "Hide"} <kbd className={ui.kbdOnDark}>H</kbd>
             </button>
             <button
               type="button"
@@ -261,28 +261,28 @@ export default function MeetingPage() {
         </div>
         {/* The read-aloud consent script belongs in the live mic's start popup (track D, #34). */}
         {/* #40: the data note's detail floats above the columns, so the page still does not scroll. */}
-        <div role="note" className={`relative z-20 border-t border-white/[0.05] px-4 py-1.5 text-center text-xs ${ui.faint}`}>
+        <div role="note" className="relative z-20 bg-[#ffe36e] px-4 py-1.5 text-center text-xs text-[#1c1a3a]">
           This meeting uses Second Chair. All participants have been told and agreed. <DataNote compact />
         </div>
       </header>
 
       {error && (
-        <p role="alert" inert={!!ended} className="mx-4 mt-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm text-rose-100 md:mx-6">
+        <p role="alert" inert={!!ended} className="mx-4 mt-3 rounded-lg border border-[#8c1238]/20 bg-[#ffd3de] px-4 py-2 text-sm text-[#8c1238] md:mx-6">
           The engine did not answer ({error}). Press Next turn to try again.
         </p>
       )}
 
       <main inert={!!ended} className="mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 gap-6 p-4 md:p-6 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,600px)_minmax(0,280px)] lg:grid-rows-[minmax(0,1fr)]">
-        <div className="order-3 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
+        <div className={`${ui.sky} order-3 p-4 lg:order-1 lg:min-h-0 lg:overflow-y-auto`}>
           <Find sources={prep?.sources ?? []} />
           <Transcript turns={turns} onToggle={toggleSpeaker} />
         </div>
         <div ref={cardColumn} className={`order-1 space-y-3 lg:order-2 lg:min-h-0 lg:overflow-y-auto lg:pr-1 ${hidden ? "invisible" : ""}`} aria-live="polite" aria-busy={waiting}>
           {waiting && (
             <div aria-label="Reading the client's last turn" className={`${ui.surface} space-y-3 p-5`}>
-              <div className="h-3 w-28 rounded bg-white/[0.06] motion-safe:animate-pulse" />
-              <div className="h-5 w-11/12 rounded bg-white/[0.06] motion-safe:animate-pulse" />
-              <div className="h-5 w-3/4 rounded bg-white/[0.06] motion-safe:animate-pulse" />
+              <div className="h-3 w-28 rounded bg-[#1c1a3a]/[0.07] motion-safe:animate-pulse" />
+              <div className="h-5 w-11/12 rounded bg-[#1c1a3a]/[0.07] motion-safe:animate-pulse" />
+              <div className="h-5 w-3/4 rounded bg-[#1c1a3a]/[0.07] motion-safe:animate-pulse" />
             </div>
           )}
           {current ? (

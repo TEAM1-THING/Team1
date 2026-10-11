@@ -1,25 +1,52 @@
 // One look for the meeting and end screens. This exists because page.tsx,
 // Card, Concerns, Find and EndScreen all draw the same surfaces and buttons.
-// Colour carries meaning only (provenance labels, the live dot); everything
-// else is warm neutral. Radius: panels 12px, controls 8px, labels 6px.
+// Colour-blocked: an ink header, tinted panels, a white live card with an ink
+// border and a hard shadow. Provenance labels keep their meaning (green
+// prepared fact, amber calculation, rose suggestion, grey do-not-claim).
+// Every text colour here passes WCAG AA on the backgrounds it sits on.
+// Radius: panels 12px, controls 8px, labels 6px. Colours are written out in
+// full because Tailwind only generates classes it can read in the source.
 export const ui = {
   // Geist is loaded by the layout, but globals.css sets body to Arial; this wins.
-  page: "font-sans antialiased bg-[#0f1012] text-[#ecebe8]",
-  surface: "rounded-xl border border-white/[0.07] bg-[#16181b]",
-  // The live card is the only raised thing on screen.
-  raised:
-    "rounded-xl border border-white/[0.09] bg-[#1b1d21] shadow-[inset_0_1px_0_rgb(255_255_255/0.04),0_16px_40px_-24px_rgb(0_0_0/0.8)]",
-  muted: "text-[#a6a39c]",
-  faint: "text-[#8a8781]",
-  btn: "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-sm transition-[background-color,color,transform] duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ecebe8] active:scale-[0.97] disabled:pointer-events-none disabled:opacity-35",
-  // Disabled, the primary drops to a quiet outline instead of a muddy grey block.
-  primary: "bg-[#ecebe8] font-medium text-[#141518] hover:bg-white disabled:border disabled:border-white/[0.12] disabled:bg-transparent disabled:text-[#a6a39c]",
-  ghost: "text-[#cfccc5] hover:bg-white/[0.06]",
-  outline: "border border-white/[0.12] text-[#ecebe8] hover:bg-white/[0.05]",
-  danger: "bg-rose-600 font-medium text-white hover:bg-rose-700",
-  kbd: "rounded border border-white/[0.12] px-1 font-sans text-[11px] leading-4 text-[#8f8c85]",
-  // On the light primary button; its own token because Tailwind ranks utilities by
-  // stylesheet order, so appending colours to kbd above would not override it.
-  kbdOnLight: "rounded border border-black/15 px-1 font-sans text-[11px] leading-4 text-[#5d5b56]",
-  chip: "inline-block w-fit shrink-0 justify-self-start rounded-md px-1.5 py-0.5 text-[11px] font-medium leading-4",
+  page: "font-sans antialiased bg-[#f8f8fb] text-[#1c1a3a]",
+  muted: "text-[#4e4c6e]",
+  faint: "text-[#646282]",
+  surface: "rounded-xl border border-[#1c1a3a]/10 bg-white",
+  sky: "rounded-xl border border-[#1c1a3a]/10 bg-[#e3f0ff]",
+  mint: "rounded-xl border border-[#1c1a3a]/10 bg-[#dcf6e8]",
+  butter: "rounded-xl border border-[#1c1a3a]/10 bg-[#fff3c4]",
+  // The live card is the one thing with an ink border and a hard shadow.
+  raised: "rounded-xl border-2 border-[#1c1a3a] bg-white shadow-[5px_5px_0_#1c1a3a]",
+  btn: "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-[background-color,color,transform,box-shadow] duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f6bff] active:translate-y-px disabled:pointer-events-none",
+  // Disabled, the primary goes quiet instead of turning into a grey block.
+  primary: "bg-[#ffd43b] text-[#1c1a3a] hover:bg-[#ffdf6b] disabled:bg-white/10 disabled:text-[#b9b7d6]",
+  // On light screens a button pops with an ink edge and a small hard shadow.
+  pop: "border-2 border-[#1c1a3a] shadow-[2px_2px_0_#1c1a3a] active:shadow-none",
+  danger: "bg-[#ff7a6b] text-[#1c1a3a] hover:bg-[#ff9488]",
+  // Header buttons sit on ink; end-screen buttons on white.
+  ghostOnDark: "text-[#e9e8f5] hover:bg-white/10 disabled:opacity-40",
+  ghost: "text-[#1c1a3a] hover:bg-[#1c1a3a]/[0.06]",
+  outline: "border-2 border-[#1c1a3a] bg-white text-[#1c1a3a] hover:bg-[#f3f2fb]",
+  kbd: "rounded border border-[#1c1a3a]/20 px-1 font-sans text-[11px] leading-4 text-[#4e4c6e]",
+  // Own tokens, not overrides: Tailwind ranks utilities by stylesheet order, so
+  // appending colours to kbd would not win.
+  kbdOnDark: "rounded border border-white/25 px-1 font-sans text-[11px] leading-4 text-[#b9b7d6]",
+  kbdOnLight: "rounded border border-[#1c1a3a]/30 px-1 font-sans text-[11px] leading-4 text-[#1c1a3a]",
+  chip: "inline-block w-fit shrink-0 justify-self-start rounded-md px-1.5 py-0.5 text-[11px] font-semibold leading-4",
 } as const;
+
+// A colour per kind of moment, so a glance tells an objection from a disclosure.
+// Ink text passes AA on each.
+export const MOMENT_TINT: Record<string, string> = {
+  objection: "bg-[#ffb4a2]",
+  hesitation: "bg-[#ffe07a]",
+  disclosure: "bg-[#a8e6cf]",
+  emotional_concern: "bg-[#ffc4e1]",
+  contradiction: "bg-[#ffc48c]",
+  question: "bg-[#b8d8ff]",
+  misunderstanding: "bg-[#d7c6ff]",
+  buying_signal: "bg-[#c7f27a]",
+  priority_change: "bg-[#9fe7f5]",
+  commitment: "bg-[#b9f0b8]",
+  unresolved_concern: "bg-[#e2e2ea]",
+};
