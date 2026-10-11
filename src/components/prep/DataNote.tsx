@@ -28,8 +28,8 @@ export function DataNote({ compact = false, className = "" }: { compact?: boolea
       <ul
         className={
           compact
-            ? "absolute top-full left-1/2 z-30 mt-2 flex w-[min(36rem,90vw)] -translate-x-1/2 list-disc flex-col gap-1.5 rounded-xl border border-white/10 bg-slate-900/95 py-3 pr-4 pl-8 text-left text-xs text-slate-200 shadow-xl backdrop-blur-xl"
-            : "mt-2 flex list-disc flex-col gap-1.5 pl-5 text-slate-400"
+            ? "absolute top-full left-1/2 z-30 mt-2 flex w-[min(36rem,90vw)] -translate-x-1/2 list-disc flex-col gap-1.5 rounded-xl border border-[#161412]/15 bg-[#faf6ef] py-3 pr-4 pl-8 text-left text-xs text-[#161412] shadow-xl backdrop-blur-xl"
+            : "mt-2 flex list-disc flex-col gap-1.5 pl-5 text-[#5b5248]"
         }
       >
         {DATA_DETAILS.map((d) => (

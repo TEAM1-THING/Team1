@@ -10,9 +10,9 @@ import { btnGhost, Field, inputClass } from "./ui";
 
 // Same pill colours as the meeting screen's provenance chips.
 const CHIP: Record<PreflightCheck["status"], string> = {
-  ok: "bg-emerald-400/15 text-emerald-300",
-  stale: "bg-amber-400/15 text-amber-300",
-  unverified: "bg-zinc-400/15 text-zinc-300",
+  ok: "bg-[#dde9d0] text-[#2f5a1e]",
+  stale: "bg-[#f5e2b3] text-[#6e4600]",
+  unverified: "bg-[#e3dcd0] text-[#4a433a]",
 };
 
 async function post(url: string, body: unknown): Promise<unknown> {
@@ -78,7 +78,7 @@ export function MandatePanel({ prep, value, onChange }: Props) {
         <button type="button" className={btnGhost} disabled={drafting} onClick={draft}>
           {drafting ? "Drafting…" : "Draft Mandate from my plan"}
         </button>
-        <span className="text-sm text-slate-400">Review and edit every field before the meeting.</span>
+        <span className="text-sm text-[#5b5248]">Review and edit every field before the meeting.</span>
       </div>
 
       <Field label="Thesis">
@@ -93,14 +93,14 @@ export function MandatePanel({ prep, value, onChange }: Props) {
         {lines("outOfScope", "Out of scope")}
       </div>
 
-      <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
+      <div className="flex flex-col gap-3 rounded-xl border border-[#161412]/15 bg-[#faf6ef] p-4">
         <div className="flex flex-wrap items-center gap-3">
           <button type="button" className={btnGhost} disabled={checking} onClick={preflight}>
             {checking ? "Checking…" : "Run pre-flight"}
           </button>
-          <span className="text-sm text-slate-400">Checks the plan&apos;s figures against live public data.</span>
+          <span className="text-sm text-[#5b5248]">Checks the plan&apos;s figures against live public data.</span>
         </div>
-        {checks && checks.length === 0 && <p className="text-sm text-slate-400">No figures to check.</p>}
+        {checks && checks.length === 0 && <p className="text-sm text-[#5b5248]">No figures to check.</p>}
         {checks && checks.length > 0 && (
           <ul className="flex flex-col gap-3">
             {checks.map((c, i) => (
@@ -109,10 +109,10 @@ export function MandatePanel({ prep, value, onChange }: Props) {
                   {c.status}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium break-words text-slate-100">“{c.claim}”</p>
-                  <p className="break-words text-slate-400">{c.note}</p>
+                  <p className="font-medium break-words text-[#161412]">“{c.claim}”</p>
+                  <p className="break-words text-[#5b5248]">{c.note}</p>
                   {(c.checkedAt || c.sourceDate) && (
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-[#74695d]">
                       {[c.checkedAt && `checked ${c.checkedAt}`, c.sourceDate && `published ${c.sourceDate}`]
                         .filter(Boolean)
                         .join(" · ")}
@@ -120,7 +120,7 @@ export function MandatePanel({ prep, value, onChange }: Props) {
                   )}
                 </div>
                 {c.sourceUrl && (
-                  <a className="shrink-0 text-indigo-300 underline hover:text-indigo-200" href={c.sourceUrl} target="_blank" rel="noreferrer">
+                  <a className="shrink-0 text-[#b8410c] underline hover:text-[#b8410c]" href={c.sourceUrl} target="_blank" rel="noreferrer">
                     source ↗
                   </a>
                 )}
@@ -131,7 +131,7 @@ export function MandatePanel({ prep, value, onChange }: Props) {
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-rose-300">
+        <p role="alert" className="text-sm text-[#8a1f35]">
           {error}
         </p>
       )}

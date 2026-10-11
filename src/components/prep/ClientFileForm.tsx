@@ -31,11 +31,11 @@ export function ClientFileForm({ value, onChange }: { value: ClientFile; onChang
       {num("cashOnHand", "Cash on hand ($)")}
       {num("investable", "Investable ($)")}
       <fieldset className="flex flex-col gap-1 text-sm sm:col-span-2">
-        <legend className="mb-1.5 font-medium text-slate-300">Risk tolerance</legend>
+        <legend className="mb-1.5 font-medium text-[#5b5248]">Risk tolerance</legend>
         <div className="flex gap-4">
           {RISK.map((r) => (
-            <label key={r} className="flex items-center gap-1.5 capitalize text-slate-200">
-              <input className="accent-indigo-400" type="radio" name="risk" checked={value.riskTolerance === r} onChange={() => set({ riskTolerance: r })} />
+            <label key={r} className="flex items-center gap-1.5 capitalize text-[#161412]">
+              <input className="accent-[#161412]" type="radio" name="risk" checked={value.riskTolerance === r} onChange={() => set({ riskTolerance: r })} />
               {r}
             </label>
           ))}
