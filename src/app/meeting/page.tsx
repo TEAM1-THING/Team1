@@ -7,6 +7,7 @@ import MomentCard from "@/components/meeting/Card";
 import { display } from "@/components/meeting/fonts";
 import { ui } from "@/components/meeting/ui";
 import EndScreen from "@/components/meeting/EndScreen";
+import { recordIsCurrent, toggleGrade, type Grades } from "@/components/meeting/endSummary";
 import Find, { FIND_INPUT_ID } from "@/components/meeting/Find";
 import Transcript from "@/components/meeting/Transcript";
 import { DataNote } from "@/components/prep/DataNote";
@@ -15,7 +16,7 @@ import { followUpTasks, postMoment, processTurn } from "@/components/meeting/rep
 import MicInput from "@/components/speech/MicInput";
 import { demoTranscript } from "@/data/demo";
 import { echoesCard } from "@/lib/engine/gate";
-import { exportRecord } from "@/lib/record";
+import { exportRecord, type CardGrade } from "@/lib/record";
 import { loadPrep } from "@/lib/store";
 import { emptyState, type Card, type ConversationState, type Prep, type TranscriptTurn } from "@/lib/types";
 
@@ -171,6 +172,26 @@ export default function MeetingPage() {
   // What End meeting exported. The end screen shows exactly this, so a result
   // that lands after the click cannot make the summary disagree with the record.
   const [ended, setEnded] = useState<{ state: ConversationState; clock: string } | null>(null);
+  // Kept here, not in the end screen, so Back to meeting and a second End
+  // meeting keep the advisor's grades for the rest of this meeting.
+  const [grades, setGrades] = useState<Grades>({});
+  // The state in the record last downloaded. The record downloads by itself
+  // once per meeting; after that only from Download record on the end screen.
+  const [downloaded, setDownloaded] = useState<ConversationState | null>(null);
+  const download = (state: ConversationState, graded?: CardGrade[]) => {
+    if (!prep) return;
+    setDownloaded(state);
+    // Synchronous inside the click, so window.open keeps the user gesture.
+    void exportRecord(prep, state, graded);
+  };
+  // Closing the end screen gives focus back to End meeting, which opened it.
+  // An effect, so it runs once the header is no longer inert.
+  const endButton = useRef<HTMLButtonElement>(null);
+  const wasEnded = useRef(false);
+  useEffect(() => {
+    if (wasEnded.current && !ended) endButton.current?.focus();
+    wasEnded.current = ended !== null;
+  }, [ended]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (ended) return; // the end screen is on top; shortcuts would drive the hidden meeting
@@ -243,6 +264,7 @@ export default function MeetingPage() {
               {hidden ? "Show" : "Hide"} <kbd className={ui.kbd}>H</kbd>
             </button>
             <button
+              ref={endButton}
               type="button"
               onClick={() => {
                 if (!prep) return;
@@ -253,8 +275,8 @@ export default function MeetingPage() {
                 setAuto(false);
                 const state = { ...convo, cards };
                 setEnded({ state, clock: mmss });
-                // Synchronous inside the click, so window.open keeps the user gesture.
-                void exportRecord(prep, state);
+                // Ending again after Back to meeting only reopens the end screen.
+                if (!downloaded) download(state);
               }}
               disabled={!prep}
               className={`${ui.btn} ${ui.accentBtn}`}
@@ -325,6 +347,10 @@ export default function MeetingPage() {
           concerns={ended.state.concerns}
           tasks={followUpTasks(ended.state.concerns, prep.clientFile.name)}
           clock={ended.clock}
+          grades={grades}
+          onGrade={(cardId, g) => setGrades((prev) => toggleGrade(prev, cardId, g))}
+          recordCurrent={recordIsCurrent(downloaded, ended.state)}
+          onDownload={(graded) => download(ended.state, graded)}
           onBack={() => setEnded(null)}
         />
       )}

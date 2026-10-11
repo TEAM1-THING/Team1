@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { endSummary, momentLabel } from "@/components/meeting/endSummary";
+import { endSummary, gradedFor, momentLabel, recordIsCurrent, toggleGrade } from "@/components/meeting/endSummary";
 import { mockMoment } from "@/lib/mock";
 import { demoTranscript } from "@/data/demo";
 import { emptyState, type Card, type Concern } from "@/lib/types";
@@ -60,4 +60,53 @@ it("marks a moment resolved only when every concern raised at its turn is resolv
   const s = endSummary(cards, [concern("liquidity", "t2", "resolved"), concern("request: fee schedule", "t2", "open")]);
   expect(s.moments[0].resolved).toBe(false);
   expect([s.resolved, s.open]).toEqual([1, 1]);
+});
+
+describe("grades kept across reopening the end screen", () => {
+  const cards = [{ id: "c2" }, { id: "c4" }, { id: "c6" }] as Card[];
+
+  it("sets a grade, replaces it with another, and clears it when pressed again", () => {
+    let g = toggleGrade({}, "c4", "helpful", "2026-10-10T20:00:00.000Z");
+    expect(g).toEqual({ c4: { cardId: "c4", grade: "helpful", gradedAt: "2026-10-10T20:00:00.000Z" } });
+    g = toggleGrade(g, "c4", "wrong", "2026-10-10T20:01:00.000Z");
+    expect(g.c4.grade).toBe("wrong");
+    expect(toggleGrade(g, "c4", "wrong")).toEqual({});
+  });
+
+  it("does not change the grades it was given", () => {
+    const before = toggleGrade({}, "c2", "helpful");
+    toggleGrade(before, "c2", "helpful");
+    expect(before.c2.grade).toBe("helpful");
+  });
+
+  it("counts grades in card order, only for cards on screen", () => {
+    let g = toggleGrade({}, "c6", "not_needed");
+    g = toggleGrade(g, "c2", "helpful");
+    g = toggleGrade(g, "gone", "wrong");
+    expect(gradedFor(cards, g).map((x) => [x.cardId, x.grade])).toEqual([
+      ["c2", "helpful"],
+      ["c6", "not_needed"],
+    ]);
+  });
+});
+
+describe("recordIsCurrent", () => {
+  const cards = [{ id: "c2", turnId: "t2" }] as Card[];
+  const concerns = [concern("liquidity", "t2", "open")];
+  const state = { ...emptyState(), cards, concerns };
+
+  it("is current when nothing changed since the download", () => {
+    expect(recordIsCurrent(state, { cards, concerns })).toBe(true);
+    // A fresh snapshot of the same meeting, as a second End meeting makes.
+    expect(recordIsCurrent(state, JSON.parse(JSON.stringify({ cards, concerns })))).toBe(true);
+  });
+
+  it("is behind once the meeting went on: a new card or a concern resolved", () => {
+    expect(recordIsCurrent(state, { cards: [...cards, { id: "c4", turnId: "t4" } as Card], concerns })).toBe(false);
+    expect(recordIsCurrent(state, { cards, concerns: [concern("liquidity", "t2", "resolved")] })).toBe(false);
+  });
+
+  it("is not current before anything was downloaded", () => {
+    expect(recordIsCurrent(null, { cards: [], concerns: [] })).toBe(false);
+  });
 });

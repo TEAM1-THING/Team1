@@ -3,14 +3,29 @@
 // record went. Shown over the live view once End meeting is pressed.
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { base44Url, buildRecord, exportRecord, openRecordsApp, recordFileName, type CardGrade, type Grade } from "@/lib/record";
+import { base44Url, buildRecord, openRecordsApp, recordFileName, type CardGrade, type Grade } from "@/lib/record";
 import type { Card, Concern, Prep } from "@/lib/types";
 import Concerns from "./Concerns";
-import { endSummary } from "./endSummary";
+import { endSummary, gradedFor, type Grades } from "./endSummary";
 import { display } from "./fonts";
 import { ui } from "./ui";
 
-type Props = { prep: Prep; cards: Card[]; concerns: Concern[]; tasks: string[]; clock: string; onBack: () => void };
+type Props = {
+  prep: Prep;
+  cards: Card[];
+  concerns: Concern[];
+  tasks: string[];
+  clock: string;
+  // Grades and downloads belong to the meeting screen, so leaving this screen
+  // and ending again keeps the grades and does not download a second time.
+  grades: Grades;
+  onGrade: (cardId: string, g: Exclude<Grade, "ungraded">) => void;
+  // Whether the record already downloaded holds exactly what this screen shows.
+  recordCurrent: boolean;
+  // Downloads the record with these grades; called inside the click.
+  onDownload: (graded: CardGrade[]) => void;
+  onBack: () => void;
+};
 
 // #42: the advisor grades each card so the record can be audited over time.
 const GRADE_BUTTONS: [Exclude<Grade, "ungraded">, string][] = [
@@ -19,23 +34,17 @@ const GRADE_BUTTONS: [Exclude<Grade, "ungraded">, string][] = [
   ["wrong", "Wrong"],
 ];
 
-export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack }: Props) {
+export default function EndScreen({ prep, cards, concerns, tasks, clock, grades, onGrade, recordCurrent, onDownload, onBack }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
-  const [grades, setGrades] = useState<Record<string, CardGrade>>({});
   const [handed, setHanded] = useState(false);
-  const graded = Object.values(grades);
-  // Pressing the chosen grade again clears it back to ungraded.
+  const graded = gradedFor(cards, grades);
+  // A new grade is not in the file downloaded before it.
   const grade = (cardId: string, g: Exclude<Grade, "ungraded">) => {
     setHanded(false);
-    setGrades((prev) => {
-      const next = { ...prev };
-      if (next[cardId]?.grade === g) delete next[cardId];
-      else next[cardId] = { cardId, grade: g, gradedAt: new Date().toISOString() };
-      return next;
-    });
+    onGrade(cardId, g);
   };
   const summary = endSummary(cards, concerns);
-  // Once, at the moment the record was exported, not on every re-render.
+  // Once per opening, not on every re-render, so the file name keeps one date.
   const [record] = useState(() => buildRecord(prep, { concerns, cards }));
   const fileName = recordFileName(record);
   // Reopening the records app hands this record over by one-time id, as End
@@ -174,29 +183,33 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
               <h2 id="record-h" className="mb-1 text-sm font-medium">
                 Record
               </h2>
-              <p className={`mb-3 text-sm break-all ${ui.muted}`}>Downloaded {fileName}</p>
+              {/* Breaks only a string too long for the line, so ordinary words stay whole. */}
+              <p className={`mb-3 text-sm [overflow-wrap:anywhere] ${ui.muted}`}>
+                {recordCurrent
+                  ? `Downloaded ${fileName}`
+                  : `Downloaded ${fileName} earlier, before the meeting went on. Download record to include the rest.`}
+              </p>
               {cards.length > 0 && (
                 <p role="status" className={`mb-3 text-sm ${ui.faint}`}>
                   {handed
                     ? `Downloaded again with ${graded.length} of ${cards.length} graded. Save this version in the records app.`
-                    : `Graded ${graded.length} of ${cards.length}. Ungraded cards are marked ungraded in the record.`}
+                    : graded.length > 0
+                      ? `Graded ${graded.length} of ${cards.length}. Download record to save the grades; ungraded cards are marked ungraded.`
+                      : `Graded 0 of ${cards.length}. Ungraded cards are marked ungraded in the record.`}
                 </p>
               )}
               <div className="flex flex-wrap gap-2">
-                {cards.length > 0 && (
-                  <button
-                    type="button"
-                    disabled={graded.length === 0}
-                    // From the click, so the records app tab opens with the graded record.
-                    onClick={() => {
-                      setHanded(true);
-                      void exportRecord(prep, { concerns, cards }, graded);
-                    }}
-                    className={`${ui.btn} ${ui.primary}`}
-                  >
-                    Hand over with grades
-                  </button>
-                )}
+                <button
+                  type="button"
+                  // From the click, so the records app tab opens with this record.
+                  onClick={() => {
+                    setHanded(true);
+                    onDownload(graded);
+                  }}
+                  className={`${ui.btn} ${ui.primary}`}
+                >
+                  Download record
+                </button>
                 {hasRecordsApp && (
                   <button
                     type="button"
