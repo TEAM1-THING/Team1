@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { FATAL_ERRORS, finalTexts, getRecognitionCtor } from "@/components/speech/MicInput";
 import { demoPrep } from "@/data/demo";
 import { mockMoment } from "@/lib/mock";
-import { base44Url, buildRecord, completeGrades, createHandoff, handoffLink, recordFileName, recordLink, supabaseConfig } from "@/lib/record";
+import { base44Url, buildRecord, completeGrades, createHandoff, handoffLink, localDate, recordFileName, recordLink, supabaseConfig } from "@/lib/record";
 import { emptyState } from "@/lib/types";
 
 describe("record hand-off by id (#45)", () => {
@@ -73,10 +73,14 @@ describe("buildRecord", () => {
     expect(Number.isNaN(Date.parse(record.endedAt))).toBe(false);
   });
 
-  it("names the file after the client and date", () => {
-    const record = { client: "Maria Lopez", endedAt: "2026-10-10T20:00:00.000Z", concerns: [], cards: [], grades: [] };
+  it("names the file after the client and the local meeting date", () => {
+    // 5:30 PM on October 10 where the test runs: in Pacific time that is already October 11 in UTC.
+    const endedAt = new Date(2026, 9, 10, 17, 30).toISOString();
+    const record = { client: "Maria Lopez", endedAt, concerns: [], cards: [], grades: [] };
     expect(recordFileName(record)).toBe("second-chair-record-maria-lopez-2026-10-10.json");
     expect(recordFileName({ ...record, client: "!!" })).toBe("second-chair-record-client-2026-10-10.json");
+    expect(localDate(new Date(2026, 9, 10, 23, 59).toISOString())).toBe("2026-10-10");
+    expect(localDate("not a date")).toBe("not a date");
   });
 });
 
