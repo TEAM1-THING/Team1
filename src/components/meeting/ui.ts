@@ -12,7 +12,8 @@ export const ui = {
   muted: "text-[#a6a39c]",
   faint: "text-[#8a8781]",
   btn: "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-sm transition-[background-color,color,transform] duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ecebe8] active:scale-[0.97] disabled:pointer-events-none disabled:opacity-35",
-  primary: "bg-[#ecebe8] font-medium text-[#141518] hover:bg-white",
+  // Disabled, the primary drops to a quiet outline instead of a muddy grey block.
+  primary: "bg-[#ecebe8] font-medium text-[#141518] hover:bg-white disabled:border disabled:border-white/[0.12] disabled:bg-transparent disabled:text-[#a6a39c]",
   ghost: "text-[#cfccc5] hover:bg-white/[0.06]",
   outline: "border border-white/[0.12] text-[#ecebe8] hover:bg-white/[0.05]",
   danger: "bg-rose-600 font-medium text-white hover:bg-rose-700",

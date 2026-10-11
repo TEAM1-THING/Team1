@@ -10,26 +10,26 @@ export default function Transcript({ turns, onToggle }: { turns: TranscriptTurn[
       {turns.length === 0 && (
         <p className={`text-sm ${ui.faint}`}>The conversation appears here, line by line.</p>
       )}
-      <ol className="space-y-3.5">
+      <ol className="space-y-3">
         {turns.map((t, i) => {
           const latest = i === turns.length - 1;
           return (
-            <li key={t.id} className={`text-[15px] leading-relaxed ${latest ? "text-[#ecebe8]" : ui.muted}`}>
+            <li key={t.id} className={`grid grid-cols-[3rem_1fr] gap-x-1 text-sm leading-relaxed ${latest ? "text-[#ecebe8]" : ui.muted}`}>
               {onToggle && isLiveTurn(t.id) ? (
                 <button
                   type="button"
                   title="Wrong speaker? Click to switch"
                   onClick={() => onToggle(t.id)}
-                  className={`mr-2 rounded px-1 text-xs font-medium underline decoration-dotted underline-offset-2 hover:bg-white/[0.06] ${t.speaker === "client" ? "text-[#ecebe8]" : ui.faint}`}
+                  className={`h-fit w-fit rounded px-1 -ml-1 pt-0.5 text-left text-xs font-medium underline decoration-dotted underline-offset-2 hover:bg-white/[0.06] ${t.speaker === "client" ? "text-[#ecebe8]" : ui.faint}`}
                 >
                   {t.speaker === "client" ? "Client" : "You"}
                 </button>
               ) : (
-                <span className={`mr-2 text-xs font-medium ${t.speaker === "client" ? "text-[#ecebe8]" : ui.faint}`}>
+                <span className={`pt-0.5 text-xs font-medium ${t.speaker === "client" ? "text-[#ecebe8]" : ui.faint}`}>
                   {t.speaker === "client" ? "Client" : "You"}
                 </span>
               )}
-              {t.text}
+              <span>{t.text}</span>
             </li>
           );
         })}

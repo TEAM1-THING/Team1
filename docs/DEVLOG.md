@@ -4,6 +4,45 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (18:20) - Production moved to second-chair-live.vercel.app; the old URL is frozen
+
+**Why.** D's Vercel project hit the Hobby limit of 100 deployments a day
+(per owner). Every deploy after 17:03 failed with "retry in 24 hours", so
+`second-chair-seven.vercel.app` stayed frozen at `fcee04a` (#52), without
+#51 and #53 through #69.
+
+**What.** A new Vercel project, `second-chair-live` (team `elenchus-hacks`,
+owner leavesj), deployed with the CLI from a clean clone of `main`, not
+connected to GitHub. Branch pushes therefore make no preview builds, and
+merges don't deploy by themselves: run `git pull && vercel --prod` in
+`~/Documents/team1-deploy` (README). The project was created with framework
+preset "Other" and served 404 until the preset was set to Next.js.
+Env: `ANTHROPIC_API_KEY`, `BRIGHTDATA_API_KEY` and the three `NEXT_PUBLIC_*`
+values from D. `ANTHROPIC_MODEL` and `BRIGHTDATA_ZONE` are left unset because
+they equal the code defaults.
+
+**Checked on the live URL** (deploy of `d03b5ae`, main at the time): `/`,
+`/prep` and `/meeting` return 200; a demo turn returned a live card from
+`claude-sonnet-5-5`; End meeting downloaded the record and posted the hand-off
+to D's Supabase with 1 card, 1 concern and 1 grade (the call was stubbed in
+the browser, so nothing was written); the records app opened at
+`#handoff=<id>`. Pre-flight answered `fallback` on the demo prep, and so does
+the old URL, so whether the new Bright Data key works is still to be
+confirmed (D is checking pre-flight with real sources).
+
+**Fixes that were never on main, now handled:** D's #67 (record file named
+with the local date) merged. B's `0e8ddce` (card fits the screen; numbered
+sources) had been pushed to `fix/b-polish` after its PR #61 closed, so it
+never reached main; it is now #70. Superseded and left alone:
+`fix/next-15.5.27` (main fixed the vulnerable Next.js in `7122cad`),
+`feat/end-screen` (#27), `feat/fb-grades` (#60), `fix/mvp-no-signin` (#66,
+closed on the user's call).
+
+**Still owed:** the old project's owner disconnects its Git link (Settings →
+Git), so PRs stop getting a failing "Vercel" check and pushes stop trying to
+deploy there. The repo's website field still points to the old URL and needs
+an org admin to change it. Redeploy after #70 and after every merge.
+
 ## 2026-10-10 (17:45) - Premise check: the client's stated fact is checked live with Bright Data (on by default)
 
 **What it does.** A client question often rides on a stated fact ("Since the
