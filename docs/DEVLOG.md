@@ -23,9 +23,11 @@ untrusted data. The check never throws and never holds the card more than
 1.5 s past the card's own answer; a late check is dropped.
 
 **On by default** wherever Bright Data and Claude are configured;
-`PREMISE_CHECK=0` turns it off. Live on the demo Fed question: "The Fed held
-its federal funds target range at 3-3/4 to 4 percent on October 8, 2026, with
-no cut. (federalreserve.gov)".
+`PREMISE_CHECK=0` turns it off. Tested with real Claude and a local stand-in
+for Bright Data (two hand-written Fed results, 1.5 s delay; the key is blank
+locally): on the demo Fed question the card led with "Check the premise: ...
+(federalreserve.gov)". The figures in that line came from the stand-in, not a
+real search. A real Bright Data search runs only on Vercel and is unverified.
 
 **The slowdown and its fix.** Run in the same process as the card, the
 premise calls slowed the Sonnet card from 3.0-5.1 s to 5.2-6.4 s and the judge
