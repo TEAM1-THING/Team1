@@ -7,6 +7,7 @@ import { base44Url, buildRecord, exportRecord, openRecordsApp, recordFileName, t
 import type { Card, Concern, Prep } from "@/lib/types";
 import Concerns from "./Concerns";
 import { endSummary } from "./endSummary";
+import { display } from "./fonts";
 import { ui } from "./ui";
 
 type Props = { prep: Prep; cards: Card[]; concerns: Concern[]; tasks: string[]; clock: string; onBack: () => void };
@@ -70,8 +71,8 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
 
   return (
     // A full-screen layer over the live view, so Back to meeting returns to it as it was.
-    <div role="dialog" aria-modal="true" aria-labelledby="end-h" className={`${ui.page} fixed inset-0 z-30 overflow-y-auto`}>
-      <p role="note" className={`border-b border-white/[0.05] px-4 py-1.5 text-center text-xs ${ui.faint}`}>
+    <div role="dialog" aria-modal="true" aria-labelledby="end-h" className={`${ui.page} ${display.variable} fixed inset-0 z-30 overflow-y-auto`}>
+      <p role="note" className={`border-b border-[#161412]/15 px-4 py-1.5 text-center text-xs ${ui.muted}`}>
         This meeting uses Second Chair. All participants have been told and agreed.
       </p>
       <main className="sc-arrive mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 md:p-8">
@@ -79,14 +80,20 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
           <p className={`text-sm ${ui.faint}`}>
             Meeting with {prep.clientFile.name} ended at <span className="tabular-nums">{clock}</span>
           </p>
-          <h1 id="end-h" ref={heading} tabIndex={-1} className="text-2xl font-semibold tracking-tight text-balance outline-none md:text-[28px]">
-            Here&apos;s what Second Chair caught
+          {/* Display size only: the bright orange is 3:1 on cream, enough for large type. */}
+          <h1
+            id="end-h"
+            ref={heading}
+            tabIndex={-1}
+            className={`${ui.display} max-w-[14ch] py-1 text-[44px] leading-[0.95] text-balance text-[#e8571a] uppercase outline-none md:text-[64px]`}
+          >
+            What Second Chair caught
           </h1>
           <p className={`text-[15px] ${ui.muted}`}>{tally}</p>
         </header>
 
         <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-          <section aria-labelledby="moments-h" className={`${ui.surface} p-5`}>
+          <section aria-labelledby="moments-h" className={`${ui.raised} p-5`}>
             <h2 id="moments-h" className="mb-4 text-sm font-medium">
               Moments
             </h2>
@@ -99,8 +106,10 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
                     <span className={`pt-px text-xs tabular-nums ${ui.faint}`}>{m.turnId}</span>
                     <div>
                       <p className="flex items-baseline gap-2">
-                        <span className="font-medium">{m.moment}</span>
-                        {m.resolved && <span className={`${ui.chip} ml-auto bg-emerald-400/15 text-emerald-300`}>Resolved</span>}
+                        <span className={`${ui.display} ${ui.accent} text-[17px] italic`}>
+                          {m.moment}
+                        </span>
+                        {m.resolved && <span className={`${ui.chip} ml-auto bg-[#dde9d0] text-[#2f5a1e]`}>Resolved</span>}
                       </p>
                       <p className={`mt-0.5 text-pretty ${ui.muted}`}>{m.concern}</p>
                       <div role="group" aria-label={`Grade the card at ${m.turnId}`} className="mt-2 flex flex-wrap gap-1.5">
@@ -112,8 +121,8 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
                               type="button"
                               aria-pressed={on}
                               onClick={() => grade(m.id, g)}
-                              className={`${ui.chip} border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ecebe8] ${
-                                on ? "border-transparent bg-[#ecebe8] text-[#141518]" : `border-white/[0.12] ${ui.muted} hover:bg-white/[0.06]`
+                              className={`${ui.chip} border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#161412] ${
+                                on ? "border-[#161412] bg-[#161412] text-[#f2ebdf]" : `border-[#161412]/25 ${ui.muted} hover:bg-[#161412]/5`
                               }`}
                             >
                               {label}
@@ -202,7 +211,7 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
           </div>
         </div>
 
-        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-5">
+        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[#161412]/10 pt-5">
           <button type="button" onClick={onBack} className={`${ui.btn} ${ui.ghost}`}>
             Back to meeting
           </button>
