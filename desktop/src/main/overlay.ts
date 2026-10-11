@@ -59,7 +59,9 @@ const MARGIN = 16;
 const MIN = { width: 340, height: 240 };
 const ZOOM = { min: 0.7, max: 1.3, step: 0.1, start: 0.9 };
 
-type Saved = { bounds?: Rectangle; zoom?: number; paired?: boolean; notice?: boolean };
+// showNotice, not the old `notice`: every save wrote the old hidden default
+// there without anyone choosing it, so that value is ignored.
+type Saved = { bounds?: Rectangle; zoom?: number; paired?: boolean; showNotice?: boolean };
 const savedPath = () => path.join(app.getPath("userData"), "overlay.json");
 function load(): Saved {
   try {
@@ -94,7 +96,7 @@ export function createOverlay(onChange: (v: OverlayView) => void, showAtLaunch: 
   let expandedHeight = start.height;
   let listening = false;
   let paired = saved.paired === true;
-  let notice = saved.notice ?? config.disclosureNotice;
+  let notice = saved.showNotice ?? config.disclosureNotice;
   let meeting = showAtLaunch; // a meeting has been opened in the panel
   let noticeCss: string | null = null;
 
@@ -199,7 +201,7 @@ export function createOverlay(onChange: (v: OverlayView) => void, showAtLaunch: 
       const b = win.getBounds();
       const bounds = { ...b, height: collapsed ? expandedHeight : b.height };
       try {
-        writeFileSync(savedPath(), JSON.stringify({ bounds, zoom, paired, notice } satisfies Saved));
+        writeFileSync(savedPath(), JSON.stringify({ bounds, zoom, paired, showNotice: notice } satisfies Saved));
       } catch (e) {
         console.warn(`[overlay] could not save position: ${e}`);
       }
