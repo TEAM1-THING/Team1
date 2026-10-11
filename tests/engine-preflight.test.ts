@@ -116,6 +116,9 @@ describe("serpSearch", () => {
     expect(url).toBe("https://api.brightdata.com/request");
     expect(init?.method).toBe("POST");
     expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer test-key");
+    vi.stubEnv("BRIGHTDATA_API_KEY", ' "test-key"\n');
+    await serpSearch("CPI");
+    expect((spy.mock.calls[1][1]?.headers as Record<string, string>).Authorization).toBe("Bearer test-key");
     const body = JSON.parse(String(init?.body));
     expect(body.zone).toBe(DEFAULT_ZONE);
     expect(body.format).toBe("raw");

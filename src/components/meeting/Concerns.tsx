@@ -29,7 +29,7 @@ export default function Concerns({ concerns }: { concerns: Concern[] }) {
             <ul className="space-y-1.5">
               {g.items.map((c) => (
                 <li key={c.id} className="flex items-baseline gap-3 text-sm">
-                  <span className={c.status === "open" ? "text-[#ecebe8]" : `line-through ${ui.faint}`}>
+                  <span className={c.status === "open" ? "text-[#161412]" : `line-through ${ui.faint}`}>
                     {c.text}
                     {c.status === "resolved" && <span className="sr-only"> (resolved)</span>}
                   </span>

@@ -14,12 +14,12 @@ export function SourcesEditor({ value, onChange }: { value: PrepSource[]; onChan
           <div className="flex gap-2">
             <select
               aria-label="Kind"
-              className="rounded-xl border border-white/15 bg-slate-950/40 px-2 text-sm text-slate-100"
+              className="rounded-xl border border-[#161412]/15 bg-[#faf6ef] px-2 text-sm text-[#161412]"
               value={s.kind}
               onChange={(e) => onChange(updateSource(value, s.id, { kind: e.target.value as PrepSource["kind"] }))}
             >
               {KINDS.map((k) => (
-                <option key={k} value={k} className="bg-slate-900">
+                <option key={k} value={k} className="bg-[#faf6ef]">
                   {k.replace("_", " ")}
                 </option>
               ))}
@@ -34,7 +34,7 @@ export function SourcesEditor({ value, onChange }: { value: PrepSource[]; onChan
             <button
               type="button"
               aria-label={`Remove ${s.title || "source"}`}
-              className="rounded-full px-2.5 text-slate-400 hover:bg-white/10 hover:text-white"
+              className="rounded-full px-2.5 text-[#5b5248] hover:bg-[#161412]/5 hover:text-[#161412]"
               onClick={() => onChange(removeSource(value, s.id))}
             >
               ✕

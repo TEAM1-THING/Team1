@@ -88,15 +88,15 @@ export function FileDrop({ onRead }: { onRead: (r: IngestResponse) => void }) {
           if (!busy) void send([...e.dataTransfer.files]);
         }}
         className={`flex cursor-pointer flex-col items-center gap-1 rounded-2xl border-2 border-dashed px-6 py-10 text-center transition ${
-          over ? "border-indigo-300 bg-indigo-500/15" : "border-white/20 bg-slate-950/30 hover:border-white/35"
+          over ? "border-[#e8571a] bg-[#e8571a]/10" : "border-[#161412]/25 bg-[#faf6ef] hover:border-[#161412]/50"
         }`}
       >
         {busy ? (
-          <p className="animate-pulse text-sm text-indigo-100">{busy}</p>
+          <p className="animate-pulse text-sm text-[#5b5248]">{busy}</p>
         ) : (
           <>
-            <p className="text-sm font-medium text-slate-100">Drop your plan, client file, deck or spreadsheet here</p>
-            <p className="text-xs text-slate-400">
+            <p className="text-sm font-medium text-[#161412]">Drop your plan, client file, deck or spreadsheet here</p>
+            <p className="text-xs text-[#5b5248]">
               PDF, Word, Excel, PowerPoint, CSV, text or images · up to 8 files, 4 MB · Google Docs: File → Download
               first
             </p>
@@ -122,29 +122,29 @@ export function FileDrop({ onRead }: { onRead: (r: IngestResponse) => void }) {
         <button type="button" disabled={!!busy} className={btnGhost} onClick={useSamples}>
           Try with sample files
         </button>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-[#74695d]">
           Samples:{" "}
-          <a className="underline hover:text-slate-300" href={SAMPLES[0]} target="_blank">
+          <a className="underline hover:text-[#161412]" href={SAMPLES[0]} target="_blank">
             plan (PDF)
           </a>{" "}
           ·{" "}
-          <a className="underline hover:text-slate-300" href={SAMPLES[1]} target="_blank">
+          <a className="underline hover:text-[#161412]" href={SAMPLES[1]} target="_blank">
             client file (CSV)
           </a>
         </span>
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-rose-300">
+        <p role="alert" className="text-sm text-[#8a1f35]">
           {error}
         </p>
       )}
       {report.length > 0 && (
         <ul className="flex flex-col gap-1 text-sm">
           {report.map((f) => (
-            <li key={f.name} className={f.read ? "text-emerald-200" : "text-amber-200"}>
+            <li key={f.name} className={f.read ? "text-[#2f5a1e]" : "text-[#6e4600]"}>
               {f.read ? "✓" : "!"} {f.name}
-              {f.note && <span className="text-slate-400"> · {f.note}</span>}
+              {f.note && <span className="text-[#5b5248]"> · {f.note}</span>}
             </li>
           ))}
         </ul>

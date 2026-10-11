@@ -28,8 +28,12 @@ const ZONE_NAME = /^[A-Za-z0-9_-]{1,64}$/;
 // date: the publish date Google shows for the result, when it shows one.
 export type SerpResult = { title: string; url: string; snippet: string; date?: string };
 
+// A key pasted into a dashboard can keep its spaces or quotes; Bright Data
+// would then answer 401 and the pre-flight would fall back.
+const apiKey = () => (process.env.BRIGHTDATA_API_KEY ?? "").trim().replace(/^(["'])(.*)\1$/, "$2").trim();
+
 export function brightDataConfigured(): boolean {
-  return Boolean(process.env.BRIGHTDATA_API_KEY);
+  return Boolean(apiKey());
 }
 
 function zoneName(): string | null {
@@ -90,7 +94,7 @@ export function normalizeOrganic(organic: unknown[]): SerpResult[] {
 // the call fails for any reason. An empty array means the search ran and
 // found nothing.
 export async function serpSearch(query: string, signal?: AbortSignal): Promise<SerpResult[] | null> {
-  const key = process.env.BRIGHTDATA_API_KEY;
+  const key = apiKey();
   const zone = zoneName();
   const q = query.replace(/\s+/g, " ").trim().slice(0, MAX_QUERY);
   if (!key || !zone || !q) return null;
@@ -103,10 +107,16 @@ export async function serpSearch(query: string, signal?: AbortSignal): Promise<S
       body: JSON.stringify({ zone, url: target, format: "raw" }),
       signal,
     });
-    if (!res.ok) return null;
+    // Status and error names only: never the key or a response body.
+    if (!res.ok) {
+      console.warn(`[brightdata] search failed (HTTP ${res.status})`);
+      return null;
+    }
     const organic = organicOf(JSON.parse(await res.text()));
+    if (!organic) console.warn("[brightdata] search answered without results");
     return organic ? normalizeOrganic(organic) : null;
-  } catch {
+  } catch (err) {
+    if (!signal?.aborted) console.warn(`[brightdata] search failed (${err instanceof Error ? err.name : "unknown"})`);
     return null;
   }
 }

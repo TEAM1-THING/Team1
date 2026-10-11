@@ -6,8 +6,8 @@ import { Field, inputClass } from "./ui";
 export function MeetingSummary({ value, onChange }: { value: Meeting; onChange: (next: Meeting) => void }) {
   const set = (patch: Partial<Meeting>) => onChange({ ...value, ...patch });
   return (
-    <section className="rounded-2xl border border-indigo-300/20 bg-indigo-500/10 p-4">
-      <p className="mb-3 text-sm font-medium text-indigo-100">This meeting, as read from your files</p>
+    <section className="rounded-2xl border border-[#161412]/15 bg-[#faf6ef] p-4">
+      <p className="mb-3 text-sm font-medium text-[#5b5248]">This meeting, as read from your files</p>
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="With">
           <input className={inputClass} value={value.with} onChange={(e) => set({ with: e.target.value })} />
