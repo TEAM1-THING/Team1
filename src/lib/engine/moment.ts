@@ -204,12 +204,25 @@ function toMomentType(raw: string): MomentType | null {
 
 // Deterministic ledger update: resolve matching open concerns, then open new
 // topics that are not already open (and were not just resolved).
+// #39 kind tags the meeting screen groups by. Any other "word: " prefix the
+// model invents ("fear: ") is a worry, which the screen reads untagged.
+const KIND_TAG = /^\s*([a-z]+(?: [a-z]+)?)\s*:\s*(?=\S)/i;
+const KIND_TAGS = new Set(["learn", "decide", "life event", "request"]);
+
+export function tagged(raw: string): string {
+  const t = raw.trim();
+  const m = t.match(KIND_TAG);
+  if (!m) return t;
+  const kind = m[1].toLowerCase();
+  return KIND_TAGS.has(kind) ? `${kind}: ${t.slice(m[0].length)}` : t.slice(m[0].length);
+}
+
 export function applyConcernUpdates(
   concerns: Concern[],
   updates: { open: string[]; resolve: string[] },
   turnId: string,
 ): Concern[] {
-  const resolving = new Set(updates.resolve.map(norm).filter(Boolean));
+  const resolving = new Set(updates.resolve.map((t) => norm(tagged(t))).filter(Boolean));
   const next: Concern[] = concerns.map((c) =>
     c.status === "open" && resolving.has(norm(c.topic))
       ? { ...c, status: "resolved", resolvedAtTurn: turnId }
@@ -219,7 +232,7 @@ export function applyConcernUpdates(
   const ids = new Set(next.map((c) => c.id));
   let n = 0;
   for (const raw of updates.open) {
-    const topic = raw.trim();
+    const topic = tagged(raw);
     const key = norm(topic);
     if (!key || open.has(key) || resolving.has(key)) continue;
     open.add(key);
