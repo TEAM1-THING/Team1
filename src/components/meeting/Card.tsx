@@ -21,9 +21,9 @@ function sourceLine(sourceId: string | undefined, sources: PrepSource[]): string
   return s ? `from ${s.title}${s.date ? ` · ${s.date}` : ""}` : null;
 }
 
-// One glance, like Cluely's single answer block: what to say, the facts behind
-// it, what not to say. The move and the reasoning wait behind "Details".
-// Every figure still carries its provenance chip.
+// One glance, like Cluely's single answer block (#37 order): the worry, what to
+// say, your move in a line, the facts behind it, what not to say. The reasoning
+// waits behind "Why". Every figure still carries its provenance chip.
 export default function MomentCard({
   card,
   dimmed = false,
@@ -67,6 +67,11 @@ export default function MomentCard({
         <p className="text-[21px] leading-relaxed font-medium tracking-tight text-slate-50">“{card.phrasing}”</p>
       </blockquote>
 
+      <p data-testid="your-move" title={card.recommendedMove} className="mb-3 line-clamp-2 text-sm text-slate-300">
+        <span className="font-semibold text-slate-100">Your move. </span>
+        {card.recommendedMove}
+      </p>
+
       {card.defer ? (
         <div className="mb-4 rounded-xl bg-orange-400/10 px-4 py-3 text-sm text-orange-200">
           <strong className="font-semibold">Defer this one.</strong> It is outside the confirmed Mandate, so offer to
@@ -104,16 +109,9 @@ export default function MomentCard({
       )}
 
       <details className="text-sm text-slate-400">
-        <summary className="cursor-pointer select-none hover:text-slate-200">Details</summary>
+        <summary className="cursor-pointer select-none hover:text-slate-200">Why</summary>
         <div className="mt-2 space-y-2 text-slate-300">
-          <p>
-            <span className="font-semibold text-slate-100">Next move. </span>
-            {card.recommendedMove}
-          </p>
-          <p>
-            <span className="font-semibold text-slate-100">Why. </span>
-            {card.why}
-          </p>
+          <p>{card.why}</p>
           <p className="text-xs text-slate-500">Anything we can&apos;t trace is shown as a suggestion, never a fact.</p>
         </div>
       </details>
