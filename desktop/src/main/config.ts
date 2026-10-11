@@ -7,7 +7,7 @@ const env = process.env;
 export const config = {
   // The meeting screen the overlay shows. The deployed app by default; point it
   // at `http://localhost:3000/meeting` while developing the web app.
-  url: env.SC_URL ?? "https://second-chair-seven.vercel.app/meeting",
+  url: env.SC_URL ?? "https://second-chair-live.vercel.app/meeting",
   side: env.SC_SIDE === "left" ? ("left" as const) : ("right" as const),
   width: Number(env.SC_WIDTH) || 460,
   // Which audio input carries the meeting's sound on macOS, where Electron has

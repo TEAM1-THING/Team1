@@ -18,7 +18,7 @@ There are two ways to use it:
 
 ## Use the website (no install)
 
-1. Open **https://second-chair-seven.vercel.app** in Chrome.
+1. Open **https://second-chair-live.vercel.app** in Chrome.
 2. Click **Prepare a meeting**, add your materials, check what Second Chair
    drafted, and click **Confirm and start meeting**.
 3. Or click **Try the demo meeting** to watch a sample client meeting: press

@@ -25,7 +25,7 @@ describe("website to desktop link", () => {
 
   it("ignores links that are not open links, and preps that are not a Prep", () => {
     expect(parseDeepLink("secondchair://elsewhere?path=/meeting")).toBeNull();
-    expect(parseDeepLink("https://second-chair-seven.vercel.app/meeting")).toBeNull();
+    expect(parseDeepLink("https://second-chair-live.vercel.app/meeting")).toBeNull();
     expect(parseDeepLink("secondchair://open#prep=bm90IGpzb24")?.prep).toBeNull(); // "not json"
     expect(parseDeepLink(desktopLink(JSON.stringify({ hello: 1 })))?.prep).toBeNull();
   });
