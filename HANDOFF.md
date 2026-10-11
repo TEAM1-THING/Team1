@@ -10,7 +10,7 @@ index below.
 ## Current state (2026-10-10, 12:35 PDT, end of session 1)
 
 **Update 18:10: production is https://second-chair-live.vercel.app.** The old
-`second-chair-seven.vercel.app` is frozen at `fcee04a` (17:02) and lacks every
+`second-chair-seven.vercel.app` is frozen at `961310a` (#65) and lacks every
 fix since then; do not demo, test or share it. Merges no longer deploy
 themselves: redeploy with `git pull && vercel --prod` in
 `~/Documents/team1-deploy` (see README). Ignore the failing "Vercel" PR check;
