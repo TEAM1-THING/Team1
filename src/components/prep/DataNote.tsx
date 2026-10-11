@@ -4,6 +4,9 @@
 // the landing, prep and meeting screens. Every line describes the app as
 // built (record.ts, docs/base44); change it when the data flow changes.
 // Owned by the prep track; the meeting screen imports it.
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 
 export const DATA_SUMMARY =
   "Second Chair does not train AI on your meeting, and saves it to your records only when you sign in and save it.";
@@ -20,8 +23,32 @@ export const DATA_DETAILS = [
 // detail floats over the page instead of pushing it down (the meeting screen
 // does not scroll).
 export function DataNote({ compact = false, className = "" }: { compact?: boolean; className?: string }) {
+  const note = useRef<HTMLDetailsElement>(null);
+  const [open, setOpen] = useState(false);
+
+  // Escape closes the open note. Listened for on the document, not the note,
+  // because a mouse click does not leave focus on the summary in every
+  // browser. Focus goes back to the summary, the control that opened it,
+  // unless the advisor has since moved on to another control.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      const el = note.current;
+      if (e.key !== "Escape" || !el) return;
+      const active = document.activeElement;
+      el.open = false;
+      if (!active || active === document.body || el.contains(active)) el.querySelector("summary")?.focus();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
   return (
-    <details className={`group relative ${compact ? "inline-block" : "text-left"} ${className}`}>
+    <details
+      ref={note}
+      onToggle={(e) => setOpen(e.currentTarget.open)}
+      className={`group relative ${compact ? "inline-block" : "text-left"} ${className}`}
+    >
       <summary className="cursor-pointer list-none underline decoration-dotted underline-offset-2 [&::-webkit-details-marker]:hidden">
         {DATA_SUMMARY}
       </summary>
