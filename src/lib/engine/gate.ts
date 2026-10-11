@@ -23,7 +23,7 @@ const FILLER =
 // Cues that a client statement carries something worth a card: worry,
 // hesitation, loss, a new need or a life event.
 const CONCERN_CUES =
-  /\b(worr(y|ied|ies|ying)|afraid|scared|nervous|anxious|concern(ed|s)?|uncertain|unsure|not sure|risk(y)?|lose|losing|lost|loss|crash|downturn|recession|wait(ing)?|delay|hold off|too much|too risky|can't afford|afford|emergency|need (help|money|cash)|short of|run out|sister|brother|son|daughter|kids?|grandchild(ren)?|grandkids?|wife|husband|spouse|partner|parents?|mom|dad|mother|father|divorc(e|ed|ing)|married|marry(ing)?|wedding|engaged|baby|pregnant|expecting|adopt(ed|ing)?|sick|illness|health|diagnos(ed|is)|surgery|hospital|caregiv(er|ing)|job|new job|promot(ed|ion)|quit|fired|laid off|retir(e|ed|ing|ement)|inherit(ed|ance)?|house|home|mortgage|down payment|moved|moving|relocat(e|ed|ing)|sold|selling|bought|business|college|tuition|debt|loan|tax(es)?|lawsuit|died|passed away|widow(ed)?|funeral)\b/;
+  /\b(worr(y|ied|ies|ying)|afraid|scared|nervous|anxious|concern(ed|s)?|uncertain|unsure|not sure|risk(y)?|lose|losing|lost|loss|crash|downturn|recession|wait(ing)?|delay|hold off|too much|too risky|can't afford|afford|emergency|need (help|money|cash)|short of|run out|sister|brother|son|daughter|kids?|grandchild(ren)?|grandkids?|wife|husband|spouse|partner|divorc(e|ed|ing)|married|marry(ing)?|wedding|engaged|baby|pregnant|adopt(ed|ing)?|sick|illness|health|diagnos(ed|is)|surgery|hospital|caregiv(er|ing)|job|new job|promot(ed|ion)|fired|laid off|retir(e|ed|ing|ement)|inherit(ed|ance)?|house|home|mortgage|down payment|moved|moving to|relocat(e|ed|ing)|(sold|selling|sell) (my|our|the) (business|company|practice|house|home)|bought (a|our|my) (house|home|place|condo)|college|tuition|debt|loan|tax(es)?|lawsuit|died|passed away|(mom|mother|dad|father|husband|wife|partner|son|daughter|brother|sister) passed|widow(ed)?|funeral|dementia|taking care of (him|her|them|my)|splitting up|separat(ed|ing)|twins|downsiz(e|ed|ing)|rental property|stepping down|starting my own (firm|business|company|practice)|(company|business|firm|practice) (got |was )?(acquired|bought out|sold)|sale of (my|our|the) (company|business|practice|firm))\b/;
 
 // A changed goal or a contradiction ("stop working at 65, not 70"), a buying
 // signal ("let's go ahead"), or any figure the client says.
@@ -48,18 +48,19 @@ export function echoesCard(text: string, phrasing: string | undefined): boolean 
 // are the cheap tells: the advisor steering or following up, or talking about
 // the plan to the client ("you", "your") rather than about their own life.
 const ADVISOR_MOVES =
-  /\b(let me|let's (look|go back|review|walk|talk|turn|take a look|start with)|i'll (send|follow up|set up|check|get back|walk you|show you|email|put together)|i (recommend|suggest)|i'd (recommend|suggest)|my recommendation|we recommend|as we discussed|as i mentioned|here's (what|how)|if you look at|you can see|on page \d+|in the report)\b/;
-const SECOND_PERSON = /\b(you|your|you're|you'll|you've|yours)\b/;
-const PLAN_TALK = /\b(the|this|our) (plan|reserve|portfolio|strategy|allocation|tranches?|report|proposal)\b/;
+  /\b(let me (walk|show|explain|go over|pull up|take you)|let's (look|review|walk|turn|take a look)|i'll (send you|follow up|set up|walk you|show you|put together)|i (recommend|suggest)|i'd (recommend|suggest)|my recommendation|we recommend|as we discussed|as i mentioned|here's (what|how)|if you look at (page|the)|you can see (the|how|that|here))\b/;
+// The client talks about their own life in the first person; the advisor
+// talks about "your plan".
+const MINE = /\b(i|i'm|i've|i'll|i'd|me|my)\b/;
+const YOUR_PLAN = /\byour (plan|reserve|portfolio|strategy|allocation|tranches?|income|proposal)\b/;
 
 export function soundsLikeAdvisor(raw: string): boolean {
-  // Fillers that put "you" in a client's mouth.
-  const text = raw.toLowerCase().replace(/\b(you know|thank you|you see|mind you)\b/g, " ");
-  return ADVISOR_MOVES.test(text) || (SECOND_PERSON.test(text) && PLAN_TALK.test(text));
+  const text = raw.toLowerCase().replace(/[\u2018\u2019]/g, "'");
+  return ADVISOR_MOVES.test(text) || (YOUR_PLAN.test(text) && !MINE.test(text));
 }
 
 export function classifyUtterance(raw: string): Gate {
-  const text = raw.trim().toLowerCase();
+  const text = raw.trim().toLowerCase().replace(/[\u2018\u2019]/g, "'");
   if (!text) return { kind: "filler", concern: false, run: false };
   const concern = CONCERN_CUES.test(text) || CHANGE_CUES.test(text);
   // Judge the last sentence: "Okay, that helps. But what if rates fall?" is a question.

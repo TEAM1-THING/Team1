@@ -6,14 +6,14 @@ import https from "node:https";
 // Prep-time calls (Mandate draft, pre-flight): quality over speed.
 export const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5-5";
 
-// Live cards: the team's budget is 5 s. Benchmark (6 scenes x 2 runs, 18
+// Live cards: the target is about 4 s; the hard cutoff is LIVE_TIMEOUT_MS. Benchmark (6 scenes x 2 runs, 18
 // blind judgements per model): Sonnet 5.5 scored highest (4.39/5 vs Opus 4.19,
 // Haiku 3.80) at median 3.96 s, max 4.59 s. Override per deployment.
 export const LIVE_MODEL = process.env.LIVE_MODEL || "claude-sonnet-5-5";
 
 // Past this the route falls back: the canned card for the demo script, no
-// card otherwise. Live replies take about 3 to 4.7 s, so a 5 s cutoff turned
-// roughly one in five into no card at all; a card at 6 s beats none.
+// card otherwise. Live replies take about 2.5 to 4.7 s with the odd one past
+// 5 s; a card at 6 s beats no card, so the cutoff sits well above them.
 export const LIVE_TIMEOUT_MS = 8_000;
 
 // Server-side refusal fallback: a declined request is re-run on Anthropic's

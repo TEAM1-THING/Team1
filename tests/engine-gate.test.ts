@@ -78,14 +78,29 @@ describe("life events reach the engine", () => {
       "I retired in March.",
       "We're expecting a baby.",
       "I sold my business.",
+      "We're moving to Denver in the spring.",
+      "We bought a house last month.",
+      "My mother passed in January.",
+      "my company got acquired",
+      "we just had twins",
+      "We're downsizing to a condo.",
     ]) {
       expect(classifyUtterance(line).run, line).toBe(true);
     }
   });
 
   it("still skips small talk", () => {
-    expect(classifyUtterance("The weather's been nice.").run).toBe(false);
-    expect(classifyUtterance("Okay.").run).toBe(false);
+    for (const line of [
+      "The weather's been nice.",
+      "Okay.",
+      "My dad loves golf.",
+      "I quit smoking.",
+      "We bought a new couch.",
+      "We're moving the couch this weekend.",
+      "Business has been slow at the shop.",
+    ]) {
+      expect(classifyUtterance(line).run, line).toBe(false);
+    }
   });
 });
 
@@ -94,9 +109,10 @@ describe("soundsLikeAdvisor", () => {
     for (const line of [
       "Let me walk you through the reserve figure in the report.",
       "I'll send you the fee schedule tomorrow.",
-      "Let's go back to the plan.",
-      "Your reserve stays outside the portfolio.",
+      "Let's take a look at the allocation.",
+      "Your reserve stays outside the market.",
       "I'd suggest we keep the allocation as it is.",
+      "Your portfolio is up four percent this year.",
     ]) {
       expect(soundsLikeAdvisor(line), line).toBe(true);
     }
@@ -109,6 +125,10 @@ describe("soundsLikeAdvisor", () => {
       "You know, the plan seemed fine to me.",
       "Thank you, the plan is clear.",
       "Okay.",
+      "Let me think about it.",
+      "I'll get back to you on that.",
+      "I trust you on the allocation.",
+      "I like your plan.",
     ]) {
       expect(soundsLikeAdvisor(line), line).toBe(false);
     }

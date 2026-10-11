@@ -31,7 +31,7 @@ import {
 
 const RECENT_TURNS = 6;
 // A card is a few short fields; a tight cap keeps a runaway answer from
-// blowing the 5 s budget.
+// blowing the live time limit.
 const MAX_TOKENS = 900;
 const DEFAULT_DEFER_REASON = "Outside the prepared Mandate; defer it to a follow-up rather than answer now.";
 
