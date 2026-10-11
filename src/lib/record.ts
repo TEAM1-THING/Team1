@@ -1,9 +1,14 @@
 // After-meeting record: every card is a record (guardrail 5). Owned by the
 // ship track. The meeting screen only ever calls exportRecord.
-// Flow: download the record as JSON, then open the Base44 records app
-// (NEXT_PUBLIC_BASE44_URL) in a new tab with the record already loaded, ready
-// to review, save and sign off.
+// Flow: download the record as JSON, then, when RECORDS_APP_ON, open the
+// Base44 records app (NEXT_PUBLIC_BASE44_URL) in a new tab with the record
+// already loaded, ready to review, save and sign off.
 import type { ConversationState, Prep } from "./types";
+
+// MVP: no sign-in. End meeting only downloads the record; the records app
+// (sign-in, Supabase hand-off) stays off until it shows the record's cards and
+// concerns. true brings the hand-off and the end screen's records button back.
+export const RECORDS_APP_ON = false;
 
 // The advisor's verdict on each card, so the records database can audit how
 // well Second Chair did over many meetings (#42). Agreed with track B.
@@ -49,6 +54,11 @@ export function recordFileName(record: MeetingRecord): string {
 export function base44Url(): string | null {
   const url = process.env.NEXT_PUBLIC_BASE44_URL?.trim();
   return url && /^https?:\/\//.test(url) ? url : null;
+}
+
+// The records app's URL when the hand-off is on, else null.
+export function recordsAppUrl(): string | null {
+  return RECORDS_APP_ON ? base44Url() : null;
 }
 
 // The records database (Supabase). The publishable key is meant for browsers;
@@ -99,10 +109,11 @@ export function recordLink(base: string, _record: MeetingRecord): string {
 
 // Opens the records app in a new tab with the record handed over by id. Call
 // it from a click: the tab opens at once, while the click still counts as the
-// user's, then moves to the hand-off once the database answers. Never throws.
+// user's, then moves to the hand-off once the database answers. Does nothing
+// while RECORDS_APP_ON is false. Never throws.
 export async function openRecordsApp(record: MeetingRecord | null): Promise<void> {
   try {
-    const url = base44Url();
+    const url = recordsAppUrl();
     if (!url) return;
     const tab = window.open("about:blank", "_blank");
     if (tab) tab.opener = null;

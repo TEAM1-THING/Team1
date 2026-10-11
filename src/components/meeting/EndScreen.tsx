@@ -3,7 +3,7 @@
 // record went. Shown over the live view once End meeting is pressed.
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { base44Url, buildRecord, exportRecord, openRecordsApp, recordFileName, type CardGrade, type Grade } from "@/lib/record";
+import { buildRecord, exportRecord, openRecordsApp, recordFileName, recordsAppUrl, type CardGrade, type Grade } from "@/lib/record";
 import type { Card, Concern, Prep } from "@/lib/types";
 import Concerns from "./Concerns";
 import { endSummary } from "./endSummary";
@@ -38,8 +38,9 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
   const [record] = useState(() => buildRecord(prep, { concerns, cards }));
   const fileName = recordFileName(record);
   // Reopening the records app hands this record over by one-time id, as End
-  // meeting does (openRecordsApp opens the tab inside the click).
-  const hasRecordsApp = base44Url() !== null;
+  // meeting does (openRecordsApp opens the tab inside the click). Off for the
+  // MVP (RECORDS_APP_ON): the record only downloads, and nothing asks to sign in.
+  const hasRecordsApp = recordsAppUrl() !== null;
   const heading = useRef<HTMLHeadingElement>(null);
   const back = useRef(onBack);
   useEffect(() => {
@@ -169,7 +170,7 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
               {cards.length > 0 && (
                 <p role="status" className={`mb-3 text-sm ${ui.faint}`}>
                   {handed
-                    ? `Downloaded again with ${graded.length} of ${cards.length} graded. Save this version in the records app.`
+                    ? `Downloaded again with ${graded.length} of ${cards.length} graded.${hasRecordsApp ? " Save this version in the records app." : ""}`
                     : `Graded ${graded.length} of ${cards.length}. Ungraded cards are marked ungraded in the record.`}
                 </p>
               )}
@@ -178,14 +179,14 @@ export default function EndScreen({ prep, cards, concerns, tasks, clock, onBack 
                   <button
                     type="button"
                     disabled={graded.length === 0}
-                    // From the click, so the records app tab opens with the graded record.
+                    // From the click, so the records app tab (when on) opens with the graded record.
                     onClick={() => {
                       setHanded(true);
                       void exportRecord(prep, { concerns, cards }, graded);
                     }}
                     className={`${ui.btn} ${ui.primary}`}
                   >
-                    Hand over with grades
+                    {hasRecordsApp ? "Hand over with grades" : "Download with grades"}
                   </button>
                 )}
                 {hasRecordsApp && (

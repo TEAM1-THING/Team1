@@ -1,9 +1,46 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { FATAL_ERRORS, finalTexts, getRecognitionCtor } from "@/components/speech/MicInput";
 import { demoPrep } from "@/data/demo";
 import { mockMoment } from "@/lib/mock";
-import { base44Url, buildRecord, completeGrades, createHandoff, handoffLink, recordFileName, recordLink, supabaseConfig } from "@/lib/record";
+import {
+  base44Url,
+  buildRecord,
+  completeGrades,
+  createHandoff,
+  handoffLink,
+  openRecordsApp,
+  recordFileName,
+  recordLink,
+  RECORDS_APP_ON,
+  recordsAppUrl,
+  supabaseConfig,
+} from "@/lib/record";
 import { emptyState } from "@/lib/types";
+
+// MVP: no sign-in, so End meeting only downloads. Even with the records app
+// and database configured, nothing opens and nothing is sent.
+describe.skipIf(RECORDS_APP_ON)("records app off for the MVP", () => {
+  const saved = { ...process.env };
+  afterEach(() => {
+    process.env = { ...saved };
+    vi.unstubAllGlobals();
+  });
+
+  it("opens no tab and sends no hand-off", async () => {
+    process.env.NEXT_PUBLIC_BASE44_URL = "https://example.base44.app";
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_test";
+    const open = vi.fn();
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("window", { open });
+    vi.stubGlobal("fetch", fetchSpy);
+    expect(base44Url()).toBe("https://example.base44.app");
+    expect(recordsAppUrl()).toBeNull();
+    await openRecordsApp(buildRecord(demoPrep, mockMoment("t2", emptyState()).state));
+    expect(open).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
 
 describe("record hand-off by id (#45)", () => {
   const config = { url: "https://example.supabase.co", key: "sb_publishable_test" };
