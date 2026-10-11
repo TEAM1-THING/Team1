@@ -26,8 +26,10 @@ export default function MomentCard({
 }) {
   if (dimmed) {
     // The previous card collapses to its headline so the new one owns the eye.
+    // No opacity: at 70% the faint and muted text fell below AA on cream (2.65
+    // and 3.29 to 1). Size, the light rule and no paper fill already recede it.
     return (
-      <article data-testid="previous-card" className={`${ui.surface} px-5 py-3 opacity-70`}>
+      <article data-testid="previous-card" className={`${ui.surface} px-5 py-3`}>
         <p className={`text-xs ${ui.faint}`}>
           Earlier, at {card.turnId}: {momentText(card.moment).toLowerCase()}
         </p>
