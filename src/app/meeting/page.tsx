@@ -218,7 +218,7 @@ export default function MeetingPage() {
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <button type="button" onClick={nextTurn} disabled={!prep || busy || done} className={`${ui.btn} ${ui.primary}`}>
-              Next turn <kbd className={`${ui.kbd} border-black/15 text-[#5d5b56]`}>→</kbd>
+              Next turn <kbd className={ui.kbdOnLight}>→</kbd>
             </button>
             <button type="button" onClick={() => setAuto((a) => !a)} disabled={!prep || done} className={`${ui.btn} ${ui.ghost}`}>
               {auto ? "Pause" : "Auto-play"}
