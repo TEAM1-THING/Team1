@@ -4,6 +4,40 @@ Running log of sessions, decisions and remaining work. Newest entries at top.
 
 ---
 
+## 2026-10-10 (17:45) - Premise check: the client's stated fact is checked live with Bright Data (on by default)
+
+**What it does.** A client question often rides on a stated fact ("Since the
+Fed cut rates by a full point last week, shouldn't we..."). When a client turn
+mentions markets, rates, tax rules, retirement accounts or news, the engine
+extracts up to two public claims (Haiku), searches each through Bright Data
+SERP, and judges it against the results only (Haiku). A contradicted claim
+leads the live card as a red SUGGESTION fact, "Check the premise: the client
+said ... (federalreserve.gov, date)", and adds "Do not repeat as fact: ..." to
+do-not-claim. Supported or unclear claims change nothing. `src/lib/engine/premise.ts`.
+
+**Guardrails.** A query carrying the client's name, an email or a long digit
+run is never sent. The cited URL must be among that claim's own results, and
+every number in the note must trace to the claim or the cited result; else the
+finding is "unclear" and stays off the card. Search results are fenced as
+untrusted data. The check never throws and never holds the card more than
+1.5 s past the card's own answer; a late check is dropped.
+
+**On by default** wherever Bright Data and Claude are configured;
+`PREMISE_CHECK=0` turns it off. Tested with real Claude and a local stand-in
+for Bright Data (two hand-written Fed results, 1.5 s delay; the key is blank
+locally): on the demo Fed question the card led with "Check the premise: ...
+(federalreserve.gov)". The figures in that line came from the stand-in, not a
+real search. A real Bright Data search runs only on Vercel and is unverified.
+
+**The slowdown and its fix.** Run in the same process as the card, the
+premise calls slowed the Sonnet card from 3.0-5.1 s to 5.2-6.4 s and the judge
+call stalled; in separate processes neither slowed. A second SDK client did
+not help. Giving the premise calls their own connections (`getSideClient()`
+in `client.ts`, `node:https` with no keep-alive agent) did: alternating A/B,
+card 2.7-4.6 s with the check on vs 4.0-4.3 s off, premise on 4 of 5 cards.
+
+---
+
 ## 2026-10-10 (17:20) - Merged: Block 2 fixes on main; macOS build fixed; advisory answer (#37) in the engine
 
 **On main (not yet live while Vercel is rate limited):** #49 macOS build fix,

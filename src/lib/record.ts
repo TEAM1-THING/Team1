@@ -39,9 +39,18 @@ export function buildRecord(prep: Prep, state: ConversationState, grades?: CardG
   };
 }
 
+// The meeting's date where the advisor is, not in UTC: a meeting ending at
+// 5:30 PM Pacific is still today, not tomorrow.
+export function localDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso.slice(0, 10) || "undated";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export function recordFileName(record: MeetingRecord): string {
   const who = record.client.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "client";
-  return `second-chair-record-${who}-${record.endedAt.slice(0, 10)}.json`;
+  return `second-chair-record-${who}-${localDate(record.endedAt)}.json`;
 }
 
 // Next.js inlines NEXT_PUBLIC_* at build time: after setting or changing these
