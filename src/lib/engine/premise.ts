@@ -56,14 +56,29 @@ export const mayStatePublicFact = (text: string): boolean => PUBLIC_WORLD.test(t
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+// Folded for comparison: accents off, lower case, so "Dána" still matches "Dana".
+const fold = (s: string) => s.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase();
+
+// Words that would identify the person: every part of the client's name, and
+// the capitalised words of whom the meeting is with ("the Whitfield trust").
+function personalWords(prep: Prep): string[] {
+  const words = prep.clientFile.name.split(/[^\p{L}\p{N}]+/u);
+  const withWhom = prep.meeting?.with ?? "";
+  words.push(...withWhom.split(/[^\p{L}\p{N}]+/u).filter((w) => /^\p{Lu}/u.test(w)));
+  return [...new Set(words.filter((w) => w.length > 1).map(fold))];
+}
+
 // A query leaves for Google, so it may hold nothing about the client: no name
-// from the client file, no email, no long digit run (an account or a phone).
+// (accents and case aside), no email, and no account, phone or ID number
+// however it is separated (7+ digits in one run; a run stops before a letter,
+// so "2026 401k" is a year and a plan, not a number).
 export function safeQuery(query: string, prep: Prep): string | null {
   const q = query.replace(/\s+/g, " ").trim().slice(0, MAX_QUERY);
-  if (!q || /@/.test(q) || /\d[\d\s-]{6,}\d/.test(q)) return null;
-  const names = prep.clientFile.name.split(/[\s,&.'-]+/).filter((w) => w.length > 2);
-  if (names.some((n) => new RegExp(`\\b${escapeRegExp(n)}\\b`, "i").test(q))) return null;
-  return q;
+  if (!q || /@/.test(q)) return null;
+  for (const run of q.match(/\d[\d\s.,/()_-]*\d(?!\p{L})/gu) ?? []) if (run.replace(/\D/g, "").length >= 7) return null;
+  const folded = fold(q);
+  const named = personalWords(prep).some((w) => new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(w)}(?![\\p{L}\\p{N}])`, "u").test(folded));
+  return named ? null : q;
 }
 
 function deadline(ms: number, outer?: AbortSignal): { signal: AbortSignal; done: () => void } {

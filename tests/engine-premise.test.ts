@@ -116,6 +116,28 @@ describe("what leaves for Google", () => {
     expect(safeQuery("rates for someone@example.com", demoPrep)).toBeNull();
     expect(safeQuery("account 4417 1234 5678 balance", demoPrep)).toBeNull();
   });
+
+  it("catches numbers split by dots, slashes or brackets, and names with accents", () => {
+    expect(safeQuery("account 4417.1234.5678", demoPrep)).toBeNull();
+    expect(safeQuery("ref 12/34/567", demoPrep)).toBeNull();
+    expect(safeQuery("call (415) 555-0199", demoPrep)).toBeNull();
+    const [first, last] = demoPrep.clientFile.name.split(" ");
+    expect(safeQuery(`${first.replace("a", "á")} retirement`, demoPrep)).toBeNull();
+    expect(safeQuery(`${last.toUpperCase()} pension rules`, demoPrep)).toBeNull();
+  });
+
+  it("refuses the name of whoever the meeting is with", () => {
+    const prep = { ...demoPrep, meeting: { with: "the Okonkwo family trust", role: "client", purpose: "review" } };
+    expect(safeQuery("Okonkwo trust tax rules", prep)).toBeNull();
+    expect(safeQuery("family trust tax rules 2026", prep)).toBe("family trust tax rules 2026");
+  });
+
+  it("keeps public queries with years, plan names and figures", () => {
+    expect(safeQuery("IRS 401k contribution limit 2026", demoPrep)).not.toBeNull();
+    expect(safeQuery("401k limit 2026 401k catch-up", demoPrep)).not.toBeNull();
+    expect(safeQuery("Federal Reserve rate decision October 8 2026", demoPrep)).not.toBeNull();
+    expect(safeQuery("401k limit 47,000", demoPrep)).not.toBeNull();
+  });
 });
 
 describe("checkPremise", () => {
